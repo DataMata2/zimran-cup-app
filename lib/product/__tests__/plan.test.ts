@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { estimate, toICS, type TaxResult } from "@/lib/tax";
+import { estimate, type TaxResult } from "@/lib/tax";
 import { buildTaxInput } from "@/lib/product/input";
 import { computePlan, FREE_LOG_LIMIT, needsPro, planNotes } from "@/lib/product/plan";
 import { missedRemaining, nextStepText, pastDue, payTarget } from "@/lib/product/payNow";
@@ -171,10 +171,11 @@ describe("free tier and notes", () => {
 });
 
 describe("calendarFile", () => {
-  it("is the engine's calendar for the plan, with the return due date, and no income figures", () => {
+  it("is built on the engine's calendar, with the return due date, and no income figures", () => {
     const result = estimate(buildTaxInput(profile, [], "2026-11-14"));
     const ics = calendarFile(result);
-    expect(ics).toBe(toICS(result, { includeReturnDue: true }));
+    // This profile has a past-due amount, so the file adds a pay-now event (see calendar.test.ts).
+    expect(ics).toContain("UID:penaltyproof-2026-pastdue@penaltyproof");
     expect(ics).toContain("BEGIN:VCALENDAR");
     expect(ics).toContain("20270415");
     expect(ics).not.toContain("30000");

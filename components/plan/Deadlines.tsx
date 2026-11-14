@@ -1,6 +1,7 @@
 import { Badge } from "@/components/kit/Badge";
 import { cx } from "@/components/kit/cx";
 import { longDate, money } from "@/lib/product/format";
+import { calendarNote } from "@/lib/product/calendar";
 import { installmentRow } from "@/lib/product/payNow";
 import { CalendarButton } from "./CalendarButton";
 import type { TaxResult } from "@/lib/tax";
@@ -66,7 +67,7 @@ export function Deadlines({ result, className }: { result: TaxResult; className?
 
       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
         <CalendarButton result={result} />
-        <p className="text-sm text-ink-3">Each remaining deadline with its amount, plus a reminder 3 days before.</p>
+        <p className="text-sm text-ink-3">{calendarNote(result)}</p>
       </div>
     </section>
   );

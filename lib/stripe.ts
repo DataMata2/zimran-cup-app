@@ -75,6 +75,8 @@ export async function createCheckoutSession({
     mode: "subscription",
     // US product: always charge in USD, never convert to the visitor's local currency.
     adaptive_pricing: { enabled: false },
+    // The sandbox account's own name can't be changed, so brand the page per session (paper / ink from globals.css).
+    branding_settings: { display_name: "Penaltyproof", background_color: "#FFF3D6", button_color: "#141414" },
     line_items: [
       {
         quantity: 1,

@@ -56,7 +56,7 @@ export default function LandingPage() {
             </span>{" "}
             <span className="min-[481px]:hidden">IRS </span>
             <span className="min-[481px]:text-hot min-[481px]:[-webkit-text-stroke:2px_var(--color-ink)] min-[481px]:[paint-order:stroke_fill] lg:[-webkit-text-stroke:3px_var(--color-ink)]">
-              estimated-tax penalties
+              <span className="whitespace-nowrap">estimated-tax</span> penalties
             </span>{" "}
             in fiscal&nbsp;2025.
           </h1>

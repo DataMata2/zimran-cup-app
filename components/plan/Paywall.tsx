@@ -8,7 +8,7 @@ import { FREE_LOG_LIMIT } from "@/lib/product/plan";
 import { DEFAULT_PRO_PLAN, startCheckout, type ProPlan } from "@/lib/product/pro";
 
 /** Why the sheet opened: the free log is full, the person asked for Pro, or they tried a Pro feature. */
-export type PaywallReason = "limit" | "upgrade" | "screenshot" | "ask";
+export type PaywallReason = "limit" | "upgrade" | "screenshot" | "ask" | "annualized" | "export";
 
 const HEADINGS: Record<PaywallReason, { title: string; body: string }> = {
   limit: {
@@ -23,6 +23,14 @@ const HEADINGS: Record<PaywallReason, { title: string; body: string }> = {
   ask: {
     title: "Ask about your numbers",
     body: "With Pro, ask why a payment is what it is and get an answer from your own plan.",
+  },
+  annualized: {
+    title: "Paid unevenly? See your annualized plan",
+    body: "With Pro, see your instalments under the IRS annualized method (Form 2210 Schedule AI), next to the regular schedule.",
+  },
+  export: {
+    title: "Export for your accountant",
+    body: "With Pro, download your payment log, instalments and tax breakdown as a CSV file.",
   },
 };
 
@@ -40,7 +48,7 @@ const FEATURES: { label: string; free: string | boolean; pro: string | boolean }
   { label: "Your plan, deadlines and calendar file", free: true, pro: true },
   { label: "Payment log", free: `${FREE_LOG_LIMIT} entries`, pro: "Unlimited" },
   { label: "Read payouts from a screenshot", free: false, pro: true },
-  { label: "Annualized plan for lumpy income", free: false, pro: true },
+  { label: "Annualized plan for uneven income", free: false, pro: true },
   { label: "“Ask why” chat", free: false, pro: true },
   { label: "CSV export for your accountant", free: false, pro: true },
 ];

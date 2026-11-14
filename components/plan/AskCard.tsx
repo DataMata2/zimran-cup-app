@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/kit/Button";
 import { cx } from "@/components/kit/cx";
 import { AiCallError, streamText, type PlanBody } from "@/lib/product/aiClient";
+import { LockIcon } from "./LockIcon";
 import type { PaywallReason } from "./Paywall";
 
 const SUGGESTIONS = ["Why is my Q4 payment higher?", "What if I earn $10,000 more?", "What happens if I skip a payment?"];
@@ -40,15 +41,6 @@ export function AskCard({
       <p className="mt-1 text-sm text-ink-2">Questions about this plan, answered from its numbers.</p>
       {pro ? <Chat plan={plan} onNeedPro={onNeedPro} /> : <Locked onNeedPro={onNeedPro} />}
     </section>
-  );
-}
-
-function LockIcon() {
-  return (
-    <svg role="img" aria-label="Pro" viewBox="0 0 16 16" className="size-4 text-ink-3" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="7" width="10" height="7" rx="1.5" />
-      <path d="M5.5 7V5a2.5 2.5 0 015 0v2" />
-    </svg>
   );
 }
 

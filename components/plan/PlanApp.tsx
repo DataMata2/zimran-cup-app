@@ -18,7 +18,9 @@ import { PaymentLog } from "./PaymentLog";
 import { PlanActions } from "./PlanActions";
 import { PlanHero } from "./PlanHero";
 import { PlanSkeleton } from "./PlanSkeleton";
+import { AnnualizedCard } from "./AnnualizedCard";
 import { AskCard } from "./AskCard";
+import { ExportCard } from "./ExportCard";
 import { WhyCard } from "./WhyCard";
 
 /** The /plan screen: the two numbers, the payment log with its meter, the deadlines and the breakdown. */
@@ -84,7 +86,7 @@ export function PlanApp() {
         {notice && (
           <Notice tone={notice === "pro" ? "accent" : "quiet"} onDismiss={() => setNotice(null)} className="mb-6">
             {notice === "pro"
-              ? "You're Pro. Unlimited logging is on."
+              ? "You're Pro. Unlimited logging, screenshot reading, the annualized plan, Ask and CSV export are on."
               : "Checkout cancelled — you're still on the free plan."}
           </Notice>
         )}
@@ -95,13 +97,15 @@ export function PlanApp() {
             <WhyCard plan={aiPlan} />
           </div>
 
-          <div className="lg:sticky lg:top-6 lg:col-start-2 lg:row-span-5 lg:row-start-1 lg:self-start">
+          <div className="lg:sticky lg:top-6 lg:col-start-2 lg:row-span-7 lg:row-start-1 lg:self-start">
             <PaymentLog result={result} log={log} pro={pro} asOf={input.asOf} onNeedPro={openPaywall} />
           </div>
 
           <Deadlines result={result} input={input} className="lg:col-start-1" />
+          <AnnualizedCard profile={profile} log={log} asOf={input.asOf} pro={pro} onNeedPro={openPaywall} className="lg:col-start-1" />
           <AskCard plan={aiPlan} pro={pro} onNeedPro={openPaywall} className="lg:col-start-1" />
           <Breakdown result={result} state={profile.state} className="lg:col-start-1" />
+          <ExportCard profile={profile} log={log} result={result} asOf={input.asOf} pro={pro} onNeedPro={openPaywall} className="lg:col-start-1" />
           <PlanActions isExample={profile.isExample} className="lg:col-start-1" />
         </div>
       </div>

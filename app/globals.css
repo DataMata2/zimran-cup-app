@@ -164,3 +164,21 @@
     transform: scaleX(1);
   }
 }
+
+/* A quiz question arriving: a short fade and lift, so the change of step registers. */
+@keyframes pp-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The quiz pins its Continue bar to the bottom on phones: keep a focused field from scrolling under it. */
+html:has([data-quiz]) {
+  scroll-padding-top: 1rem;
+  scroll-padding-bottom: 7rem;
+}

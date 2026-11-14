@@ -2,8 +2,7 @@ import { buttonClasses } from "@/components/kit/Button";
 import { cx } from "@/components/kit/cx";
 import { Disclaimer } from "@/components/kit/Disclaimer";
 import { longDate, money, pct } from "@/lib/product/format";
-import { aboutMoney, payNowPlan, type PayNow } from "@/lib/product/payNow";
-import { payTarget } from "@/lib/product/plan";
+import { aboutMoney, payNowPlan, payTarget, type PayNow } from "@/lib/product/payNow";
 import { estimateAccruedPenalty, type TaxResult } from "@/lib/tax";
 
 const DIRECT_PAY_URL = "https://www.irs.gov/payments/direct-pay";
@@ -114,7 +113,7 @@ function PayNowHeadline({ payNow }: { payNow: PayNow }) {
       <DirectPay />
       <p className="mt-4 text-xs text-ink-3">
         Penalty so far: {aboutMoney(penaltySoFar)} (estimate)
-        <span className="mt-0.5 block">Assumes the payments you entered were made on time.</span>
+        <span className="mt-0.5 block">Assumes the amount you&rsquo;d already paid was paid on time.</span>
       </p>
     </>
   );

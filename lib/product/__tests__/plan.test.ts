@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { estimate, toICS, type TaxResult } from "@/lib/tax";
 import { buildTaxInput } from "@/lib/product/input";
-import { computePlan, FREE_LOG_LIMIT, needsPro, pastDuePart, payTarget, planNotes } from "@/lib/product/plan";
+import { computePlan, FREE_LOG_LIMIT, needsPro, planNotes } from "@/lib/product/plan";
+import { missedRemaining, nextStepText, pastDue, payTarget } from "@/lib/product/payNow";
 import { decodeIcsParam, encodeIcsParam, icsHref, ICS_PARAM_MAX_LENGTH } from "@/lib/product/icsParam";
 import { CHECKOUT_ERROR, refreshPro, startCheckout } from "@/lib/product/pro";
 import { dateList, shortDate } from "@/lib/product/format";
@@ -21,14 +22,15 @@ const profile: Profile = {
   isExample: false,
 };
 
-describe("pastDuePart", () => {
+describe("pastDue", () => {
   it("sums every missed instalment (the cumulative shortfall), not just the last one", () => {
     // Nothing paid by Nov 14: Q1, Q2 and Q3 are all past due.
     const result = estimate(buildTaxInput(profile, [], "2026-11-14"));
     const missed = result.installments.filter((i) => i.status === "pastDue");
     expect(missed.length).toBe(3);
-    const part = pastDuePart(result);
+    const part = pastDue(result);
     expect(part?.dues).toEqual(missed.map((i) => i.due));
+    expect(part?.quarters).toEqual([1, 2, 3]);
     expect(part?.amount).toBe(Math.max(...missed.map((i) => i.shortfall)));
     expect(part?.amount).toBe(missed.reduce((s, i) => s + i.required, 0));
     expect(result.nextDeadline?.amountDue).toBeGreaterThan(part!.amount);
@@ -37,16 +39,47 @@ describe("pastDuePart", () => {
   it("is null when nothing is past due", () => {
     const result = estimate(buildTaxInput({ ...profile, estimatedPaid: 6000 }, [], "2026-11-14"));
     expect(result.nextDeadline?.includesPastDue).toBe(false);
-    expect(pastDuePart(result)).toBeNull();
+    expect(pastDue(result)).toBeNull();
+  });
+
+  it("ignores a past-due shortfall under 50 cents (it would read as $0)", () => {
+    const fake = {
+      installments: [{ quarter: 3, due: "2026-09-15", shortfall: 0.3, status: "pastDue" }],
+      nextDeadline: null,
+    } as unknown as TaxResult;
+    expect(pastDue(fake)).toBeNull();
+  });
+});
+
+describe("missedRemaining", () => {
+  it("is each missed quarter's own unpaid part, adding up to the past-due total", () => {
+    const result = estimate(buildTaxInput(profile, [], "2026-11-14"));
+    const parts = ([1, 2, 3] as const).map((q) => missedRemaining(result, q));
+    for (const p of parts) expect(p).toBeCloseTo(result.installments[0]!.required, 6);
+    expect(parts.reduce((s, p) => s + p, 0)).toBeCloseTo(pastDue(result)!.amount, 6);
+  });
+
+  it("shows only the unpaid rest of a partly paid quarter", () => {
+    // $1,000 paid: it goes to Q1 first, so Q1 still lacks required − 1,000 and Q2, Q3 lack their full amount.
+    const result = estimate(buildTaxInput({ ...profile, estimatedPaid: 1000 }, [], "2026-11-14"));
+    const req = result.installments[0]!.required;
+    expect(missedRemaining(result, 1)).toBeCloseTo(req - 1000, 6);
+    expect(missedRemaining(result, 2)).toBeCloseTo(req, 6);
   });
 });
 
 describe("payTarget", () => {
-  it("is the next deadline's amount", () => {
+  it("is the next instalment on its own, without the past-due part", () => {
     const result = estimate(buildTaxInput(profile, [], "2026-11-14"));
     expect(payTarget(result)).toEqual({
-      quarter: 4, due: "2027-01-15", amount: result.nextDeadline!.amountDue, isNext: true,
+      quarter: 4, due: "2027-01-15", amount: result.nextDeadline!.amountDue - pastDue(result)!.amount, isNext: true,
     });
+    expect(payTarget(result)!.amount).toBeCloseTo(result.installments[3]!.required, 6);
+  });
+
+  it("is the full next deadline when nothing is past due", () => {
+    const result = estimate(buildTaxInput({ ...profile, estimatedPaid: 6000 }, [], "2026-11-14"));
+    expect(payTarget(result)?.amount).toBe(result.nextDeadline!.amountDue);
   });
 
   it("is null when the year's target is already paid", () => {
@@ -63,6 +96,36 @@ describe("payTarget", () => {
       ],
     } as unknown as TaxResult;
     expect(payTarget(fake)).toEqual({ quarter: 4, due: "2027-01-15", amount: 900, isNext: false });
+  });
+
+  it("treats a next deadline under 50 cents as covered", () => {
+    const fake = {
+      nextDeadline: { quarter: 4, due: "2027-01-15", amountDue: 0.4, includesPastDue: false },
+      installments: [],
+    } as unknown as TaxResult;
+    expect(payTarget(fake)).toBeNull();
+  });
+});
+
+describe("nextStepText", () => {
+  it("splits a past-due amount from the next instalment", () => {
+    const result = estimate(buildTaxInput(profile, [], "2026-11-14"));
+    expect(nextStepText(result)).toMatch(/^Q1–Q3 are still past due\. Pay \$[\d,]+ now, then \$[\d,]+ by Jan 15, 2027\.$/);
+  });
+
+  it("never says covered while a quarter is past due, even with no deadline left", () => {
+    const fake = {
+      installments: [{ quarter: 4, due: "2027-01-15", shortfall: 1200, status: "pastDue" }],
+      nextDeadline: null,
+    } as unknown as TaxResult;
+    expect(nextStepText(fake)).toBe("Q4 is still past due. Pay $1,200 now.");
+  });
+
+  it("names the next deadline, or says the year is covered", () => {
+    const onTrack = estimate(buildTaxInput({ ...profile, estimatedPaid: 6000 }, [], "2026-11-14"));
+    expect(nextStepText(onTrack)).toMatch(/^Next: \$[\d,]+ by Jan 15, 2027\.$/);
+    const done = estimate(buildTaxInput({ ...profile, estimatedPaid: 8000 }, [], "2026-11-14"));
+    expect(nextStepText(done)).toBe("That covers your safe-harbor amount for 2026.");
   });
 });
 

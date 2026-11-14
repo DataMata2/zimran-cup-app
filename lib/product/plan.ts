@@ -31,45 +31,6 @@ export function computePlan(profile: Profile, log: readonly LogEntry[], asOf: st
   }
 }
 
-export interface PastDue {
-  /** Everything still unpaid through the last missed due date (the cumulative shortfall). */
-  amount: number;
-  /** Due dates of the missed instalments, oldest first. */
-  dues: string[];
-}
-
-/**
- * The overdue part of the next deadline: the largest cumulative shortfall over the past-due instalments
- * (so two missed quarters add up), with the dates that were missed. Null when nothing is past due.
- */
-export function pastDuePart(result: TaxResult): PastDue | null {
-  if (!result.nextDeadline?.includesPastDue) return null;
-  const missed = result.installments.filter((i) => i.status === "pastDue");
-  const amount = missed.reduce((max, i) => Math.max(max, i.shortfall), 0);
-  if (missed.length === 0 || amount <= 0) return null;
-  return { amount, dues: missed.map((i) => i.due) };
-}
-
-export interface PayTarget {
-  quarter: 1 | 2 | 3 | 4;
-  due: string;
-  amount: number;
-  /** This is the engine's next deadline (false when it is $0 and a later quarter has the next amount). */
-  isNext: boolean;
-}
-
-/**
- * The next payment the hero asks for: the next deadline's amount, or, when that is $0 (already covered),
- * the first later instalment with a planned payment. Null when nothing more is due for the tax year.
- */
-export function payTarget(result: TaxResult): PayTarget | null {
-  const next = result.nextDeadline;
-  if (!next) return null;
-  if (next.amountDue > 0) return { quarter: next.quarter, due: next.due, amount: next.amountDue, isNext: true };
-  const later = result.installments.find((i) => i.quarter > next.quarter && i.plannedPayment > 0);
-  return later ? { quarter: later.quarter, due: later.due, amount: later.plannedPayment, isNext: false } : null;
-}
-
 /** Flags shown elsewhere on the screen (the hero already explains a past-due amount). */
 const SHOWN_ELSEWHERE: readonly FlagCode[] = ["past_due_installment"];
 /** Flags that read as fine print, under the breakdown. */

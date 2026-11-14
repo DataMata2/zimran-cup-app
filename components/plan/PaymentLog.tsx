@@ -9,7 +9,8 @@ import { ProgressBar } from "@/components/kit/ProgressBar";
 import { SegmentedControl } from "@/components/kit/SegmentedControl";
 import { longDate, money, moneyCents, pct, shortDate } from "@/lib/product/format";
 import { meterLabel, meterPctLabel, meterSegments, penaltyMeter } from "@/lib/product/meter";
-import { FREE_LOG_LIMIT, needsPro, payTarget } from "@/lib/product/plan";
+import { nextStepText } from "@/lib/product/payNow";
+import { FREE_LOG_LIMIT, needsPro } from "@/lib/product/plan";
 import { addLogEntry, removeLogEntry, useAddedCount } from "@/lib/product/store";
 import type { LogEntry, LogKind } from "@/lib/product/types";
 import { setAsideForPayment, type TaxResult } from "@/lib/tax";
@@ -115,7 +116,6 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
 
   const entries = [...log].reverse();
   const used = Math.min(added, FREE_LOG_LIMIT);
-  const next = payTarget(result);
 
   return (
     <Card as="section" raised padding="none" aria-labelledby="meter-title" className="overflow-hidden">
@@ -272,9 +272,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
                 <>
                   <p className="text-lg font-bold text-accent-ink">Logged {moneyCents(confirmation.amount)} paid to the IRS</p>
                   <p className="mt-0.5 text-sm text-ink-2">
-                    {next
-                      ? `Next: ${money(next.amount)} by ${longDate(next.due)}.`
-                      : "That covers your safe-harbor amount for 2026."}
+                    {nextStepText(result)}
                   </p>
                 </>
               )}

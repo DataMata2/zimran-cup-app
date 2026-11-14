@@ -4,8 +4,7 @@ import { describe, expect, it } from "vitest";
 import { estimate, estimateAccruedPenalty, type PenaltyEstimate, type TaxResult } from "@/lib/tax";
 import { buildExample } from "@/lib/product/example";
 import { buildTaxInput } from "@/lib/product/input";
-import { aboutMoney, pastDueSentence, payNowPlan, quarterList, WEEKLY_PENALTY_MIN } from "@/lib/product/payNow";
-import { pastDuePart } from "@/lib/product/plan";
+import { aboutMoney, pastDue, pastDueSentence, payNowPlan, quarterList, WEEKLY_PENALTY_MIN } from "@/lib/product/payNow";
 import { ENGINE_TEST_COUNT } from "@/lib/product/trust";
 import type { LogEntry, Profile } from "@/lib/product/types";
 
@@ -94,18 +93,22 @@ describe("payNowPlan", () => {
     expect(payNowPlan(fake({ 3: 6000 }, null), penalty(5))?.then).toBeNull();
   });
 
+  it("is null when the past-due shortfall would show as $0", () => {
+    expect(payNowPlan(fake({ 3: 0.4 }, 1000), penalty(0))).toBeNull();
+  });
+
   it("hides the weekly penalty under $1", () => {
     expect(payNowPlan(fake({ 3: 50 }, 50), penalty(WEEKLY_PENALTY_MIN - 0.01))?.weeklyPenalty).toBeNull();
     expect(payNowPlan(fake({ 3: 50 }, 50), penalty(0))?.weeklyPenalty).toBeNull();
     expect(payNowPlan(fake({ 3: 60 }, 60), penalty(WEEKLY_PENALTY_MIN))?.weeklyPenalty).toBe(WEEKLY_PENALTY_MIN);
   });
 
-  it("fresh quiz case, nothing paid by Nov 14: Q1–Q3, the same amount as pastDuePart, the rest by Jan 15", () => {
+  it("fresh quiz case, nothing paid by Nov 14: Q1–Q3, the same amount as pastDue, the rest by Jan 15", () => {
     const result = estimate(buildTaxInput(fresh, [], AS_OF));
     const pen = estimateAccruedPenalty(result);
     const plan = payNowPlan(result, pen)!;
     expect(plan.pastDueText).toBe("Q1–Q3 are past due.");
-    expect(plan.amount).toBe(pastDuePart(result)!.amount);
+    expect(plan.amount).toBe(pastDue(result)!.amount);
     expect(plan.then?.amount).toBeCloseTo(result.nextDeadline!.amountDue - plan.amount, 6);
     expect(plan.then?.due).toBe("2027-01-15");
     expect(plan.weeklyPenalty).toBe(pen.weeklyCostIfUnpaid);

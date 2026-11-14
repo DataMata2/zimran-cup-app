@@ -6,8 +6,8 @@
 import { estimateAccruedPenalty, type TaxInput, type TaxResult } from "@/lib/tax";
 import { longDate, money, pct } from "./format";
 import { penaltyMeter, meterPctLabel } from "./meter";
-import { payNowPlan } from "./payNow";
-import { computePlan, payTarget } from "./plan";
+import { payNowPlan, payTarget } from "./payNow";
+import { computePlan } from "./plan";
 import { stateName } from "./states";
 import type { LogEntry, Profile } from "./types";
 import { isLogEntry, isProfile } from "./validate";

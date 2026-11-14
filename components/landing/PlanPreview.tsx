@@ -4,8 +4,8 @@ import { Card } from "@/components/kit/Card";
 import { Disclaimer } from "@/components/kit/Disclaimer";
 import { ProgressBar } from "@/components/kit/ProgressBar";
 import { EXAMPLE_DESCRIPTION, EXAMPLE_NAME } from "@/lib/product/example";
-import { dateList, longDate, money, pct } from "@/lib/product/format";
-import { pastDuePart } from "@/lib/product/plan";
+import { longDate, money, pct } from "@/lib/product/format";
+import { pastDue, pastDueSentence, payTarget } from "@/lib/product/payNow";
 import { meterLabel, meterSegments } from "@/lib/product/meter";
 import { useExamplePlan } from "./useExamplePlan";
 
@@ -19,8 +19,8 @@ function Blank({ className }: { className: string }) {
 /** The example persona's two numbers and meter, as the product shows them. */
 export function PlanPreview() {
   const plan = useExamplePlan();
-  const next = plan?.result.nextDeadline ?? null;
-  const missed = plan ? pastDuePart(plan.result) : null;
+  const due = plan ? pastDue(plan.result) : null;
+  const target = plan ? payTarget(plan.result) : null;
   const segments = plan ? meterSegments(plan.meter) : null;
 
   return (
@@ -35,12 +35,31 @@ export function PlanPreview() {
       <div className="px-5 pt-5 pb-6 sm:px-6 sm:pt-6">
         <p className="text-sm text-ink-2">To stay penalty-proof, pay</p>
         {plan ? (
-          next && next.amountDue > 0 ? (
+          due ? (
+            <>
+              <p className="mt-1 flex flex-wrap items-baseline gap-x-3">
+                <span className="text-[2.75rem] leading-none font-bold tracking-[-0.03em] text-ink sm:text-[3.25rem]">
+                  {money(due.amount)}
+                </span>
+                <span className="text-base font-semibold text-ink-2">now</span>
+              </p>
+              {target && (
+                <p className="mt-2 text-base text-ink-2">
+                  then <span className="font-semibold text-ink">{money(target.amount)}</span> by{" "}
+                  <span className="font-semibold whitespace-nowrap text-ink">{longDate(target.due)}</span>
+                </p>
+              )}
+              <p className="mt-3 flex items-center gap-2 text-sm font-medium text-red">
+                <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-red" />
+                {pastDueSentence(due.quarters)}
+              </p>
+            </>
+          ) : target ? (
             <p className="mt-1 flex flex-wrap items-baseline gap-x-3">
               <span className="text-[2.75rem] leading-none font-bold tracking-[-0.03em] text-ink sm:text-[3.25rem]">
-                {money(next.amountDue)}
+                {money(target.amount)}
               </span>
-              <span className="text-base font-semibold text-ink-2">by {longDate(next.due)}</span>
+              <span className="text-base font-semibold text-ink-2">by {longDate(target.due)}</span>
             </p>
           ) : (
             <p className="mt-1 text-2xl font-bold text-accent">Nothing more for 2026</p>
@@ -48,11 +67,6 @@ export function PlanPreview() {
         ) : (
           <p className="mt-1">
             <Blank className="h-11 w-44" />
-          </p>
-        )}
-        {missed && (
-          <p className="mt-3 inline-flex rounded-sm bg-amber-soft px-2.5 py-1 text-sm font-medium text-amber">
-            Includes {money(missed.amount)} missed on {dateList(missed.dues)}
           </p>
         )}
 

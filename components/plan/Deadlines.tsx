@@ -1,29 +1,28 @@
 import { Badge } from "@/components/kit/Badge";
 import { buttonClasses } from "@/components/kit/Button";
 import { cx } from "@/components/kit/cx";
-import { longDate, money, shortDate } from "@/lib/product/format";
+import { longDate, money } from "@/lib/product/format";
+import { missedRemaining, payTarget, type PayTarget } from "@/lib/product/payNow";
 import { icsHref } from "@/lib/product/icsParam";
 import type { Installment, TaxInput, TaxResult } from "@/lib/tax";
 
 const RETURN_DUE = "2027-04-15";
 
-/** What a row shows: the amount and a short line under the date. */
-function rowContent(i: Installment, result: TaxResult): { amount: number; note: string } {
+/**
+ * What a row shows: the amount and a short line under the date. A past-due part is paid now, so the next
+ * deadline's row shows only its own instalment and each missed row shows what is still unpaid on it.
+ */
+function rowContent(i: Installment, result: TaxResult, target: PayTarget | null): { amount: number; note: string } {
   const next = result.nextDeadline;
   if (next && next.quarter === i.quarter) {
-    return {
-      amount: next.amountDue,
-      note: next.includesPastDue ? "Pay by this date, includes what was missed" : next.amountDue > 0 ? "Pay by this date" : "Already covered",
-    };
+    const own = target?.isNext ? target.amount : 0;
+    return { amount: own, note: own > 0 ? "Pay by this date" : "Already covered" };
   }
   switch (i.status) {
     case "paid":
       return { amount: i.required, note: "Covered" };
     case "pastDue":
-      return {
-        amount: i.required,
-        note: next ? `Missed, added to ${shortDate(next.due)}` : "Missed",
-      };
+      return { amount: missedRemaining(result, i.quarter), note: "Missed, pay now" };
     default:
       return { amount: i.plannedPayment, note: i.plannedPayment > 0 ? "Planned" : "Nothing to pay" };
   }
@@ -33,6 +32,7 @@ function rowContent(i: Installment, result: TaxResult): { amount: number; note: 
 export function Deadlines({ result, input, className }: { result: TaxResult; input: TaxInput; className?: string }) {
   const trueUp = result.aprilTrueUp;
   const nextQuarter = result.nextDeadline?.quarter ?? null;
+  const target = payTarget(result);
 
   return (
     <section aria-labelledby="deadlines-title" className={cx("min-w-0", className)}>
@@ -44,7 +44,7 @@ export function Deadlines({ result, input, className }: { result: TaxResult; inp
       <div className="mt-5 rounded-lg border border-line bg-surface">
         <ol>
           {result.installments.map((i) => {
-            const { amount, note } = rowContent(i, result);
+            const { amount, note } = rowContent(i, result, target);
             const isNext = i.quarter === nextQuarter;
             return (
               <li

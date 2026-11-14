@@ -1,15 +1,14 @@
 import { Badge } from "@/components/kit/Badge";
-import { buttonClasses } from "@/components/kit/Button";
 import { cx } from "@/components/kit/cx";
 import { longDate, money } from "@/lib/product/format";
 import { installmentRow } from "@/lib/product/payNow";
-import { icsHref } from "@/lib/product/icsParam";
-import type { TaxInput, TaxResult } from "@/lib/tax";
+import { CalendarButton } from "./CalendarButton";
+import type { TaxResult } from "@/lib/tax";
 
 const RETURN_DUE = "2027-04-15";
 
 /** The four 2026 instalments, the April return, and the calendar file. */
-export function Deadlines({ result, input, className }: { result: TaxResult; input: TaxInput; className?: string }) {
+export function Deadlines({ result, className }: { result: TaxResult; className?: string }) {
   const trueUp = result.aprilTrueUp;
   const nextQuarter = result.nextDeadline?.quarter ?? null;
 
@@ -66,17 +65,7 @@ export function Deadlines({ result, input, className }: { result: TaxResult; inp
       </div>
 
       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-        <a
-          href={icsHref(input)}
-          download="penaltyproof-2026.ics"
-          className={buttonClasses({ variant: "secondary", className: "w-full sm:w-auto" })}
-        >
-          <svg aria-hidden viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <rect x="2" y="3" width="12" height="11" rx="2" />
-            <path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3" strokeLinecap="round" />
-          </svg>
-          Add all to calendar (.ics)
-        </a>
+        <CalendarButton result={result} />
         <p className="text-sm text-ink-3">Each remaining deadline with its amount, plus a reminder 3 days before.</p>
       </div>
     </section>

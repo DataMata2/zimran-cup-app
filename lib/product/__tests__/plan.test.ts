@@ -3,7 +3,7 @@ import { estimate, toICS, type TaxResult } from "@/lib/tax";
 import { buildTaxInput } from "@/lib/product/input";
 import { computePlan, FREE_LOG_LIMIT, needsPro, planNotes } from "@/lib/product/plan";
 import { missedRemaining, nextStepText, pastDue, payTarget } from "@/lib/product/payNow";
-import { decodeIcsParam, encodeIcsParam, icsHref, ICS_PARAM_MAX_LENGTH } from "@/lib/product/icsParam";
+import { calendarFile, ICS_FILENAME } from "@/lib/product/calendar";
 import { CHECKOUT_ERROR, refreshPro, startCheckout } from "@/lib/product/pro";
 import { dateList, shortDate } from "@/lib/product/format";
 import type { Profile } from "@/lib/product/types";
@@ -170,31 +170,15 @@ describe("free tier and notes", () => {
   });
 });
 
-describe("ics param", () => {
-  it("round-trips the engine input and builds the same calendar", () => {
-    const input = buildTaxInput(profile, [], "2026-11-14");
-    const d = encodeIcsParam(input);
-    expect(d).toMatch(/^[A-Za-z0-9_-]+$/);
-    expect(decodeIcsParam(d)).toEqual(input);
-    expect(toICS(estimate(decodeIcsParam(d)!), { includeReturnDue: true })).toBe(
-      toICS(estimate(input), { includeReturnDue: true }),
-    );
-    expect(icsHref(input)).toBe(`/api/ics?d=${d}`);
-  });
-
-  it("keeps non-ASCII text intact", () => {
-    const value = { note: "Café — 東京" } as never;
-    expect(decodeIcsParam(encodeIcsParam(value))).toEqual(value);
-  });
-
-  it("rejects anything that is not base64url JSON of an object", () => {
-    expect(decodeIcsParam(null)).toBeNull();
-    expect(decodeIcsParam("")).toBeNull();
-    expect(decodeIcsParam("not base64!")).toBeNull();
-    expect(decodeIcsParam(Buffer.from("not json").toString("base64url"))).toBeNull();
-    expect(decodeIcsParam(Buffer.from("[1,2]").toString("base64url"))).toBeNull();
-    expect(decodeIcsParam(Buffer.from("42").toString("base64url"))).toBeNull();
-    expect(decodeIcsParam("A".repeat(ICS_PARAM_MAX_LENGTH + 1))).toBeNull();
+describe("calendarFile", () => {
+  it("is the engine's calendar for the plan, with the return due date, and no income figures", () => {
+    const result = estimate(buildTaxInput(profile, [], "2026-11-14"));
+    const ics = calendarFile(result);
+    expect(ics).toBe(toICS(result, { includeReturnDue: true }));
+    expect(ics).toContain("BEGIN:VCALENDAR");
+    expect(ics).toContain("20270415");
+    expect(ics).not.toContain("30000");
+    expect(ICS_FILENAME).toBe("penaltyproof-2026.ics");
   });
 });
 

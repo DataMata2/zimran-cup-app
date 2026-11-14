@@ -100,7 +100,7 @@ export function PlanApp() {
             <PaymentLog result={result} log={log} pro={pro} asOf={input.asOf} onNeedPro={openPaywall} />
           </div>
 
-          <Deadlines result={result} input={input} className="lg:col-start-1" />
+          <Deadlines result={result} className="lg:col-start-1" />
           <AnnualizedCard profile={profile} log={log} asOf={input.asOf} pro={pro} onNeedPro={openPaywall} className="lg:col-start-1" />
           <AskCard plan={aiPlan} pro={pro} onNeedPro={openPaywall} className="lg:col-start-1" />
           <Breakdown result={result} state={profile.state} className="lg:col-start-1" />

@@ -70,14 +70,15 @@ describe("buildTaxInput", () => {
     expect(input.estimatedPaymentsMade).toEqual([]);
   });
 
-  it("dates the quiz lump sum at asOf, clamped to Jan 1..Sep 15, and adds irs entries", () => {
+  it("dates the quiz lump sum at asOf, clamped to Jan 1..Apr 15 (assumed paid on time), and adds irs entries", () => {
     const p = { ...profile, estimatedPaid: 3700 };
-    expect(buildTaxInput(p, [], "2026-07-01").estimatedPaymentsMade).toEqual([{ date: "2026-07-01", amount: 3700 }]);
-    expect(buildTaxInput(p, [], "2026-11-14").estimatedPaymentsMade).toEqual([{ date: "2026-09-15", amount: 3700 }]);
+    expect(buildTaxInput(p, [], "2026-03-10").estimatedPaymentsMade).toEqual([{ date: "2026-03-10", amount: 3700 }]);
+    expect(buildTaxInput(p, [], "2026-07-01").estimatedPaymentsMade).toEqual([{ date: "2026-04-15", amount: 3700 }]);
+    expect(buildTaxInput(p, [], "2026-11-14").estimatedPaymentsMade).toEqual([{ date: "2026-04-15", amount: 3700 }]);
     expect(buildTaxInput(p, [], "2026-01-01").estimatedPaymentsMade).toEqual([{ date: "2026-01-01", amount: 3700 }]);
     const log = [entry({ kind: "irs", amount: 1000, date: "2026-10-01" }), entry({ kind: "income", amount: 500 })];
     expect(buildTaxInput(p, log, "2026-11-14").estimatedPaymentsMade).toEqual([
-      { date: "2026-09-15", amount: 3700 },
+      { date: "2026-04-15", amount: 3700 },
       { date: "2026-10-01", amount: 1000 },
     ]);
   });

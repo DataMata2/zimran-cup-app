@@ -3,8 +3,12 @@
 import type { DatedAmount, TaxInput } from "@/lib/tax";
 import type { LogEntry, Profile } from "./types";
 
-/** Latest date the quiz's lump-sum "estimated payments so far" is assumed to have been paid (Q3 due date). */
-const LUMP_LATEST = "2026-09-15";
+/**
+ * Latest date the quiz's lump-sum "estimated payments so far" is assumed to have been paid: the Q1 due date.
+ * The lump is assumed paid on time; the engine credits it earliest-first either way, so only the accrued
+ * penalty estimate depends on this date (a later date would count the covered quarters as paid late).
+ */
+const LUMP_LATEST = "2026-04-15";
 const LUMP_EARLIEST = "2026-01-01";
 
 /**
@@ -13,7 +17,7 @@ const LUMP_EARLIEST = "2026-01-01";
  * - ytd1099Income = profile.ytdIncome + every income entry.
  * - expectedAnnual1099Income = max(profile.expectedIncome, that YTD).
  * - estimatedPaymentsMade = the quiz lump sum (dated asOf, but no earlier than Jan 1 and no later than
- *   Sep 15, 2026) plus every "irs" entry on its own date.
+ *   Apr 15, 2026, i.e. assumed paid on time) plus every "irs" entry on its own date.
  * - W-2 and prior-year fields pass through (null prior-year tax = unknown).
  */
 export function buildTaxInput(profile: Profile, log: readonly LogEntry[], asOf: string): TaxInput {

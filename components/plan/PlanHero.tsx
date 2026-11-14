@@ -112,7 +112,10 @@ function PayNowHeadline({ payNow }: { payNow: PayNow }) {
         </p>
       )}
       <DirectPay />
-      <p className="mt-4 text-xs text-ink-3">Penalty so far: {aboutMoney(penaltySoFar)} (estimate)</p>
+      <p className="mt-4 text-xs text-ink-3">
+        Penalty so far: {aboutMoney(penaltySoFar)} (estimate)
+        <span className="mt-0.5 block">Assumes the payments you entered were made on time.</span>
+      </p>
     </>
   );
 }

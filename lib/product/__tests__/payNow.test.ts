@@ -121,6 +121,10 @@ describe("payNowPlan", () => {
     expect(plan.quarters).toEqual([3]);
     expect(plan.pastDueText).toBe("Q3 is past due.");
     expect(plan.amount).toBeGreaterThan(0);
+    // The quiz lump ($3,700) is assumed paid on time, so Q1 and Q2 carry no penalty: only Q3 accrues.
+    const pen = estimateAccruedPenalty(result);
+    expect(pen.perInstallment.filter((i) => i.quarter !== 3).every((i) => i.penalty === 0)).toBe(true);
+    expect(pen.total).toBe(pen.perInstallment.find((i) => i.quarter === 3)!.penalty);
   });
 });
 

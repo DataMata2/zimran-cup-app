@@ -2,6 +2,7 @@
 // Nothing here computes tax; every amount is read from the engine's TaxResult.
 
 import { estimate, setAsideForPayment, TaxInputError, type Flag, type FlagCode, type TaxInput, type TaxResult } from "@/lib/tax";
+import { localIsoDate } from "./asof";
 import { longDate } from "./format";
 import { buildTaxInput } from "./input";
 import type { LogEntry, LogKind, Profile } from "./types";
@@ -42,6 +43,22 @@ export function logDateError(kind: LogKind, date: string, asOf: string): string 
     return `Use a date between ${longDate(LOG_YEAR_START)} and ${longDate(latest)}.`;
   }
   return null;
+}
+
+/** The hint under the IRS date when the payment may already be in the pre-log lump (see `showIrsBackdateHint`). */
+export const IRS_BACKDATE_HINT = "Already counted in \u2018paid before logging\u2019? Then don\u2019t add it here.";
+
+/**
+ * True when an "I paid the IRS" entry is dated before logging started (the local date of profile.createdAt,
+ * when the plan's answers were saved) and the profile has a pre-log lump (estimatedPaid > 0): the payment may
+ * already be in that lump. Copy only; it never blocks logging. False for an empty or invalid date.
+ */
+export function showIrsBackdateHint(date: string, profile: Pick<Profile, "estimatedPaid" | "createdAt"> | null): boolean {
+  if (!profile || !(profile.estimatedPaid > 0)) return false;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+  const saved = new Date(profile.createdAt);
+  if (Number.isNaN(saved.getTime())) return false;
+  return date < localIsoDate(saved);
 }
 
 export type PlanOutcome =

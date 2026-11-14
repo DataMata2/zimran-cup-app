@@ -12,14 +12,16 @@ import { countedEntries } from "@/lib/product/freeLimit";
 import {
   defaultIrsDate,
   FREE_LOG_LIMIT,
+  IRS_BACKDATE_HINT,
   latestLogDate,
   LOG_YEAR_END as YEAR_END,
   LOG_YEAR_START as YEAR_START,
   logDateError,
   needsPro,
   setAsideAfterLogging,
+  showIrsBackdateHint,
 } from "@/lib/product/plan";
-import { addLogEntry, getProfile, removeLogEntry, useAddedCount } from "@/lib/product/store";
+import { addLogEntry, getProfile, removeLogEntry, useAddedCount, useProfile } from "@/lib/product/store";
 import type { LogEntry, LogKind } from "@/lib/product/types";
 import { setAsideForPayment, type TaxResult } from "@/lib/tax";
 import type { PaywallReason } from "./Paywall";
@@ -50,6 +52,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
   const meter = penaltyMeter(result, log);
   /** "I got paid" entries ever added to this log (deleting one doesn't free a slot; IRS payments don't count). */
   const added = useAddedCount();
+  const savedProfile = useProfile();
 
   const [kind, setKind] = useState<LogKind>("income");
   const [amount, setAmount] = useState<number | null>(null);
@@ -208,7 +211,11 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
               <span aria-hidden className="text-right text-base font-bold text-ink max-[400px]:text-left">
                 on
               </span>
-              <Field label={kind === "income" ? "Date you were paid" : "Date you paid the IRS"} hideLabel>
+              <Field
+                label={kind === "income" ? "Date you were paid" : "Date you paid the IRS"}
+                hideLabel
+                hint={kind === "irs" && showIrsBackdateHint(irsDate, savedProfile) ? IRS_BACKDATE_HINT : undefined}
+              >
                 <TextInput
                   type="date"
                   className="[&_input]:pr-2 [&_input]:pl-3"

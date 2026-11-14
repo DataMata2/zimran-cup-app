@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { estimate, estimateAccruedPenalty, type TaxResult } from "@/lib/tax";
 import { buildTaxInput } from "@/lib/product/input";
-import { computePlan, defaultIrsDate, FREE_LOG_LIMIT, logDateError, needsPro, planNotes } from "@/lib/product/plan";
+import {
+  computePlan, defaultIrsDate, FREE_LOG_LIMIT, IRS_BACKDATE_HINT, logDateError, needsPro, planNotes, showIrsBackdateHint,
+} from "@/lib/product/plan";
 import { buildCsv } from "@/lib/product/csv";
 import { isLogEntry } from "@/lib/product/validate";
 import { penaltyMeter } from "@/lib/product/meter";
@@ -319,5 +321,32 @@ describe("LIVE-PP-02: the IRS payment date", () => {
     const log = [irsOn("2026-04-15")];
     const csv = buildCsv({ log, result: estimate(buildTaxInput(profile, log, NOV15)), asOf: NOV15 });
     expect(csv).toContain("2026-04-15,Estimated tax paid to IRS,,2000.00,");
+  });
+});
+
+describe("PP-backdate-hint: an IRS payment dated before logging started", () => {
+  // Saved at local noon on Nov 10, 2026, so the local date is Nov 10 in any time zone.
+  const saved = { estimatedPaid: 3700, createdAt: new Date(2026, 10, 10, 12).toISOString() };
+
+  it("shows the hint for a date before the day the answers were saved", () => {
+    expect(showIrsBackdateHint("2026-11-09", saved)).toBe(true);
+    expect(showIrsBackdateHint("2026-04-15", saved)).toBe(true);
+    expect(IRS_BACKDATE_HINT).toBe("Already counted in ‘paid before logging’? Then don’t add it here.");
+  });
+
+  it("hides it on the same day or after", () => {
+    expect(showIrsBackdateHint("2026-11-10", saved)).toBe(false);
+    expect(showIrsBackdateHint("2026-11-15", saved)).toBe(false);
+  });
+
+  it("hides it without a pre-log lump or a profile", () => {
+    expect(showIrsBackdateHint("2026-04-15", { ...saved, estimatedPaid: 0 })).toBe(false);
+    expect(showIrsBackdateHint("2026-04-15", null)).toBe(false);
+  });
+
+  it("hides it for an empty or invalid date", () => {
+    expect(showIrsBackdateHint("", saved)).toBe(false);
+    expect(showIrsBackdateHint("2026-4-15", saved)).toBe(false);
+    expect(showIrsBackdateHint("not a date", saved)).toBe(false);
   });
 });

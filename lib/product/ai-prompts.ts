@@ -209,7 +209,7 @@ export function logFacts(log: readonly LogEntry[]) {
     .slice(0, 50)
     .map((e) =>
       e.kind === "income"
-        ? { date: longDate(e.date), type: "client payment", amount: money(e.amount), from: e.payer.slice(0, 60) || "unnamed client", setAside: money(e.setAside) }
+        ? { date: longDate(e.date), type: "client payment", amount: money(e.amount), from: e.payer.replace(/[<>]/g, "").trim().slice(0, 60) || "unnamed client", setAside: money(e.setAside) }
         : { date: longDate(e.date), type: "estimated payment to the IRS", amount: money(e.amount) },
     );
 }
@@ -316,21 +316,39 @@ export function dollarAmounts(text: string): number[] {
   return out;
 }
 
-/** Every number in the source text (JSON facts, user messages), with and without its cents, as whole dollars. */
+/** Every number in the source text (user messages), with and without its cents, as whole dollars. */
 export function knownNumbers(...sources: string[]): Set<number> {
   const known = new Set<number>([0]);
   for (const s of sources) {
-    for (const m of s.matchAll(/(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?/g)) {
-      const whole = Number(m[1]!.replace(/,/g, ""));
-      known.add(whole);
-      if (m[2]) known.add(Math.round(Number(`${whole}${m[2]}`)));
-    }
+    for (const m of s.matchAll(/(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?/g)) addWithCents(known, m[1]!, m[2]);
   }
   return known;
 }
 
-/** Dollar amounts in `text` that are in none of the sources (the model made them up or did arithmetic). */
-export function unknownDollarAmounts(text: string, ...sources: string[]): number[] {
-  const known = knownNumbers(...sources);
+/**
+ * Only the dollar amounts ("$1,234", "$2,340.50") in the source text, with and without cents. The facts
+ * write every amount this way, so a "$15" can't pass because a date says "Jan 15".
+ */
+export function knownDollarAmounts(...sources: string[]): Set<number> {
+  const known = new Set<number>([0]);
+  for (const s of sources) {
+    for (const m of s.matchAll(/\$\s?(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?/g)) addWithCents(known, m[1]!, m[2]);
+  }
+  return known;
+}
+
+function addWithCents(known: Set<number>, digits: string, cents: string | undefined) {
+  const whole = Number(digits.replace(/,/g, ""));
+  known.add(whole);
+  if (cents) known.add(Math.round(Number(`${whole}${cents}`)));
+}
+
+/**
+ * Dollar amounts in `text` found in none of the sources (the model made them up or did arithmetic).
+ * `facts` count only by their $-amounts; `loose` (what the person typed) by any number in it.
+ */
+export function unknownDollarAmounts(text: string, facts: readonly string[], loose: readonly string[] = []): number[] {
+  const known = knownDollarAmounts(...facts);
+  for (const n of knownNumbers(...loose)) known.add(n);
   return [...new Set(dollarAmounts(text))].filter((n) => !known.has(n));
 }

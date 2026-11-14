@@ -74,6 +74,8 @@ async function textResponse(
   let full = first.done ? "" : first.value;
   if (first.done) throw new Error("Model returned no text");
 
+  /** The client went away (closed the card, navigated): the stream error that follows is expected. */
+  let cancelled = false;
   const body = new ReadableStream<Uint8Array>({
     start(controller) {
       controller.enqueue(encoder.encode(first.value));
@@ -90,11 +92,13 @@ async function textResponse(
         full += next.value;
         controller.enqueue(encoder.encode(next.value));
       } catch (err) {
+        if (cancelled) return;
         console.error("AI stream failed:", err instanceof Error ? err.message : err);
         controller.error(err);
       }
     },
     cancel() {
+      cancelled = true;
       stream.abort();
     },
   });
@@ -112,8 +116,8 @@ async function* textDeltas(stream: ReturnType<Anthropic["beta"]["messages"]["str
   if (final.stop_reason === "max_tokens") console.warn(`AI stream hit max_tokens (${final.usage.output_tokens} output tokens); the text was cut off.`);
 }
 
-function postCheck(deps: AiDeps, route: string, text: string, sources: string[]) {
-  const unknown = unknownDollarAmounts(text, ...sources);
+function postCheck(deps: AiDeps, route: string, text: string, facts: string[], loose: string[] = []) {
+  const unknown = unknownDollarAmounts(text, facts, loose);
   if (unknown.length > 0) {
     (deps.warn ?? console.warn)(`${route}: amounts not in the plan: ${unknown.map((n) => `$${n}`).join(", ")}`, { text });
   }
@@ -162,7 +166,7 @@ export function askHandler(deps: AiDeps) {
         ...FALLBACK,
       }, { signal: request.signal });
       return textResponse(stream, (text) => {
-        postCheck(deps, "ask", text, [system, ...messages.map((m) => m.content)]);
+        postCheck(deps, "ask", text, [system], messages.map((m) => m.content));
         return `\n\n${ASK_DISCLAIMER}`;
       });
     }, "POST /api/ask");

@@ -85,6 +85,16 @@ export function Paywall({ reason, onClose }: { reason: PaywallReason | null; onC
     }
   }, [open]);
 
+  // Back from Stripe via the back button, the page can come out of the back/forward cache with the
+  // button still busy. Reset it so checkout can be started again.
+  useEffect(() => {
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) setBusy(false);
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
+
   async function checkout() {
     setBusy(true);
     setError(null);

@@ -4,9 +4,8 @@
 // If localStorage is unavailable (private mode, blocked storage) the data lives in memory for the tab.
 
 import { useSyncExternalStore } from "react";
-import type { FilingStatus } from "@/lib/tax";
-import { isStateCode } from "./states";
 import type { LogEntry, NewLogEntry, Profile } from "./types";
+import { isLogEntry, isProfile } from "./validate";
 
 export const STORAGE_KEYS = {
   profile: "pp.v1.profile",
@@ -83,32 +82,7 @@ function cachedReader<T>(key: Key, parse: (raw: string) => T, empty: T): () => T
 }
 
 // ---------------------------------------------------------------------------------------------------
-// Validation of what comes back from storage (it may be stale, edited or from another version).
-
-const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
-const isNumOrNull = (v: unknown) => v === null || isNum(v);
-const isStr = (v: unknown): v is string => typeof v === "string";
-const FILING_STATUSES: readonly string[] = ["single", "mfj", "mfs", "hoh", "qss"] satisfies FilingStatus[];
-const isFilingStatus = (v: unknown): v is FilingStatus => typeof v === "string" && FILING_STATUSES.includes(v);
-
-function isProfile(v: unknown): v is Profile {
-  if (typeof v !== "object" || v === null) return false;
-  const p = v as Record<string, unknown>;
-  return (
-    isFilingStatus(p.filingStatus) && isStateCode(p.state) && isNum(p.ytdIncome) && isNum(p.expectedIncome) &&
-    isNum(p.w2Wages) && isNum(p.w2Withholding) && isNumOrNull(p.priorYearTax) && isNumOrNull(p.priorYearAgi) &&
-    isNum(p.estimatedPaid) && isStr(p.createdAt) && typeof p.isExample === "boolean"
-  );
-}
-
-function isLogEntry(v: unknown): v is LogEntry {
-  if (typeof v !== "object" || v === null) return false;
-  const e = v as Record<string, unknown>;
-  return (
-    isStr(e.id) && (e.kind === "income" || e.kind === "irs") && isNum(e.amount) && isStr(e.payer) &&
-    isStr(e.date) && isNum(e.setAside) && isStr(e.createdAt)
-  );
-}
+// Readers. What comes back from storage may be stale, edited or from another version (see ./validate).
 
 const EMPTY_LOG: readonly LogEntry[] = Object.freeze([]);
 

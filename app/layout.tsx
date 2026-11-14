@@ -10,10 +10,28 @@ const publicSans = Public_Sans({
   display: "swap",
 });
 
+const TITLE = "Penaltyproof — never pay an IRS underpayment penalty";
+const DESCRIPTION =
+  "For US freelancers: how much to set aside from every payment, and the minimum to pay the IRS by each quarterly deadline to avoid the underpayment penalty. Tax year 2026.";
+
+// The OG image (app/opengraph-image.png) and icons (app/icon.svg, apple-icon.png, favicon.ico) are file
+// conventions; metadataBase makes their URLs absolute for link previews.
 export const metadata: Metadata = {
-  title: "Penaltyproof — never pay an IRS underpayment penalty",
-  description:
-    "For US freelancers: how much to set aside from every payment, and the minimum to pay the IRS by each quarterly deadline to avoid the underpayment penalty. Tax year 2026.",
+  metadataBase: new URL(process.env.APP_URL || "http://localhost:3000"),
+  title: TITLE,
+  description: DESCRIPTION,
+  applicationName: "Penaltyproof",
+  openGraph: {
+    type: "website",
+    siteName: "Penaltyproof",
+    title: "Never pay an IRS underpayment penalty again",
+    description: DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Never pay an IRS underpayment penalty again",
+    description: DESCRIPTION,
+  },
 };
 
 export const viewport: Viewport = {

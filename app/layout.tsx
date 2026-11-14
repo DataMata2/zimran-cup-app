@@ -1,29 +1,36 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Public_Sans } from "next/font/google";
+import type { ReactNode } from "react";
+import { Footer } from "@/components/site/Footer";
+import { Header } from "@/components/site/Header";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Public Sans: a plain, sturdy grotesque with true tabular figures, so every amount lines up.
+const publicSans = Public_Sans({
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: "--font-public-sans",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Placeholder",
-  description: "Placeholder product",
+  title: "Penaltyproof — never pay an IRS underpayment penalty",
+  description:
+    "For US freelancers: how much to set aside from every payment, and the minimum to pay the IRS by each quarterly deadline to avoid the underpayment penalty. Tax year 2026.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export const viewport: Viewport = {
+  themeColor: "#f5f5f0",
+  colorScheme: "light",
+};
+
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="en" className={`${publicSans.variable} h-full antialiased`}>
+      <body className="flex min-h-full flex-col">
+        <Header />
+        {children}
+        <Footer />
+      </body>
     </html>
   );
 }

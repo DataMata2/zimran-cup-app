@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { draftFromProfile, emptyDraft } from "@/lib/product/quiz";
+import { draftFromProfile, emptyDraft, paidSoFarNote } from "@/lib/product/quiz";
 import { chooseDraft, clearDraft, loadDraft, QUIZ_DRAFT_KEY, saveDraft } from "@/lib/product/quizDraft";
 import type { LogEntry, Profile } from "@/lib/product/types";
 
@@ -32,10 +32,23 @@ describe("chooseDraft", () => {
 
   it("keeps an editing draft, and a new-quiz draft when there is no own plan (none, or the example)", () => {
     const editing = { ...draftFromProfile(profile, log), step: 2 as const };
-    expect(chooseDraft(editing, profile, log)).toBe(editing);
+    expect(chooseDraft(editing, profile, log)).toEqual(editing);
     const fresh = { ...emptyDraft(), step: 2 as const };
     expect(chooseDraft(fresh, null, [])).toBe(fresh);
     expect(chooseDraft(fresh, { ...profile, isExample: true }, log)).toBe(fresh);
+  });
+
+  it("SHARED-01: a saved edit draft takes the logged IRS total from the live log, so a deleted payment leaves the note", () => {
+    const irs: LogEntry = { id: "i", kind: "irs", amount: 1000, payer: "", date: "2026-11-10", setAside: 0, createdAt: "2026-11-10T10:00:00.000Z" };
+    const saved = { ...draftFromProfile(profile, [...log, irs]), step: 6 as const };
+    expect(saved.loggedIrs).toBe(1000);
+    // The IRS entry was deleted on /plan since the draft was saved.
+    const reopened = chooseDraft(saved, profile, log);
+    expect(reopened.loggedIrs).toBe(0);
+    expect(paidSoFarNote(reopened)).toBeUndefined();
+    expect(chooseDraft(saved, profile, []).loggedIrs).toBe(0);
+    // And one added since shows up.
+    expect(paidSoFarNote(chooseDraft({ ...saved, loggedIrs: 0 }, profile, [...log, irs]))).toContain("$1,000");
   });
 
   it("without a saved draft: the own plan to edit, else a blank quiz (the example is not prefilled)", () => {

@@ -22,6 +22,8 @@ export interface SyncDeps {
   /** Run `flush` when the page is hidden or being unloaded. Returns the unsubscribe function. */
   onPageHide: (flush: () => void) => () => void;
   warn: (message: string, detail?: unknown) => void;
+  /** Start creating the guest cookie now, so a later save (even a keepalive one on pagehide) needn't wait. */
+  prepareGuest?: () => void;
 }
 
 function browserPageHide(flush: () => void): () => void {
@@ -44,6 +46,7 @@ const browserDeps = (): SyncDeps => ({
   onChange: onStoreChange,
   onPageHide: browserPageHide,
   warn: (m, d) => console.warn(m, d ?? ""),
+  prepareGuest: () => void ensureGuest(fetch),
 });
 
 /**
@@ -108,6 +111,7 @@ function put(deps: SyncDeps, body: string, keepalive: boolean, onFail: () => voi
 export function startSync(deps: SyncDeps = browserDeps()): () => void {
   let timer: ReturnType<typeof setTimeout> | null = null;
   let lastSent: string | null = null;
+  deps.prepareGuest?.();
 
   const send = (keepalive: boolean) => {
     timer = null;

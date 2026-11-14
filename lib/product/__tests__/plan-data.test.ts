@@ -229,6 +229,14 @@ describe("client sync", () => {
     expect(local.profile).toBeNull();
   });
 
+  it("starts creating the guest cookie as soon as sync starts, before any save", () => {
+    let prepared = 0;
+    const stop = startSync({ ...syncDeps(), prepareGuest: () => void (prepared += 1) });
+    expect(prepared).toBe(1);
+    expect(calls).toHaveLength(0);
+    stop();
+  });
+
   it("debounces a PUT 1 s after the last change and flushes a pending one on stop", async () => {
     vi.useFakeTimers();
     respond = async () => Response.json({ ok: true });

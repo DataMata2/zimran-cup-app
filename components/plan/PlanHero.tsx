@@ -3,7 +3,19 @@ import { buttonClasses } from "@/components/kit/Button";
 import { cx } from "@/components/kit/cx";
 import { Disclaimer } from "@/components/kit/Disclaimer";
 import { longDate, money, pct } from "@/lib/product/format";
-import { aboutMoney, missedLabel, nextLabel, payNowPlan, payTarget, type PayNow } from "@/lib/product/payNow";
+import {
+  aboutMoney,
+  allPaidCopy,
+  catchUpLine,
+  latePaidPenalty,
+  latePaidText,
+  missedLabel,
+  nextLabel,
+  payNowPlan,
+  payTarget,
+  payTargetPurpose,
+  type PayNow,
+} from "@/lib/product/payNow";
 import { estimateAccruedPenalty, type TaxResult } from "@/lib/tax";
 
 const DIRECT_PAY_URL = "https://www.irs.gov/payments/direct-pay";
@@ -11,9 +23,13 @@ const DIRECT_PAY_URL = "https://www.irs.gov/payments/direct-pay";
 /** The two numbers: what to pay by the next deadline, and the share of every payment to set aside. */
 export function PlanHero({ result, className }: { result: TaxResult; className?: string }) {
   const target = payTarget(result);
-  const payNow = payNowPlan(result, estimateAccruedPenalty(result));
-  const { rate, catchUpRate } = result.setAside;
-  const catchUp = catchUpRate > rate + 0.0005;
+  const penalty = estimateAccruedPenalty(result);
+  const payNow = payNowPlan(result, penalty);
+  // Penalty from quarters paid late; the headlines below must not claim "penalty-proof" while it is set.
+  const latePenalty = latePaidPenalty(result, penalty);
+  const allPaid = allPaidCopy(latePenalty);
+  const { rate } = result.setAside;
+  const catchUp = catchUpLine(result);
 
   return (
     <section aria-labelledby="pay-title" className={cx("min-w-0", className)}>
@@ -27,9 +43,10 @@ export function PlanHero({ result, className }: { result: TaxResult; className?:
           >
             <AmountLabel>{nextLabel(target.quarter)}</AmountLabel>
             Pay <span className="font-bold text-ink">{money(target.amount)}</span> by{" "}
-            <span className="font-bold whitespace-nowrap text-ink">{longDate(target.due)}</span> to stay
-            penalty-proof.
+            <span className="font-bold whitespace-nowrap text-ink">{longDate(target.due)}</span>{" "}
+            {payTargetPurpose(latePenalty)}
           </h1>
+          {latePenalty !== null && <LatePaidNote amount={latePenalty} />}
           {!target.isNext && result.nextDeadline && (
             <p className="mt-4 text-base text-ink-2">
               You&rsquo;ve already covered the {longDate(result.nextDeadline.due)} deadline.
@@ -43,12 +60,10 @@ export function PlanHero({ result, className }: { result: TaxResult; className?:
             id="pay-title"
             className="max-w-[16ch] text-[2.4rem] leading-[1.08] font-bold tracking-[-0.03em] text-accent sm:text-5xl lg:text-[3.5rem]"
           >
-            You&rsquo;re penalty-proof for 2026.
+            {allPaid.headline}
           </h1>
-          <p className="mt-4 max-w-[52ch] text-base text-ink-2">
-            What you&rsquo;ve paid meets the safe-harbor amount, so no underpayment penalty applies. Keep setting
-            money aside for the balance with your return.
-          </p>
+          <p className="mt-4 max-w-[52ch] text-base text-ink-2">{allPaid.body}</p>
+          {latePenalty !== null && <LatePaidNote amount={latePenalty} />}
         </>
       )}
 
@@ -56,16 +71,21 @@ export function PlanHero({ result, className }: { result: TaxResult; className?:
         <p className="max-w-[22ch] text-2xl leading-tight font-medium tracking-[-0.02em] text-ink-2 sm:text-3xl">
           Set aside <span className="font-bold text-ink">{pct(rate, 0)}</span> of every payment.
         </p>
-        {catchUp && (
-          <p className="mt-3 text-base text-ink-2">
-            Catching up? Set aside <span className="font-semibold text-ink">{pct(catchUpRate, 0)}</span> of
-            what&rsquo;s still to come.
-          </p>
-        )}
+        {catchUp && <p className="mt-3 max-w-[60ch] text-base text-ink-2">{catchUp.text}</p>}
         <p className="mt-5 max-w-[60ch] text-sm text-ink-2">{result.safeHarbor.reason}</p>
         <Disclaimer className="mt-3" />
       </div>
     </section>
+  );
+}
+
+/** Penalty already built up from a quarter paid late, once nothing is past due. Calm: it no longer grows. */
+function LatePaidNote({ amount }: { amount: number }) {
+  return (
+    <p className="mt-4 flex max-w-[52ch] gap-2.5 text-base text-ink-2">
+      <span aria-hidden className="mt-[0.55em] size-2 shrink-0 rounded-full bg-amber-mid" />
+      <span>{latePaidText(amount)}</span>
+    </p>
   );
 }
 

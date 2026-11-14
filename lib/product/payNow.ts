@@ -3,7 +3,8 @@
 // Pure selection and copy. Every amount comes from the engine (estimate() and estimateAccruedPenalty()).
 
 import type { Installment, PenaltyEstimate, TaxResult } from "@/lib/tax";
-import { longDate, money } from "./format";
+import { SET_ASIDE_MAX_RATE } from "@/lib/tax/estimate";
+import { longDate, money, pct } from "./format";
 
 /** Below this weekly penalty (dollars) the hero says the penalty grows daily instead of "about $0 a week". */
 export const WEEKLY_PENALTY_MIN = 1;
@@ -162,4 +163,51 @@ export function nextStepText(result: TaxResult): string {
 /** "about $123", or "less than $1" when it would round to $0. */
 export function aboutMoney(amount: number): string {
   return amount < 0.5 ? "less than $1" : `about ${money(amount)}`;
+}
+
+/**
+ * Penalty that already built up from quarters paid late, when nothing is past due any more. Null when a
+ * quarter is still past due (the pay-now headline shows the penalty then) or when it is under 50 cents.
+ * While this is set, the hero and the AI facts never say "penalty-proof" or "no penalty applies".
+ */
+export function latePaidPenalty(result: TaxResult, penalty: PenaltyEstimate): number | null {
+  if (pastDue(result)) return null;
+  return penalty.total >= MIN_SHOWN ? penalty.total : null;
+}
+
+/** The calm line under the hero when latePaidPenalty() is set. */
+export function latePaidText(amount: number): string {
+  return `Paid late earlier this year: ${aboutMoney(amount)} in penalty has built up (estimate). The IRS bills it after you file; it stopped growing once each quarter was paid.`;
+}
+
+/** The end of the pay-target headline after "Pay $X by <date>". */
+export function payTargetPurpose(latePenalty: number | null): string {
+  return latePenalty === null ? "to stay penalty-proof." : "to keep the penalty from growing.";
+}
+
+/** The headline and the line under it once nothing more is due for the year. */
+export function allPaidCopy(latePenalty: number | null): { headline: string; body: string } {
+  return latePenalty === null
+    ? {
+        headline: "You’re penalty-proof for 2026.",
+        body: "What you’ve paid meets the safe-harbor amount, so no underpayment penalty applies. Keep setting money aside for the balance with your return.",
+      }
+    : {
+        headline: "You’re paid up for 2026.",
+        body: "What you’ve paid meets the safe-harbor amount, so no more penalty builds up. Keep setting money aside for the balance with your return.",
+      };
+}
+
+/**
+ * The "catching up" line under the set-aside rate, or null when it would say the same as the rate.
+ * At the engine's cap the catch-up rate is a ceiling, not a real share, so the line says the cap won't cover it.
+ */
+export function catchUpLine(result: TaxResult): { text: string; capped: boolean } | null {
+  const { rate, catchUpRate } = result.setAside;
+  if (!(catchUpRate > rate + 0.0005)) return null;
+  if (catchUpRate >= SET_ASIDE_MAX_RATE - 1e-9) {
+    const text = `Behind on saving? Even ${pct(SET_ASIDE_MAX_RATE, 0)} of what’s still to come won’t cover what’s left, so plan for a balance with your April return.`;
+    return { text, capped: true };
+  }
+  return { text: `Catching up? Set aside ${pct(catchUpRate, 0)} of what’s still to come.`, capped: false };
 }

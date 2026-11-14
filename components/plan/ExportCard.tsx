@@ -41,7 +41,7 @@ export function ExportCard({
     } catch {
       // The annualized section is optional; the rest of the export doesn't depend on it.
     }
-    downloadCsv(buildCsv({ log, result, annualized: ai, asOf }));
+    downloadCsv(buildCsv({ log, result, annualized: ai, asOf, preLogPaid: profile.estimatedPaid }));
     setDone(true);
   }
 

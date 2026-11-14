@@ -200,6 +200,28 @@ describe("csv", () => {
     expect(csvRows([["a", 1], [], ["b,c"]])).toBe('a,1.00\r\n\r\n"b,c"');
   });
 
+  it("R8-2: the pre-log amount has its own row, so 2,000 opening + 6,000 logged = 8,000 Credited", () => {
+    const opening: Profile = { ...profile, estimatedPaid: 2000 };
+    const log = [
+      entry({ kind: "irs", amount: 4000, date: "2026-06-10", setAside: 0 }),
+      entry({ kind: "irs", amount: 2000, date: "2026-06-20", setAside: 0 }),
+    ];
+    const result = estimate(buildTaxInput(opening, log, "2026-07-01"));
+    const lines = buildCsv({ log, result, asOf: "2026-07-01", preLogPaid: opening.estimatedPaid }).slice(1).split("\r\n");
+    const head = lines.indexOf("Date,Type,Payer,Amount,Set aside");
+    expect(lines[head + 1]).toBe(",Estimated tax paid to IRS before logging (from your answers),,2000.00,");
+    // Payment rows (until the blank line) that are IRS payments, summed from the Amount column.
+    const rows = lines.slice(head + 1, lines.indexOf("", head));
+    const irsSum = rows.filter((l) => l.includes("Estimated tax paid to IRS")).reduce((s, l) => s + Number(l.split(",")[3]), 0);
+    expect(irsSum).toBe(8000);
+    const ih = lines.indexOf("Quarter,Due,Required,Credited,To pay,Note,Status");
+    const credited = lines.slice(ih + 1, ih + 5).reduce((s, l) => s + Number(l.split(",")[3]), 0);
+    expect(credited).toBe(8000);
+    // Every row keeps the five-column layout; no row without a pre-log amount.
+    expect(rows.every((l) => l.split(",").length === 5)).toBe(true);
+    expect(buildCsv({ log, result, asOf: "2026-07-01", preLogPaid: 0 })).not.toContain("before logging");
+  });
+
   it("has the log, the instalments and the breakdown, with the engine's numbers", () => {
     const log = [
       entry({ amount: 4200, payer: "=cmd|' /C calc'!A0", date: "2026-06-03", setAside: 1000.5 }),

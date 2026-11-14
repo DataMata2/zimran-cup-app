@@ -46,10 +46,17 @@ export interface CsvData {
   annualized?: AnnualizedResult | null;
   /** Date of the export (YYYY-MM-DD), the plan's asOf. */
   asOf: string;
+  /**
+   * The amount paid before logging, from the quiz (profile.estimatedPaid). When > 0 it gets its own undated row
+   * at the top of the payment log, so the IRS rows add up to the Credited column (R8-2).
+   */
+  preLogPaid?: number;
 }
 
+export const PRE_LOG_PAID_TYPE = "Estimated tax paid to IRS before logging (from your answers)";
+
 /** The whole export: a title block, then the log, the instalments and the tax breakdown, a blank row between. */
-export function buildCsv({ log, result, annualized, asOf }: CsvData): string {
+export function buildCsv({ log, result, annualized, asOf, preLogPaid = 0 }: CsvData): string {
   const { tax, income, safeHarbor } = result;
   const rows: Cell[][] = [
     ["Penaltyproof: 2026 estimated tax"],
@@ -58,6 +65,7 @@ export function buildCsv({ log, result, annualized, asOf }: CsvData): string {
     [],
     ["Payment log"],
     ["Date", "Type", "Payer", "Amount", "Set aside"],
+    ...(preLogPaid > 0 ? [[null, PRE_LOG_PAID_TYPE, null, preLogPaid, null]] : []),
     ...[...log]
       .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
       .map((e): Cell[] => [

@@ -56,17 +56,17 @@ export default function LandingPage() {
             </span>{" "}
             <span className="min-[481px]:hidden">IRS </span>
             <span className="min-[481px]:text-hot min-[481px]:[-webkit-text-stroke:2px_var(--color-ink)] min-[481px]:[paint-order:stroke_fill] lg:[-webkit-text-stroke:3px_var(--color-ink)]">
-              underpayment penalties
+              estimated-tax penalties
             </span>{" "}
-            last year.
+            in fiscal&nbsp;2025.
           </h1>
           <p className="mt-4 max-w-[560px] text-[17px] leading-[1.5] text-ink min-[481px]:hidden">
-            Know what to set aside from every payment and what to pay by each deadline, so you never owe the
+            Know what to set aside from every payment and what to pay by each deadline, so you don’t owe the
             penalty.
           </p>
           <p className="mt-6 max-w-[560px] text-[19px] leading-[1.5] text-ink max-[480px]:hidden lg:text-[21px]">
             Penaltyproof tells you how much to set aside from every payment, and the minimum to pay the IRS by
-            each quarterly deadline so you never owe that penalty.
+            each quarterly deadline so you don’t owe that penalty.
           </p>
           <div className="mt-6 sm:mt-8">
             <HeroActions />

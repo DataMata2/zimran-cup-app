@@ -108,9 +108,12 @@ function Headline({ headline }: { headline: AnnualizedHeadline }) {
       );
     case "regularBest":
       return (
-        <p className="text-lg font-bold tracking-[-0.01em] text-ink">
-          Your income is even enough that the regular schedule is best.
-        </p>
+        <>
+          <p className="text-lg font-bold tracking-[-0.01em] text-ink">
+            Your payments came in evenly, so the regular schedule fits.
+          </p>
+          <p className="mt-1 text-sm text-ink-2">The annualized method helps when most income lands late in the year.</p>
+        </>
       );
     case "noneRequired":
       return (

@@ -13,6 +13,7 @@ import {
   draftToProfile,
   loggedIncomeOf,
   firstIncompleteStep,
+  paidSoFarLead,
   QUIZ_STEPS,
   stepErrors,
   type EngineProblem,
@@ -308,7 +309,7 @@ function Quiz({ useUrlStep }: { useUrlStep: boolean }) {
             >
               {STEP_COPY[step].question}
             </h1>
-            <p className="mt-2 text-[15px] leading-snug text-ink-3 sm:mt-3 sm:text-[17px]">{STEP_COPY[step].lead}</p>
+            <p className="mt-2 text-[15px] leading-snug text-ink-3 sm:mt-3 sm:text-[17px]">{(step === 6 && paidSoFarLead(draft)) || STEP_COPY[step].lead}</p>
 
             {problem && problem.step === step && (
               <p

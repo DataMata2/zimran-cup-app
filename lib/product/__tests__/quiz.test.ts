@@ -10,6 +10,7 @@ import {
   isStepValid,
   monthsElapsed,
   paidSoFarLabel,
+  paidSoFarLead,
   paidSoFarNote,
   parseDraft,
   stepErrors,
@@ -18,6 +19,7 @@ import {
   type QuizDraft,
 } from "@/lib/product/quiz";
 import { money } from "@/lib/product/format";
+import { STEP_COPY } from "@/components/quiz/copy";
 import { buildTaxInput } from "@/lib/product/input";
 import { pastDue } from "@/lib/product/payNow";
 import { penaltyMeter } from "@/lib/product/meter";
@@ -360,6 +362,15 @@ describe("LIVE-PP-01 / SHARED-01: the field is only what was paid before logging
     expect(paidSoFarLabel(draftFromProfile(profile, log))).toBe("IRS payments made before you started logging here");
     expect(paidSoFarLabel(draftFromProfile(profile, []))).toBe("Paid so far for 2026");
     expect(paidSoFarLabel(complete)).toBe("Paid so far for 2026");
+  });
+
+  it("R8-1: step 6's subtitle says only the pre-log amount while editing with IRS payments in the log", () => {
+    expect(paidSoFarLead(draftFromProfile(profile, log))).toBe(
+      "Only what you paid the IRS before you started logging here. Payments in your log are added for you.",
+    );
+    expect(paidSoFarLead(draftFromProfile(profile, []))).toBeUndefined();
+    expect(paidSoFarLead({ ...complete, loggedIrs: 1000 })).toBeUndefined();
+    expect(STEP_COPY[6].lead).toBe("The total of your Form 1040-ES payments for tax year 2026. Not paycheck withholding.");
   });
 
   it("no sum line without logged IRS payments or outside edit mode", () => {

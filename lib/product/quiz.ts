@@ -98,6 +98,15 @@ export function paidSoFarLabel(draft: QuizDraft): string {
   return draft.editing && draft.loggedIrs > 0 ? PAID_BEFORE_LOG_LABEL : PAID_SO_FAR_LABEL;
 }
 
+/** Step 6's subtitle while editing with IRS payments in the log (R8-1): the field is not the grand total. */
+export const PAID_BEFORE_LOG_LEAD =
+  "Only what you paid the IRS before you started logging here. Payments in your log are added for you.";
+
+/** Step 6's subtitle override, or undefined to keep the usual one (same condition as `paidSoFarLabel`). */
+export function paidSoFarLead(draft: QuizDraft): string | undefined {
+  return draft.editing && draft.loggedIrs > 0 ? PAID_BEFORE_LOG_LEAD : undefined;
+}
+
 /**
  * The read-only sum line under the field while editing with IRS payments in the log, else undefined.
  * The field is always only what was paid before logging (stored as profile.estimatedPaid, never adjusted);

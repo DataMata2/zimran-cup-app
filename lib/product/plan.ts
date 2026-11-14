@@ -8,9 +8,9 @@ import type { LogEntry, Profile } from "./types";
 /** Free tier: this many logged entries (income + IRS payments together). The next one needs Pro. */
 export const FREE_LOG_LIMIT = 3;
 
-/** True when adding one more entry needs Pro. */
-export function needsPro(logLength: number, pro: boolean): boolean {
-  return !pro && logLength >= FREE_LOG_LIMIT;
+/** True when adding one more entry needs Pro. `used` = entries ever added (see ./freeLimit), not the log length. */
+export function needsPro(used: number, pro: boolean): boolean {
+  return !pro && used >= FREE_LOG_LIMIT;
 }
 
 export type PlanOutcome =

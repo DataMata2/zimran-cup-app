@@ -10,7 +10,7 @@ import { SegmentedControl } from "@/components/kit/SegmentedControl";
 import { longDate, money, moneyCents, pct, shortDate } from "@/lib/product/format";
 import { meterLabel, meterPctLabel, meterSegments, penaltyMeter } from "@/lib/product/meter";
 import { FREE_LOG_LIMIT, needsPro, payTarget } from "@/lib/product/plan";
-import { addLogEntry, removeLogEntry } from "@/lib/product/store";
+import { addLogEntry, removeLogEntry, useAddedCount } from "@/lib/product/store";
 import type { LogEntry, LogKind } from "@/lib/product/types";
 import { setAsideForPayment, type TaxResult } from "@/lib/tax";
 import type { PaywallReason } from "./Paywall";
@@ -40,6 +40,8 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
   const meter = penaltyMeter(result, log);
   const segments = meterSegments(meter);
   const label = meterLabel(meter);
+  /** Entries ever added to this log (deleting one doesn't free a slot). */
+  const added = useAddedCount();
 
   const [kind, setKind] = useState<LogKind>("income");
   const [amount, setAmount] = useState<number | null>(null);
@@ -63,7 +65,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
       setError(`Use a date between ${longDate(YEAR_START)} and ${longDate(asOf)}.`);
       return;
     }
-    if (needsPro(log.length, pro)) {
+    if (needsPro(added, pro)) {
       onNeedPro("limit");
       return;
     }
@@ -103,7 +105,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
   }
 
   const entries = [...log].reverse();
-  const used = Math.min(log.length, FREE_LOG_LIMIT);
+  const used = Math.min(added, FREE_LOG_LIMIT);
   const next = payTarget(result);
 
   return (
@@ -280,7 +282,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
             <p className="text-sm text-accent-ink">Pro: unlimited logging</p>
           ) : (
             <p className="text-sm text-ink-2">
-              {used} of {FREE_LOG_LIMIT} free entries used
+              {used} of {FREE_LOG_LIMIT} free entries used{added > log.length ? ", deleted ones included" : ""}
               <span aria-hidden> · </span>
               <button
                 type="button"

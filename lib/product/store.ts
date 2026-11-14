@@ -5,12 +5,15 @@
 
 import { useSyncExternalStore } from "react";
 import type { LogEntry, NewLogEntry, Profile } from "./types";
+import { entriesUsed, nextAdded } from "./freeLimit";
 import { isLogEntry, isProfile } from "./validate";
 
 export const STORAGE_KEYS = {
   profile: "pp.v1.profile",
   log: "pp.v1.log",
   pro: "pp.v1.pro",
+  /** How many entries were ever added to the current log (deleting one doesn't lower it). */
+  added: "pp.v1.added",
 } as const;
 
 type Key = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
@@ -106,6 +109,18 @@ const readLog = cachedReader<readonly LogEntry[]>(
 
 const readPro = cachedReader<boolean>(STORAGE_KEYS.pro, (raw) => raw === "1", false);
 
+const readAddedRaw = cachedReader<number>(
+  STORAGE_KEYS.added,
+  (raw) => {
+    const n = Number(raw);
+    return Number.isSafeInteger(n) && n > 0 ? n : 0;
+  },
+  0,
+);
+
+/** Entries counted against the free tier: never fewer than are in the log now. */
+const readAdded = (): number => entriesUsed(readAddedRaw(), readLog().length);
+
 function newId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID();
   return `e${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
@@ -132,6 +147,8 @@ export function setProfile(profile: Profile, options?: { log?: readonly NewLogEn
   if (options?.log) {
     const now = new Date().toISOString();
     writeRaw(STORAGE_KEYS.log, JSON.stringify(options.log.map((e) => toEntry(e, now))));
+    // A new log starts a new count (the entries it starts with count once they are there).
+    writeRaw(STORAGE_KEYS.added, null);
   }
   emit();
 }
@@ -144,12 +161,22 @@ export function getLog(): readonly LogEntry[] {
 /** Append an entry; the store assigns `id` and `createdAt`. Returns the saved entry. */
 export function addLogEntry(entry: NewLogEntry): LogEntry {
   const saved = toEntry(entry, new Date().toISOString());
-  writeRaw(STORAGE_KEYS.log, JSON.stringify([...readLog(), saved]));
+  const log = readLog();
+  writeRaw(STORAGE_KEYS.added, String(nextAdded(readAddedRaw(), log.length)));
+  writeRaw(STORAGE_KEYS.log, JSON.stringify([...log, saved]));
   emit();
   return saved;
 }
 
-/** Remove an entry by id (no-op if it isn't there). */
+/**
+ * How many entries were added to this log, counting deleted ones (at least the current log length).
+ * The free tier counts this, so deleting an entry doesn't free a slot.
+ */
+export function getAddedCount(): number {
+  return readAdded();
+}
+
+/** Remove an entry by id (no-op if it isn't there). The added count stays. */
 export function removeLogEntry(id: string): void {
   writeRaw(STORAGE_KEYS.log, JSON.stringify(readLog().filter((e) => e.id !== id)));
   emit();
@@ -169,6 +196,7 @@ export function resetAll(): void {
   writeRaw(STORAGE_KEYS.profile, null);
   writeRaw(STORAGE_KEYS.log, null);
   writeRaw(STORAGE_KEYS.pro, null);
+  writeRaw(STORAGE_KEYS.added, null);
   emit();
 }
 
@@ -183,6 +211,11 @@ export function useProfile(): Profile | null {
 /** The payment log (oldest first); empty on the server and during hydration. */
 export function useLog(): readonly LogEntry[] {
   return useSyncExternalStore(subscribe, readLog, () => EMPTY_LOG);
+}
+
+/** See `getAddedCount`; 0 on the server and during hydration. */
+export function useAddedCount(): number {
+  return useSyncExternalStore(subscribe, readAdded, () => 0);
 }
 
 export function usePro(): boolean {

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cx } from "@/components/kit/cx";
 import { Disclaimer } from "@/components/kit/Disclaimer";
 import { money, pct } from "@/lib/product/format";
@@ -61,15 +62,12 @@ export function Breakdown({ result, state, className }: { result: TaxResult; sta
 
       <p className="mt-4 text-sm text-ink-2">
         Tax maths matches the IRS Form 1040-ES worksheet to the cent:{" "}
-        <a
+        <Link
           href={VERIFIED_URL}
-          target="_blank"
-          rel="noopener noreferrer"
           className="font-medium text-accent underline decoration-accent-mid underline-offset-2 hover:text-accent-hover"
         >
           {ENGINE_TEST_COUNT} tests
-          <span className="sr-only"> (opens GitHub in a new tab)</span>
-        </a>
+        </Link>
         .
       </p>
 

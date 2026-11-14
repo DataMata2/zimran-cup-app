@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { DISCLAIMER_TEXT } from "@/components/kit/Disclaimer";
 import { Wordmark } from "./Wordmark";
 
@@ -11,9 +12,15 @@ export function Footer() {
             {DISCLAIMER_TEXT} Federal and state estimated tax for US freelancers.
           </p>
         </div>
-        <p className="max-w-xs sm:text-right">
-          Not affiliated with the IRS. For anything unusual in your situation, ask a tax professional.
-        </p>
+        <div className="flex max-w-xs flex-col gap-2 sm:items-end sm:text-right">
+          <Link
+            href="/how-we-check"
+            className="font-medium text-ink underline decoration-line-strong underline-offset-2 hover:text-accent"
+          >
+            How we check our numbers
+          </Link>
+          <p>Not affiliated with the IRS. For anything unusual in your situation, ask a tax professional.</p>
+        </div>
       </div>
     </footer>
   );

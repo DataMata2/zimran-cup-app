@@ -4,7 +4,7 @@
 // it, so the model only ever copies numbers, never derives them.
 
 import { estimateAccruedPenalty, type TaxInput, type TaxResult } from "@/lib/tax";
-import { longDate, money, moneyUp, pct } from "./format";
+import { longDate, money, moneyPay, pct } from "./format";
 import { meterValueText, penaltyMeter } from "./meter";
 import {
   allPaidCopy,
@@ -16,6 +16,7 @@ import {
   payNowPlan,
   payTarget,
   hasDatelessLump,
+  installmentRow,
   lumpAssumptionText,
   payTargetEnding,
 } from "./payNow";
@@ -135,20 +136,20 @@ export function planFacts(
 
   const headline = payNow
     ? {
-        says: `${missedLabel(payNow.quarters)}: pay ${moneyUp(payNow.amount)} now.`,
+        says: `${missedLabel(payNow.quarters)}: pay ${moneyPay(payNow.amount)} now.`,
         pastDue: payNow.pastDueText,
-        payNowAmount: moneyUp(payNow.amount),
+        payNowAmount: moneyPay(payNow.amount),
         penaltyPerWeekIfUnpaid: payNow.weeklyPenalty !== null ? money(payNow.weeklyPenalty) : "less than $1",
         penaltySoFar: money(payNow.penaltySoFar),
         thenAlsoPay: payNow.then
-          ? { label: nextLabel(payNow.then.quarter), amount: moneyUp(payNow.then.amount), by: longDate(payNow.then.due) }
+          ? { label: nextLabel(payNow.then.quarter), amount: moneyPay(payNow.then.amount), by: longDate(payNow.then.due) }
           : null,
         ...assumption,
       }
     : target
       ? {
-          says: `Pay ${moneyUp(target.amount)} by ${longDate(target.due)}${payTargetEnding(latePenalty, lumpPaid)}`,
-          amount: moneyUp(target.amount),
+          says: `Pay ${moneyPay(target.amount)} by ${longDate(target.due)}${payTargetEnding(latePenalty, lumpPaid)}`,
+          amount: moneyPay(target.amount),
           due: longDate(target.due),
           nextDeadlineAlreadyCovered: !target.isNext && r.nextDeadline ? longDate(r.nextDeadline.due) : null,
           ...accruedPenalty,
@@ -187,20 +188,26 @@ export function planFacts(
         ? `${sh.priorYearOption.amount} (${sh.priorYearOption.share} of your 2025 tax)`
         : "not available (2025 tax not entered or not a full-year return)",
     },
-    installments: r.installments.map((i) => ({
-      quarter: `Q${i.quarter}`,
-      due: longDate(i.due),
-      required: money(i.required),
-      credited: money(i.paymentsCredited + i.withholdingCredited),
-      planSaysPay: moneyUp(i.plannedPayment),
-      status: STATUS_LABEL[i.status],
-    })),
+    installments: r.installments.map((i) => {
+      // What the deadlines list shows for this quarter (the past-due part is in headline.payNowAmount).
+      const row = installmentRow(r, i);
+      return {
+        quarter: `Q${i.quarter}`,
+        due: longDate(i.due),
+        required: money(i.required),
+        credited: money(i.paymentsCredited + i.withholdingCredited),
+        deadlinesListShows: row.amountText,
+        deadlinesListNote: row.note,
+        status: STATUS_LABEL[i.status],
+      };
+    }),
     nextDeadline: r.nextDeadline
       ? {
           quarter: `Q${r.nextDeadline.quarter}`,
           due: longDate(r.nextDeadline.due),
-          // With a past-due amount the screen splits this total into "pay now" and "then"; say it that way.
-          [r.nextDeadline.includesPastDue ? "totalIncludingPastDue" : "amountDue"]: (r.nextDeadline.includesPastDue ? money : moneyUp)(r.nextDeadline.amountDue),
+          // With a past-due amount the screen shows only the parts (pay now, then the next payment), never
+          // their total, so the facts carry no total either.
+          ...(r.nextDeadline.includesPastDue ? {} : { amountDue: moneyPay(r.nextDeadline.amountDue) }),
         }
       : null,
     aprilReturn: {

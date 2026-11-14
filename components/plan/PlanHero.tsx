@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { buttonClasses } from "@/components/kit/Button";
 import { cx } from "@/components/kit/cx";
 import { Disclaimer } from "@/components/kit/Disclaimer";
-import { longDate, moneyUp, pct } from "@/lib/product/format";
+import { longDate, moneyPay, pct } from "@/lib/product/format";
 import {
   aboutMoney,
   allPaidCopy,
@@ -47,7 +47,7 @@ export function PlanHero({ result, lumpPaid = 0, className }: { result: TaxResul
             className="font-display text-[2.25rem] leading-[1.05] font-bold tracking-[-0.03em] text-ink-2 sm:text-5xl sm:leading-[1.02] lg:text-[3.5rem]"
           >
             <AmountLabel>{nextLabel(target.quarter)}</AmountLabel>
-            Pay <span className="font-extrabold text-ink tabular-nums">{moneyUp(target.amount)}</span> by{" "}
+            Pay <span className="font-extrabold text-ink tabular-nums">{moneyPay(target.amount)}</span> by{" "}
             <span className="font-extrabold whitespace-nowrap text-ink">{longDate(target.due)}</span>
             {payTargetEnding(latePenalty, lumpPaid)}
           </h1>
@@ -201,7 +201,7 @@ function NextPayment({ then }: { then: NonNullable<PayNow["then"]> }) {
         <p className="font-mono text-xs font-bold tracking-[0.08em] text-ink-3 uppercase">{nextLabel(then.quarter)}</p>
         <p className="mt-2 text-lg leading-snug text-ink-2 sm:text-xl">
           <span className="block font-display text-[2.6rem] leading-none font-extrabold tracking-[-0.035em] text-ink tabular-nums sm:text-[3.25rem]">
-            {moneyUp(then.amount)}
+            {moneyPay(then.amount)}
           </span>{" "}
           <span className="mt-1.5 block">
             by <span className="font-bold whitespace-nowrap text-ink">{longDate(then.due)}</span>
@@ -226,7 +226,7 @@ function PayNowHeadline({ payNow, assumption }: { payNow: PayNow; assumption: st
           <AmountLabel tone="red">{missedLabel(quarters)}</AmountLabel>
           Pay{" "}
           <span className="inline-block rounded-[14px] border-3 border-ink bg-surface px-[0.1em] tabular-nums shadow-chip">
-            {moneyUp(amount)}
+            {moneyPay(amount)}
           </span>{" "}
           now.
         </h1>

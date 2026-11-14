@@ -3,7 +3,7 @@ import { estimate, setAsideForPayment } from "@/lib/tax";
 import { todayIso, localIsoDate } from "@/lib/product/asof";
 import { buildTaxInput } from "@/lib/product/input";
 import { meterFill, meterPctLabel, meterSummary, meterTicks, meterValueText, penaltyMeter } from "@/lib/product/meter";
-import { longDate, money, moneyCents, moneyUp, pct } from "@/lib/product/format";
+import { longDate, money, moneyCents, moneyPay, pct } from "@/lib/product/format";
 import { buildExample, EXAMPLE_ANSWERS } from "@/lib/product/example";
 import { STATE_OPTIONS, stateName, isStateCode } from "@/lib/product/states";
 import type { LogEntry, Profile } from "@/lib/product/types";
@@ -188,14 +188,14 @@ describe("format", () => {
     expect(money(-1500)).toBe("-$1,500");
     expect(money(12060000000)).toBe("$12,060,000,000");
   });
-  it("PP-QA-08: moneyUp rounds an amount to pay up to whole dollars, ignoring float residue", () => {
-    expect(moneyUp(2000.25)).toBe("$2,001");
-    expect(moneyUp(2000.01)).toBe("$2,001");
-    expect(moneyUp(1850.0000001)).toBe("$1,850");
-    expect(moneyUp(1850.004)).toBe("$1,850");
-    expect(moneyUp(1850)).toBe("$1,850");
-    expect(moneyUp(0)).toBe("$0");
-    expect(money(2000.25)).toBe("$2,000"); // totals and breakdowns keep rounding to nearest
+  it("PP-QA-08 (ruling): moneyPay shows whole dollars for whole amounts, else exact cents", () => {
+    expect(moneyPay(2000.25)).toBe("$2,000.25");
+    expect(moneyPay(6000.75)).toBe("$6,000.75");
+    expect(moneyPay(1850)).toBe("$1,850");
+    expect(moneyPay(1850.0000001)).toBe("$1,850");
+    expect(moneyPay(1849.999)).toBe("$1,850");
+    expect(moneyPay(0)).toBe("$0");
+    expect(money(2000.25)).toBe("$2,000"); // totals and breakdowns keep whole dollars
   });
   it("moneyCents shows two decimals", () => {
     expect(moneyCents(1234.5)).toBe("$1,234.50");

@@ -4,7 +4,7 @@
 
 import type { Installment, PenaltyEstimate, TaxResult } from "@/lib/tax";
 import { SET_ASIDE_MAX_RATE } from "@/lib/tax/estimate";
-import { longDate, money, moneyUp, pct } from "./format";
+import { longDate, money, moneyPay, pct } from "./format";
 
 /** Below this weekly penalty (dollars) the hero says the penalty grows daily instead of "about $0 a week". */
 export const WEEKLY_PENALTY_MIN = 1;
@@ -107,8 +107,8 @@ export function pastDueSentence(quarters: readonly number[]): string {
  */
 export function installmentRow(result: TaxResult, i: Installment): { amount: number; note: string; amountText: string } {
   const next = result.nextDeadline;
-  // Amounts to pay show rounded up (moneyUp); a covered row's requirement is a breakdown figure (money).
-  const pay = (amount: number, note: string) => ({ amount, note, amountText: moneyUp(amount) });
+  // Every row uses moneyPay, so the missed rows add up to the hero's pay-now to the cent.
+  const pay = (amount: number, note: string) => ({ amount, note, amountText: moneyPay(amount) });
   if (next && next.quarter === i.quarter) {
     const target = payTarget(result);
     const own = target?.isNext ? target.amount : 0;
@@ -116,7 +116,7 @@ export function installmentRow(result: TaxResult, i: Installment): { amount: num
   }
   switch (i.status) {
     case "paid":
-      return { amount: i.required, note: "Covered", amountText: money(i.required) };
+      return { amount: i.required, note: "Covered", amountText: moneyPay(i.required) };
     case "pastDue":
       return pay(missedRemaining(result, i.quarter), "Missed, pay now");
     default:
@@ -156,10 +156,10 @@ export function nextStepText(result: TaxResult): string {
   const due = pastDue(result);
   const target = payTarget(result);
   if (due) {
-    const now = `${quarterList(due.quarters)} ${due.quarters.length === 1 ? "is" : "are"} still past due. Pay ${moneyUp(due.amount)} now`;
-    return target ? `${now}, then ${moneyUp(target.amount)} by ${longDate(target.due)}.` : `${now}.`;
+    const now = `${quarterList(due.quarters)} ${due.quarters.length === 1 ? "is" : "are"} still past due. Pay ${moneyPay(due.amount)} now`;
+    return target ? `${now}, then ${moneyPay(target.amount)} by ${longDate(target.due)}.` : `${now}.`;
   }
-  return target ? `Next: ${moneyUp(target.amount)} by ${longDate(target.due)}.` : "That covers your safe-harbor amount for 2026.";
+  return target ? `Next: ${moneyPay(target.amount)} by ${longDate(target.due)}.` : "That covers your safe-harbor amount for 2026.";
 }
 
 /**

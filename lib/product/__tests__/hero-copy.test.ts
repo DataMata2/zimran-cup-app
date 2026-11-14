@@ -5,8 +5,8 @@ import { PlanHero } from "@/components/plan/PlanHero";
 import { planFacts, unknownDollarAmounts } from "@/lib/product/ai-prompts";
 import { buildExample } from "@/lib/product/example";
 import { buildTaxInput } from "@/lib/product/input";
-import { money } from "@/lib/product/format";
-import { calendarNote, payNowSummary } from "@/lib/product/calendar";
+import { money, moneyPay } from "@/lib/product/format";
+import { calendarFile, calendarNote } from "@/lib/product/calendar";
 import {
   catchUpLine,
   installmentRow,
@@ -174,33 +174,56 @@ describe("PP-QA-03: a quiz lump with unknown dates never reads as penalty-proof"
   });
 });
 
-describe("PP-QA-08: amounts to pay round up in the hero, deadlines, calendar note, log line and facts", () => {
-  // Single TX, $60k, 2025 tax $8,001, nothing paid, browser date Apr 1, 2026: Q1 is $2,000.25.
-  const p: Profile = { ...onTime, ytdIncome: 15000, priorYearTax: 8001, estimatedPaid: 0 };
-  const result = estimate(buildTaxInput(p, [], "2026-04-01"));
+describe("PP-QA-08 (ruling): amounts to pay show exact cents and add up across hero, deadlines, .ics and facts", () => {
+  // The reviewer's case: single TX, $60k, 2025 tax $8,001, nothing paid. Each quarter is $2,000.25.
+  const p: Profile = { ...onTime, ytdIncome: 50000, priorYearTax: 8001, estimatedPaid: 0 };
+  const icsAmounts = (ics: string) =>
+    // The payment events only (pay-now and each deadline); the April return event is a balance, not a payment.
+    [...ics.matchAll(/^SUMMARY:(.*estimated tax.*)$/gm)].map((m) => Number(/\$(\d+\.\d{2})/.exec(m[1]!)![1]));
+  const cents = (s: string) => Math.round(Number(s.replace(/[$,]/g, "")) * 100);
 
-  it("the pay target is $2,000.25 and shows as $2,001 everywhere it is a payment", () => {
+  it("Nov 14: missed rows sum to the hero's pay-now; pay-now + next = the .ics sum; the facts say the same", () => {
+    const result = plan(p, []);
+    const due = pastDue(result)!;
     const target = payTarget(result)!;
-    expect(target.amount).toBeCloseTo(2000.25, 6);
-    const html = renderToStaticMarkup(createElement(PlanHero, { result }));
-    expect(html).toContain("$2,001");
-    expect(html).not.toContain("$2,000<");
-    expect(planFacts(result, [], p).headline.says).toBe("Pay $2,001 by Apr 15, 2026 to stay penalty-proof.");
-    expect(planFacts(result, [], p).headline).toMatchObject({ amount: "$2,001" });
-    const q1 = installmentRow(result, result.installments[0]!);
-    expect(q1.amountText).toBe("$2,001");
-    expect(nextStepText(result)).toBe("Next: $2,001 by Apr 15, 2026.");
+    expect(due.quarters).toEqual([1, 2, 3]);
+    const html = hero(result);
+    expect(html).toContain("$6,000.75</span> now.");
+    expect(html).toContain("$2,000.25");
+
+    const rows = result.installments.map((i) => installmentRow(result, i));
+    expect(rows.map((r) => r.amountText)).toEqual(["$2,000.25", "$2,000.25", "$2,000.25", "$2,000.25"]);
+    const missed = rows.filter((r) => r.note === "Missed, pay now").reduce((sum, r) => sum + cents(r.amountText), 0);
+    expect(missed).toBe(cents(moneyPay(due.amount)));
+
+    const ics = icsAmounts(calendarFile(result));
+    const parts = cents(moneyPay(due.amount)) + cents(moneyPay(target.amount));
+    expect(Math.round(ics.reduce((a, b) => a + b, 0) * 100)).toBe(parts);
+    expect(parts).toBe(800100);
+    expect(calendarNote(result)).toContain("($6,000.75)");
+
+    const facts = planFacts(result, [], p);
+    expect(facts.headline).toMatchObject({
+      says: "Missed Q1–Q3 payments: pay $6,000.75 now.",
+      payNowAmount: "$6,000.75",
+      thenAlsoPay: { amount: "$2,000.25" },
+    });
+    expect(JSON.stringify(facts)).not.toContain("totalIncludingPastDue");
+    expect(facts.nextDeadline).not.toHaveProperty("amountDue");
+    expect(facts.installments.map((i) => i.deadlinesListShows)).toEqual(rows.map((r) => r.amountText));
+    expect(nextStepText(result)).toBe("Q1–Q3 are still past due. Pay $6,000.75 now, then $2,000.25 by Jan 15, 2027.");
   });
 
-  it("past due: pay-now in the hero and the calendar note round up; the .ics keeps cents", () => {
-    const late = estimate(buildTaxInput(p, [], "2026-05-01"));
-    const due = pastDue(late)!;
-    expect(due.amount).toBeCloseTo(2000.25, 6);
-    const html = renderToStaticMarkup(createElement(PlanHero, { result: late }));
-    expect(html).toContain("$2,001</span> now.");
-    expect(calendarNote(late)).toContain("($2,001)");
-    expect(payNowSummary(due)).toBe("Pay missed Q1 estimated tax: $2000.25");
-    expect(planFacts(late, [], p).headline).toMatchObject({ says: "Missed Q1 payment: pay $2,001 now.", payNowAmount: "$2,001" });
+  it("Apr 1: the pay target shows $2,000.25, not a rounded figure", () => {
+    const result = estimate(buildTaxInput(p, [], "2026-04-01"));
+    expect(payTarget(result)!.amount).toBeCloseTo(2000.25, 6);
+    expect(hero(result)).toContain("$2,000.25");
+    expect(planFacts(result, [], p).headline.says).toBe("Pay $2,000.25 by Apr 15, 2026 to stay penalty-proof.");
+    expect(planFacts(result, [], p).nextDeadline).toMatchObject({ amountDue: "$2,000.25" });
+  });
+
+  it("whole-dollar amounts stay whole (Maya: $1,850)", () => {
+    expect(hero(plan(maya, mayaLog))).toContain("$1,850</span> now.");
   });
 });
 

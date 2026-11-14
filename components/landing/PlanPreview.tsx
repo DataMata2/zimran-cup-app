@@ -3,7 +3,7 @@
 import { Card } from "@/components/kit/Card";
 import { Disclaimer } from "@/components/kit/Disclaimer";
 import { EXAMPLE_DESCRIPTION, EXAMPLE_NAME } from "@/lib/product/example";
-import { longDate, moneyUp, pct } from "@/lib/product/format";
+import { longDate, moneyPay, pct } from "@/lib/product/format";
 import { missedLabel, nextLabel, pastDue, payTarget } from "@/lib/product/payNow";
 import { PaidMeter } from "@/components/plan/PaidMeter";
 import { useExamplePlan } from "./useExamplePlan";
@@ -38,7 +38,7 @@ export function PlanPreview() {
               <p className="mt-3 flex flex-wrap items-baseline gap-x-3">
                 <span className="font-display text-2xl font-extrabold tracking-[-0.03em] text-ink">Pay</span>
                 <span className="font-display text-[2.75rem] leading-none font-extrabold tracking-[-0.035em] text-ink sm:text-[3.5rem]">
-                  {moneyUp(due.amount)}
+                  {moneyPay(due.amount)}
                 </span>
                 <span className="font-display text-2xl font-extrabold tracking-[-0.03em] text-ink">now</span>
               </p>
@@ -46,7 +46,7 @@ export function PlanPreview() {
                 <div className="mt-5 rounded-md border-2 border-ink bg-paper px-4 py-3">
                   <p className="text-sm font-semibold text-ink-2">{nextLabel(target.quarter)}</p>
                   <p className="mt-0.5 text-base text-ink-2">
-                    <span className="font-semibold text-ink">{moneyUp(target.amount)}</span> by{" "}
+                    <span className="font-semibold text-ink">{moneyPay(target.amount)}</span> by{" "}
                     <span className="font-semibold whitespace-nowrap text-ink">{longDate(target.due)}</span>
                   </p>
                 </div>
@@ -57,7 +57,7 @@ export function PlanPreview() {
               <p className="text-sm font-semibold text-ink-2">{nextLabel(target.quarter)}</p>
               <p className="mt-1 flex flex-wrap items-baseline gap-x-3">
                 <span className="font-display text-[2.75rem] leading-none font-extrabold tracking-[-0.035em] text-ink sm:text-[3.5rem]">
-                  {moneyUp(target.amount)}
+                  {moneyPay(target.amount)}
                 </span>
                 <span className="text-base font-semibold text-ink-2">by {longDate(target.due)}</span>
               </p>

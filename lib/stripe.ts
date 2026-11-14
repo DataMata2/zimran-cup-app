@@ -24,8 +24,8 @@ export function getStripe(): Stripe {
 /** Penaltyproof plans (yearly first); prices are created inline via price_data (no Stripe price objects needed). */
 export const PLANS = {
   yearly: {
-    name: "Penaltyproof Pro — tax year",
-    description: "Full tax year of Penaltyproof Pro",
+    name: "Penaltyproof Pro — yearly",
+    description: "Penaltyproof Pro, billed yearly",
     amountCents: 5900,
     currency: "usd",
     interval: "year",

@@ -5,6 +5,8 @@ import {
   buildAnnualizedInput, computeAnnualizedPlan, payments1099, summarizeAnnualized,
 } from "@/lib/product/annualizedPlan";
 import { buildCsv, csvField, csvRows } from "@/lib/product/csv";
+import { buildExample } from "@/lib/product/example";
+import { installmentRow, pastDue, payTarget } from "@/lib/product/payNow";
 import { countedEntries, entriesUsed, nextAdded } from "@/lib/product/freeLimit";
 import { needsPro } from "@/lib/product/plan";
 import type { LogEntry, Profile } from "@/lib/product/types";
@@ -173,16 +175,37 @@ describe("csv", () => {
     expect(lines).toContain("Date,Type,Payer,Amount,Set aside");
     expect(lines).toContain(`2026-06-03,Income received,'=cmd|' /C calc'!A0,4200.00,1000.50`);
     expect(lines).toContain("2026-06-10,Estimated tax paid to IRS,,2000.00,");
-    expect(lines).toContain("Quarter,Due,Required,Credited,Planned payment,Status");
+    expect(lines).toContain("Quarter,Due,Required,Credited,To pay,Note,Status");
     const q1 = result.installments[0];
     expect(lines).toContain(
-      `Q1,2026-04-15,${q1.required.toFixed(2)},${(q1.paymentsCredited + q1.withholdingCredited).toFixed(2)},${q1.plannedPayment.toFixed(2)},Paid`,
+      `Q1,2026-04-15,${q1.required.toFixed(2)},${(q1.paymentsCredited + q1.withholdingCredited).toFixed(2)},0.00,Covered,Paid`,
     );
     expect(lines).toContain(`Total tax,${result.tax.total.toFixed(2)}`);
     expect(lines).toContain(`Self-employment tax,${result.tax.seTax.toFixed(2)}`);
     expect(lines.some((l) => l.startsWith("Annualized instalments"))).toBe(true);
     // Every line is a whole number of fields: no stray line breaks.
     expect(lines.every((l) => (l.match(/"/g)?.length ?? 0) % 2 === 0)).toBe(true);
+  });
+});
+
+describe("PP-QA-11: CSV plan columns match the screen", () => {
+  it("Maya (Q3 missed): pay-now is its own row, Q3 shows its unpaid part and Q4 only its own instalment", () => {
+    const { profile: maya, entry: e } = buildExample("2026-11-14", new Date("2026-11-14T12:00:00Z"));
+    const log = [{ ...e, id: "e", createdAt: "2026-11-14T12:00:00.000Z" }];
+    const result = estimate(buildTaxInput(maya, log, "2026-11-14"));
+    const lines = buildCsv({ log, result, asOf: "2026-11-14" }).slice(1).split("\r\n");
+    const due = pastDue(result)!;
+    const target = payTarget(result)!;
+    const q3 = installmentRow(result, result.installments[2]!);
+    const q4 = installmentRow(result, result.installments[3]!);
+    expect(lines.find((l) => l.startsWith("Q3,"))).toContain(`,${q3.amount.toFixed(2)},"Missed, pay now",Past due`);
+    expect(lines.find((l) => l.startsWith("Q4,"))).toContain(`,${q4.amount.toFixed(2)},Pay by this date,`);
+    // Q4 carries only its own instalment, not the past-due lump the engine's nextDeadline includes.
+    expect(q4.amount).toBeCloseTo(target.amount, 6);
+    expect(result.nextDeadline!.amountDue).toBeGreaterThan(q4.amount + 1);
+    expect(lines).toContain("Payment,When,Amount");
+    expect(lines).toContain(`Missed Q3 payment,Now (past due),${due.amount.toFixed(2)}`);
+    expect(lines).toContain(`Next quarterly payment (Q4),2027-01-15,${target.amount.toFixed(2)}`);
   });
 });
 

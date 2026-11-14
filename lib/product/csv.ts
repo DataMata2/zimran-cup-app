@@ -1,7 +1,9 @@
 // "Export for your accountant" (Pro): the payment log, the instalments and the tax breakdown as one CSV.
-// Built in the browser. Every amount is copied from the engine's results or the log; nothing is computed here.
+// Built in the browser. Every amount is copied from the engine's results or the log (split into pay-now and
+// the next instalment by ./payNow, as on screen); nothing is computed here.
 
 import type { AnnualizedResult, InstallmentStatus, SafeHarborRule, TaxResult } from "@/lib/tax";
+import { installmentRow, missedLabel, nextLabel, pastDue, payTarget } from "./payNow";
 import type { LogEntry } from "./types";
 
 export const CSV_FILENAME = "penaltyproof-2026.csv";
@@ -67,16 +69,24 @@ export function buildCsv({ log, result, annualized, asOf }: CsvData): string {
       ]),
     [],
     ["Federal estimated tax instalments (Form 1040-ES, regular method)"],
-    ["Quarter", "Due", "Required", "Credited", "Planned payment", "Status"],
-    ...result.installments.map((i): Cell[] => [
-      `Q${i.quarter}`,
-      i.due,
-      i.required,
-      i.paymentsCredited + i.withholdingCredited,
-      i.plannedPayment,
-      STATUS[i.status],
-    ]),
+    // "To pay" matches the /plan deadlines (PP-QA-11): a missed row shows what is still unpaid on it, the next
+    // deadline only its own instalment (the past-due part is paid now, below), a covered row 0.
+    ["Quarter", "Due", "Required", "Credited", "To pay", "Note", "Status"],
+    ...result.installments.map((i): Cell[] => {
+      const row = installmentRow(result, i);
+      const toPay = row.note === "Covered" ? 0 : row.amount;
+      return [`Q${i.quarter}`, i.due, i.required, i.paymentsCredited + i.withholdingCredited, toPay, row.note, STATUS[i.status]];
+    }),
   ];
+
+  // What to pay and when, as the hero says it: the missed amount now, then the next quarterly payment.
+  const due = pastDue(result);
+  const target = payTarget(result);
+  if (due || target) {
+    rows.push([], ["What to pay"], ["Payment", "When", "Amount"]);
+    if (due) rows.push([missedLabel(due.quarters), "Now (past due)", due.amount]);
+    if (target) rows.push([nextLabel(target.quarter), target.due, target.amount]);
+  }
 
   if (annualized && annualized.requiredAnnualPayment > 0) {
     rows.push(

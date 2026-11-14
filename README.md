@@ -2,6 +2,40 @@
 
 Placeholder product for Zimran Business Cup 2026. This repo currently holds the production plumbing only: guest mode (no sign-up), a Stripe test-mode paywall, Supabase storage and a health check. Product pages come later.
 
+## Product: Penaltyproof
+
+### What it does
+
+1. A US freelancer answers six questions (filing status, state, income so far and expected, W-2, last year's tax, what they've paid). No sign-up.
+2. `/plan` shows two numbers: the minimum to pay the IRS by the next quarterly deadline (split into "pay now" for a missed quarter and the next instalment), and the share of every client payment to set aside.
+3. Each time a client pays, they log it and see the set-aside in dollars and cents. Each IRS payment they log fills the meter: paid to the IRS against the legal minimum due so far.
+4. Deadlines go to their calendar as an `.ics` file built in the browser.
+5. Pro ($59 per tax year or $9.99 a month) adds unlimited logging, reading payouts from a screenshot, the annualized plan for uneven income, "Ask why" chat and a CSV for an accountant.
+
+### How the numbers are made
+
+The tax engine in `lib/tax/` (a verbatim copy of `engine/src`) computes everything: federal income tax, self-employment tax, state tax, the safe-harbor minimum (Form 1040-ES), the instalment schedule, the penalty estimate (Form 2210), the annualized method (Schedule AI), the set-aside rate and the calendar file. The UI only selects and formats its results (`lib/product/`). The AI never calculates. It explains numbers the engine already produced.
+
+### AI features (Claude, server-side)
+
+- **Why this number?** (`POST /api/explain`): a short plain-English explanation of your plan, streamed.
+- **Ask about your numbers** (`POST /api/ask`, Pro): questions answered from your own plan and log.
+- **Paste a payout email or screenshot** (`POST /api/read-payment`; screenshots need Pro): fills in amount, client and date for you to check before logging.
+
+The model sees only display strings of the engine's results (no raw profile). The prompts forbid arithmetic, and every dollar amount in an answer is checked against the `$`-amounts it was given; anything else is logged. Requests are rate-limited per guest and IP.
+
+### Tests
+
+`pnpm test`: 232 tests in 13 files. 71 are the engine's (`lib/tax/__tests__`, including four personas checked by hand against the IRS worksheet, see below); 161 cover the product layer: input building, the meter, pay-now split, quiz validation, storage, server copy, Pro helpers, CSV, AI facts, guards and post-checks.
+
+### Guest mode
+
+No accounts. Answers and the payment log live in `localStorage` (`lib/product/store.ts`), with a copy on the server keyed by an anonymous guest cookie (`GET/PUT /api/plan-data`), restored into an empty browser. Pro status is stored per guest on the server (`GET /api/pro`).
+
+### Try Pro
+
+Checkout is Stripe test mode: card `4242 4242 4242 4242`, any future date, any CVC.
+
 ## Stack
 
 - Next.js 16 (App Router, Cache Components, standalone output), TypeScript, Tailwind CSS v4, shadcn/ui

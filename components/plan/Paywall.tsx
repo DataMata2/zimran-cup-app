@@ -14,7 +14,7 @@ const HEADINGS: Record<PaywallReason, { title: string; body: string }> = {
     title: `You've logged your ${FREE_LOG_LIMIT} free client payments`,
     body: "Pro logs every client payment, so your set-aside stays right through April. Logging IRS payments stays free.",
   },
-  upgrade: { title: "Penaltyproof Pro", body: "Log every payment for the whole tax year, and more." },
+  upgrade: { title: "Penaltyproof Pro", body: "Log every client payment, and more." },
   screenshot: {
     title: "Read payouts from a screenshot",
     body: "With Pro, upload a payout screenshot and we fill in the amount, client and date for you to check.",

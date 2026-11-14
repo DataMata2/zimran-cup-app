@@ -4,7 +4,7 @@ import { Card } from "@/components/kit/Card";
 import { Disclaimer } from "@/components/kit/Disclaimer";
 import { EXAMPLE_DESCRIPTION, EXAMPLE_NAME } from "@/lib/product/example";
 import { longDate, money, pct } from "@/lib/product/format";
-import { pastDue, pastDueSentence, payTarget } from "@/lib/product/payNow";
+import { missedLabel, nextLabel, pastDue, payTarget } from "@/lib/product/payNow";
 import { PaidMeter } from "@/components/plan/PaidMeter";
 import { useExamplePlan } from "./useExamplePlan";
 
@@ -29,41 +29,47 @@ export function PlanPreview() {
       </div>
 
       <div className="px-5 pt-5 pb-6 sm:px-6 sm:pt-6">
-        <p className="text-sm text-ink-2">To stay penalty-proof, pay</p>
         {plan ? (
           due ? (
             <>
+              <p className="text-sm font-semibold text-red">{missedLabel(due.quarters)}</p>
               <p className="mt-1 flex flex-wrap items-baseline gap-x-3">
+                <span className="text-base font-semibold text-ink-2">Pay</span>
                 <span className="text-[2.75rem] leading-none font-bold tracking-[-0.03em] text-ink sm:text-[3.25rem]">
                   {money(due.amount)}
                 </span>
                 <span className="text-base font-semibold text-ink-2">now</span>
               </p>
               {target && (
-                <p className="mt-2 text-base text-ink-2">
-                  then <span className="font-semibold text-ink">{money(target.amount)}</span> by{" "}
-                  <span className="font-semibold whitespace-nowrap text-ink">{longDate(target.due)}</span>
-                </p>
+                <div className="mt-4 border-l-2 border-line-strong pl-3">
+                  <p className="text-sm font-semibold text-ink-2">{nextLabel(target.quarter)}</p>
+                  <p className="mt-0.5 text-base text-ink-2">
+                    <span className="font-semibold text-ink">{money(target.amount)}</span> by{" "}
+                    <span className="font-semibold whitespace-nowrap text-ink">{longDate(target.due)}</span>
+                  </p>
+                </div>
               )}
-              <p className="mt-3 flex items-center gap-2 text-sm font-medium text-red">
-                <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-red" />
-                {pastDueSentence(due.quarters)}
-              </p>
             </>
           ) : target ? (
-            <p className="mt-1 flex flex-wrap items-baseline gap-x-3">
-              <span className="text-[2.75rem] leading-none font-bold tracking-[-0.03em] text-ink sm:text-[3.25rem]">
-                {money(target.amount)}
-              </span>
-              <span className="text-base font-semibold text-ink-2">by {longDate(target.due)}</span>
-            </p>
+            <>
+              <p className="text-sm font-semibold text-ink-2">{nextLabel(target.quarter)}</p>
+              <p className="mt-1 flex flex-wrap items-baseline gap-x-3">
+                <span className="text-[2.75rem] leading-none font-bold tracking-[-0.03em] text-ink sm:text-[3.25rem]">
+                  {money(target.amount)}
+                </span>
+                <span className="text-base font-semibold text-ink-2">by {longDate(target.due)}</span>
+              </p>
+            </>
           ) : (
-            <p className="mt-1 text-2xl font-bold text-accent">Nothing more for 2026</p>
+            <p className="text-2xl font-bold text-accent">Nothing more to pay for 2026</p>
           )
         ) : (
-          <p className="mt-1">
-            <Blank className="h-11 w-44" />
-          </p>
+          <>
+            <Blank className="h-4 w-36" />
+            <p className="mt-2">
+              <Blank className="h-11 w-44" />
+            </p>
+          </>
         )}
 
         <div className="mt-6 flex items-baseline justify-between gap-4 border-t border-line pt-5">

@@ -100,6 +100,17 @@ export function pastDueSentence(quarters: readonly number[]): string {
   return `${quarterList(quarters)} ${n === 1 ? "is" : "are"} past due.`;
 }
 
+/** "Missed Q3 payment" or "Missed Q1–Q3 payments": the label over the pay-now amount. */
+export function missedLabel(quarters: readonly number[]): string {
+  const n = new Set(quarters).size;
+  return `Missed ${quarterList(quarters)} payment${n === 1 ? "" : "s"}`;
+}
+
+/** "Next quarterly payment (Q4)": the label over the next instalment's amount. */
+export function nextLabel(quarter: number): string {
+  return `Next quarterly payment (Q${quarter})`;
+}
+
 /** The pay-now plan when anything is past due, else null. `then` is payTarget(): the next instalment on its own. */
 export function payNowPlan(result: TaxResult, penalty: PenaltyEstimate): PayNow | null {
   const due = pastDue(result);

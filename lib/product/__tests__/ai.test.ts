@@ -210,7 +210,7 @@ describe("planFacts", () => {
     expect(facts.safeHarbor.requiredFor2026).toBe(money(result.safeHarbor.requiredAnnualPayment));
     expect(facts.installments).toHaveLength(4);
     // Maya missed Q3: the headline is the pay-now amount.
-    expect(facts.headline.says).toMatch(/^Pay \$[\d,]+ now\.$/);
+    expect(facts.headline.says).toMatch(/^Missed Q3 payment: pay \$[\d,]+ now\.$/);
     expect(facts.today).toBe("Nov 14, 2026");
   });
   it("puts the facts into the prompts", () => {

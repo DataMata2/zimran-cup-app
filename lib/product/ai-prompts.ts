@@ -6,7 +6,7 @@
 import { estimateAccruedPenalty, type TaxInput, type TaxResult } from "@/lib/tax";
 import { longDate, money, pct } from "./format";
 import { meterValueText, penaltyMeter } from "./meter";
-import { payNowPlan, payTarget } from "./payNow";
+import { missedLabel, nextLabel, payNowPlan, payTarget } from "./payNow";
 import { computePlan } from "./plan";
 import { stateName } from "./states";
 import type { LogEntry, Profile } from "./types";
@@ -105,12 +105,14 @@ export function planFacts(result: TaxResult, log: readonly LogEntry[], profile?:
 
   const headline = payNow
     ? {
-        says: `Pay ${money(payNow.amount)} now.`,
+        says: `${missedLabel(payNow.quarters)}: pay ${money(payNow.amount)} now.`,
         pastDue: payNow.pastDueText,
         payNowAmount: money(payNow.amount),
         penaltyPerWeekIfUnpaid: payNow.weeklyPenalty !== null ? money(payNow.weeklyPenalty) : "less than $1",
         penaltySoFar: money(payNow.penaltySoFar),
-        thenAlsoPay: payNow.then ? { amount: money(payNow.then.amount), by: longDate(payNow.then.due) } : null,
+        thenAlsoPay: payNow.then
+          ? { label: nextLabel(payNow.then.quarter), amount: money(payNow.then.amount), by: longDate(payNow.then.due) }
+          : null,
       }
     : target
       ? {
@@ -221,7 +223,7 @@ Rules:
 - Use only numbers that appear in the JSON you are given, written exactly as they appear there (like $1,234 or 20%). Never calculate, add, subtract, round or estimate a number yourself.
 - Use each number only for what its key says (for example, ninetyPercentOfExpected2026Tax is 90% of the tax, not the tax itself; the full tax is tax2026.total).
 - Write 4 to 6 sentences as one paragraph, in the second person ("you"). No headings, no lists, no bullet points, no markdown.
-- Start with the headline exactly as headline.says puts it: what to pay and by when, which safe-harbor rule sets that amount, and why paying it keeps the IRS underpayment penalty away. If something is past due, say so and what it costs to wait, then give headline.thenAlsoPay as the next payment and its date, the way the screen says "Then $X by <date>".
+- Start with the headline exactly as headline.says puts it: what to pay and by when, which safe-harbor rule sets that amount, and why paying it keeps the IRS underpayment penalty away. If something is past due, say so and what it costs to wait, then give headline.thenAlsoPay as the next quarterly payment and its date, the way the screen labels it.
 - Then explain the set-aside percentage: what share of each client payment to keep for taxes and why.
 - Money set aside is only saved, not paid. Only payments to the IRS (and W-2 withholding) protect against the penalty, so never say set-aside money makes anyone safe or penalty-proof.
 - Then say what is left for the April 15, 2027 return (an amount owed or a refund).

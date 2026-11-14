@@ -1,8 +1,9 @@
+import type { ReactNode } from "react";
 import { buttonClasses } from "@/components/kit/Button";
 import { cx } from "@/components/kit/cx";
 import { Disclaimer } from "@/components/kit/Disclaimer";
 import { longDate, money, pct } from "@/lib/product/format";
-import { aboutMoney, payNowPlan, payTarget, type PayNow } from "@/lib/product/payNow";
+import { aboutMoney, missedLabel, nextLabel, payNowPlan, payTarget, type PayNow } from "@/lib/product/payNow";
 import { estimateAccruedPenalty, type TaxResult } from "@/lib/tax";
 
 const DIRECT_PAY_URL = "https://www.irs.gov/payments/direct-pay";
@@ -24,6 +25,7 @@ export function PlanHero({ result, className }: { result: TaxResult; className?:
             id="pay-title"
             className="max-w-[17ch] text-[2.4rem] leading-[1.08] font-medium tracking-[-0.03em] text-ink-2 sm:text-5xl sm:leading-[1.05] lg:text-[3.5rem]"
           >
+            <AmountLabel>{nextLabel(target.quarter)}</AmountLabel>
             Pay <span className="font-bold text-ink">{money(target.amount)}</span> by{" "}
             <span className="font-bold whitespace-nowrap text-ink">{longDate(target.due)}</span> to stay
             penalty-proof.
@@ -84,31 +86,49 @@ function DirectPay() {
   );
 }
 
-/** Past-due headline: pay the missed amount now, what each week of waiting costs, then the next deadline. */
+/** The small line over a hero amount that says which payment it is. Part of the heading, read with a colon. */
+function AmountLabel({ children, tone = "ink" }: { children: ReactNode; tone?: "ink" | "red" }) {
+  return (
+    <span
+      className={cx(
+        "mb-3 block text-base leading-snug font-semibold tracking-normal sm:text-lg",
+        tone === "red" ? "text-red" : "text-ink-2",
+      )}
+    >
+      {children}
+      <span className="sr-only">: </span>
+    </span>
+  );
+}
+
+/** Past-due headline: the missed payment to make now, what each week of waiting costs, then the next one. */
 function PayNowHeadline({ payNow }: { payNow: PayNow }) {
-  const { amount, pastDueText, weeklyPenalty, then, penaltySoFar } = payNow;
+  const { amount, quarters, weeklyPenalty, then, penaltySoFar } = payNow;
   return (
     <>
       <h1
         id="pay-title"
         className="max-w-[17ch] text-[2.4rem] leading-[1.08] font-medium tracking-[-0.03em] text-ink-2 sm:text-5xl sm:leading-[1.05] lg:text-[3.5rem]"
       >
+        <AmountLabel tone="red">{missedLabel(quarters)}</AmountLabel>
         Pay <span className="font-bold text-ink">{money(amount)}</span> now.
       </h1>
-      <p className="mt-5 flex max-w-[52ch] gap-2.5 text-base font-medium text-red">
+      <p className="mt-4 flex max-w-[52ch] gap-2.5 text-base font-medium text-red">
         <span aria-hidden className="mt-[0.55em] size-2 shrink-0 rounded-full bg-red" />
         <span>
-          {pastDueText}{" "}
           {weeklyPenalty !== null
-            ? `Every week adds ${aboutMoney(weeklyPenalty)} in penalty.`
+            ? `Every week it stays unpaid adds ${aboutMoney(weeklyPenalty)} in penalty.`
             : "Penalty grows daily until it\u2019s paid."}
         </span>
       </p>
       {then && (
-        <p className="mt-4 text-xl leading-snug tracking-[-0.01em] text-ink-2 sm:text-2xl">
-          Then <span className="font-bold text-ink">{money(then.amount)}</span> by{" "}
-          <span className="font-bold whitespace-nowrap text-ink">{longDate(then.due)}</span>
-        </p>
+        <div className="mt-7 border-l-2 border-line-strong pl-4">
+          <p className="text-sm font-semibold text-ink-2">{nextLabel(then.quarter)}</p>
+          <p className="mt-1 text-xl leading-snug tracking-[-0.01em] text-ink-2 sm:text-2xl">
+            <span className="font-bold text-ink">{money(then.amount)}</span> by{" "}
+            <span className="font-bold whitespace-nowrap text-ink">{longDate(then.due)}</span>
+          </p>
+        </div>
       )}
       <DirectPay />
       <p className="mt-4 text-xs text-ink-3">

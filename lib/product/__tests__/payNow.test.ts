@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { estimate, estimateAccruedPenalty, type PenaltyEstimate, type TaxResult } from "@/lib/tax";
 import { buildExample } from "@/lib/product/example";
 import { buildTaxInput } from "@/lib/product/input";
-import { aboutMoney, pastDue, pastDueSentence, payNowPlan, quarterList, WEEKLY_PENALTY_MIN } from "@/lib/product/payNow";
+import { aboutMoney, missedLabel, nextLabel, pastDue, pastDueSentence, payNowPlan, quarterList, WEEKLY_PENALTY_MIN } from "@/lib/product/payNow";
 import { ENGINE_TEST_COUNT } from "@/lib/product/trust";
 import type { LogEntry, Profile } from "@/lib/product/types";
 
@@ -62,6 +62,18 @@ describe("quarterList / pastDueSentence", () => {
 
   it("lists a broken run of three in full", () => {
     expect(quarterList([1, 2, 4])).toBe("Q1, Q2 and Q4");
+  });
+});
+
+describe("missedLabel / nextLabel", () => {
+  it("labels the pay-now amount by the missed quarters", () => {
+    expect(missedLabel([3])).toBe("Missed Q3 payment");
+    expect(missedLabel([1, 2, 3])).toBe("Missed Q1–Q3 payments");
+    expect(missedLabel([1, 3])).toBe("Missed Q1 and Q3 payments");
+  });
+
+  it("labels the next instalment by its quarter", () => {
+    expect(nextLabel(4)).toBe("Next quarterly payment (Q4)");
   });
 });
 

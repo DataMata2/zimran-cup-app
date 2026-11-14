@@ -1,11 +1,19 @@
 services:
   app:
+    container_name: zimran-app
     build:
       context: .
       args:
         NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
     env_file: .env
+    # Local runs publish a port; on the server Caddy reaches the container over the proxy network.
     ports:
       - "127.0.0.1:${APP_PORT:-3100}:3000"
+    networks: [default, proxy]
     restart: unless-stopped
+
+networks:
+  proxy:
+    name: ${PROXY_NETWORK:-zimran_proxy}
+    external: ${PROXY_EXTERNAL:-false}

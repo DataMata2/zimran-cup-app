@@ -114,7 +114,7 @@ export default function LandingPage() {
           <div className="flex flex-col gap-6 rounded-lg border border-accent-mid/50 bg-accent-soft p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between lg:gap-12">
             <div className="min-w-0">
               <h2 id="price-title" className="text-xl font-bold tracking-[-0.015em] text-accent-ink sm:text-2xl">
-                $59 per tax year — less than one penalty.
+                $59 a year — less than one penalty.
               </h2>
               <p className="mt-2 max-w-[60ch] text-sm text-ink-2">
                 Your plan, every IRS payment you log and your first three client payments are free. Pro adds unlimited logging, reading

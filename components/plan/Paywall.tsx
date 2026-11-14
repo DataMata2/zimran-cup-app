@@ -35,12 +35,12 @@ const HEADINGS: Record<PaywallReason, { title: string; body: string }> = {
 };
 
 const PRICES: Record<ProPlan, { price: string; per: string; cta: string }> = {
-  yearly: { price: "$59", per: "per tax year, through the April 15, 2027 return", cta: "Continue to checkout, $59" },
-  monthly: { price: "$9.99", per: "a month", cta: "Continue to checkout, $9.99 a month" },
+  yearly: { price: "$59", per: "a year, a yearly subscription billed by Stripe (test mode)", cta: "Continue to checkout, $59 a year" },
+  monthly: { price: "$9.99", per: "a month, a monthly subscription billed by Stripe (test mode)", cta: "Continue to checkout, $9.99 a month" },
 };
 
 const PLAN_OPTIONS = [
-  { value: "yearly", label: "Tax year" },
+  { value: "yearly", label: "Yearly" },
   { value: "monthly", label: "Monthly" },
 ] as const;
 

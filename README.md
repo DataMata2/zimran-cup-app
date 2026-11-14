@@ -22,7 +22,7 @@ The tax engine in `lib/tax/` (a verbatim copy of `engine/src`) computes everythi
 - **Ask about your numbers** (`POST /api/ask`, Pro): questions answered from your own plan and log.
 - **Paste a payout email or screenshot** (`POST /api/read-payment`; screenshots need Pro): fills in amount, client and date for you to check before logging.
 
-The model sees only display strings of the engine's results (no raw profile). The prompts forbid arithmetic, and every dollar amount in an answer is checked against the `$`-amounts it was given; anything else is logged. Requests are rate-limited per guest and IP.
+The model sees only display strings of the engine's results, plus filing status, state and the log (payer names cleaned). The prompts forbid arithmetic, and every dollar amount in an answer is checked against the `$`-amounts it was given; anything else is logged. Requests are rate-limited per guest and IP.
 
 ### Tests
 

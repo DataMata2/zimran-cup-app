@@ -87,16 +87,16 @@ export function ReadPayout({
   }
 
   return (
-    <div className="mt-4 animate-[pp-step-in_250ms_var(--ease-out-soft)_both] rounded-md border border-line-strong bg-surface p-4">
+    <div className="mt-3 animate-[pp-step-in_250ms_var(--ease-out-soft)_both] rounded-md border-2 border-ink bg-surface p-4">
       <div className="flex items-start justify-between gap-3">
-        <label htmlFor={`${ids}-paste`} className="text-sm font-semibold text-ink">
+        <label htmlFor={`${ids}-paste`} className="text-sm font-bold text-ink">
           Paste a payout email
         </label>
         <button
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="-mt-2 -mr-2 flex size-9 shrink-0 items-center justify-center rounded-md text-ink-3 hover:bg-sunken hover:text-ink"
+          className="-mt-3 -mr-3 flex size-11 shrink-0 items-center justify-center rounded-md text-ink-2 hover:bg-sunken hover:text-ink"
         >
           <svg aria-hidden viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
             <path d="M4 4l8 8M12 4l-8 8" />
@@ -113,7 +113,7 @@ export function ReadPayout({
         maxLength={PASTE_MAX}
         rows={3}
         placeholder="From Stripe, PayPal, Upwork, your bank or a client"
-        className="mt-2 block w-full resize-y rounded-md border border-line-strong bg-surface px-3.5 py-2.5 text-base text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+        className="mt-2 block w-full resize-y rounded-md border-3 border-ink bg-surface px-3.5 py-2.5 text-base text-ink placeholder:text-ink-3 focus:outline-none focus-visible:shadow-[0_0_0_4px_var(--color-sky),0_0_0_6px_var(--color-ink)]"
       />
 
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -132,13 +132,13 @@ export function ReadPayout({
           }}
         />
         {file ? (
-          <span className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-full bg-sunken py-1 pr-1 pl-3 text-sm text-ink">
+          <span className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-full border-2 border-ink bg-sun-soft py-0.5 pr-0.5 pl-3 text-sm font-medium text-ink">
             <span className="truncate">{file.name}</span>
             <button
               type="button"
               onClick={() => setFile(null)}
               aria-label={`Remove ${file.name}`}
-              className="flex size-7 shrink-0 items-center justify-center rounded-full text-ink-3 hover:bg-line hover:text-ink"
+              className="flex size-10 shrink-0 items-center justify-center rounded-full text-ink-2 hover:bg-ink/10 hover:text-ink"
             >
               <svg aria-hidden viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                 <path d="M4 4l8 8M12 4l-8 8" />
@@ -148,12 +148,12 @@ export function ReadPayout({
         ) : (
           <Button size="sm" variant="secondary" onClick={pickFile}>
             Upload screenshot
-            {!pro && <span className="rounded-full bg-accent-soft px-2 py-0.5 text-xs font-semibold text-accent-ink">Pro</span>}
+            {!pro && <span className="rounded-full border-2 border-ink bg-sun px-2 py-0.5 font-mono text-[10px] leading-none font-bold tracking-[0.08em] uppercase">Pro</span>}
           </Button>
         )}
       </div>
 
-      <p className="mt-2 text-xs text-ink-3">Screenshots: PNG, JPEG, WebP or GIF, up to 4 MB.</p>
+      <p className="mt-3 text-xs text-ink-2">Screenshots: PNG, JPEG, WebP or GIF, up to 4 MB.</p>
 
       {error && (
         <p role="alert" className="mt-3 text-sm font-medium text-red">

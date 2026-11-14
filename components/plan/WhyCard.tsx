@@ -56,7 +56,7 @@ export function WhyCard({ plan, className }: { plan: PlanBody; className?: strin
         onClick={toggle}
         aria-expanded={open}
         aria-controls={panelId}
-        className="group inline-flex items-center gap-2 rounded-md text-base font-semibold text-accent underline-offset-4 hover:underline"
+        className="group inline-flex min-h-11 items-center gap-2 rounded-md text-base font-bold text-ink underline decoration-2 underline-offset-4 hover:bg-ink/5"
       >
         Why this number?
         <svg
@@ -65,7 +65,7 @@ export function WhyCard({ plan, className }: { plan: PlanBody; className?: strin
           className={cx("size-4 transition-transform duration-200 ease-out-soft", open && "rotate-180")}
           fill="none"
           stroke="currentColor"
-          strokeWidth="1.8"
+          strokeWidth="2.4"
           strokeLinecap="round"
           strokeLinejoin="round"
         >
@@ -73,8 +73,8 @@ export function WhyCard({ plan, className }: { plan: PlanBody; className?: strin
         </svg>
       </button>
 
-      <div id={panelId} hidden={!open} className="mt-4">
-        <div className="max-w-[62ch] rounded-lg border border-line bg-surface px-5 py-5 sm:px-6">
+      <div id={panelId} hidden={!open} className="mt-3">
+        <div className="max-w-[62ch] rounded-lg border-3 border-ink bg-surface px-5 py-5 shadow-hard sm:px-6">
           {state.status === "error" ? (
             <div role="alert" className="flex flex-col items-start gap-3">
               <p className="text-base text-ink-2">Couldn&rsquo;t load the explanation.</p>
@@ -107,7 +107,7 @@ export function WhyCard({ plan, className }: { plan: PlanBody; className?: strin
                 </div>
               ) : (
                 state.status === "done" && (
-                  <p className="mt-4 text-xs text-ink-3">
+                  <p className="mt-4 text-sm text-ink-2">
                     Written by AI from the numbers on this page. It explains them; it doesn&rsquo;t calculate them.
                   </p>
                 )

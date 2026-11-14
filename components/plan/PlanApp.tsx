@@ -82,7 +82,7 @@ export function PlanApp() {
         <CheckoutReturn onNotice={setNotice} />
       </Suspense>
 
-      <div className="mx-auto w-full max-w-6xl px-4 pt-6 pb-16 sm:px-6 sm:pt-10 lg:pb-24">
+      <div className="mx-auto w-full max-w-6xl px-5 pt-7 pb-16 sm:px-6 sm:pt-10 lg:pb-24">
         {notice && (
           <Notice tone={notice === "pro" ? "accent" : "quiet"} onDismiss={() => setNotice(null)} className="mb-6">
             {notice === "pro"
@@ -91,8 +91,8 @@ export function PlanApp() {
           </Notice>
         )}
 
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-x-14 lg:gap-y-12">
-          <div className="flex min-w-0 flex-col gap-8 lg:col-start-1">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,27rem)] lg:gap-x-10 lg:gap-y-12">
+          <div className="flex min-w-0 flex-col gap-5 lg:col-start-1">
             <PlanHero result={result} />
             <WhyCard plan={aiPlan} />
           </div>
@@ -118,9 +118,9 @@ export function PlanApp() {
 /** Saved answers that can't be used (unreadable, or rejected by the tax engine): offer to re-enter them. */
 function RecoveryCard() {
   return (
-    <main className="mx-auto flex w-full max-w-xl flex-1 flex-col px-4 py-16 sm:px-6">
+    <main className="mx-auto flex w-full max-w-xl flex-1 flex-col px-5 py-16 sm:px-6">
       <Card padding="lg" role="alert">
-        <h1 className="text-xl font-bold tracking-[-0.015em] text-ink">We couldn&rsquo;t read your saved answers.</h1>
+        <h1 className="font-display text-2xl leading-tight font-extrabold tracking-[-0.03em] text-ink">We couldn&rsquo;t read your saved answers.</h1>
         <p className="mt-2 text-base text-ink-2">
           They may be from an older version of Penaltyproof. Enter them again to see your plan. Your payment log is
           kept.

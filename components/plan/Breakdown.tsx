@@ -28,55 +28,55 @@ export function Breakdown({ result, state, className }: { result: TaxResult; sta
 
   return (
     <section aria-labelledby="breakdown-title" className={cx("min-w-0", className)}>
-      <h2 id="breakdown-title" className="text-xl font-bold tracking-[-0.015em] text-ink">
+      <h2 id="breakdown-title" className="font-display text-2xl leading-tight font-extrabold tracking-[-0.03em] text-ink sm:text-[1.75rem]">
         Your 2026 tax, estimated
       </h2>
-      <p className="mt-1 text-sm text-ink-2">
+      <p className="mt-2 text-base text-ink-2">
         On {money(income.net1099Annual)} of freelance profit for the year{income.projected ? " (projected from what you've been paid so far)" : ""}.
       </p>
 
-      <dl className="mt-5 rounded-lg border border-line bg-surface px-4 sm:px-5">
+      <dl className="mt-5 rounded-lg border-3 border-ink bg-surface px-4 shadow-hard sm:px-6">
         {rows.map((r) => (
-          <div key={r.label} className="flex items-baseline justify-between gap-4 border-b border-line py-3 text-sm">
+          <div key={r.label} className="flex items-baseline justify-between gap-4 border-b border-ink py-3.5 text-base">
             <dt className="text-ink-2">{r.label}</dt>
-            <dd className="font-semibold text-ink">{r.value}</dd>
+            <dd className="font-bold text-ink tabular-nums">{r.value}</dd>
           </div>
         ))}
-        <div className="flex items-baseline justify-between gap-4 border-b border-line py-3.5">
-          <dt className="text-base font-semibold text-ink">Total</dt>
-          <dd className="text-base font-bold text-ink">{money(tax.total)}</dd>
+        <div className="-mt-px flex items-baseline justify-between gap-4 border-y-3 border-ink py-4">
+          <dt className="font-display text-lg font-extrabold text-ink">Total</dt>
+          <dd className="font-display text-2xl leading-none font-extrabold tracking-[-0.02em] text-ink tabular-nums">{money(tax.total)}</dd>
         </div>
-        <div className="flex items-baseline justify-between gap-4 py-3.5 text-sm">
+        <div className="flex items-baseline justify-between gap-4 py-3.5 text-base">
           <dt className="text-ink-2">Effective rate on freelance profit</dt>
-          <dd className="font-semibold text-ink">{pct(rates.effectiveOnFreelance)}</dd>
+          <dd className="font-bold text-ink tabular-nums">{pct(rates.effectiveOnFreelance)}</dd>
         </div>
       </dl>
 
       {notes.length > 0 && (
-        <ul className="mt-4 flex flex-col gap-2">
+        <ul className="mt-5 flex flex-col gap-2">
           {notes.map((f) => (
             <li key={f.code} className="flex gap-2.5 text-sm text-ink-2">
-              <span aria-hidden className="mt-2 size-1.5 shrink-0 rounded-full bg-line-strong" />
+              <span aria-hidden className="mt-2 size-1.5 shrink-0 rounded-full bg-ink" />
               <span className="max-w-[68ch]">{f.message}</span>
             </li>
           ))}
         </ul>
       )}
 
-      <p className="mt-4 text-sm text-ink-2">
+      <p className="mt-5 text-sm text-ink">
         Tax maths matches the IRS Form 1040-ES worksheet to the cent:{" "}
         <Link
           href={VERIFIED_URL}
-          className="font-medium text-accent underline decoration-accent-mid underline-offset-2 hover:text-accent-hover"
+          className="-my-3 inline-block rounded-sm py-3 font-bold text-ink underline decoration-2 underline-offset-4 hover:bg-ink/5"
         >
           {ENGINE_TEST_COUNT} tests
         </Link>
         .
       </p>
 
-      <div className="mt-5 flex flex-col gap-1.5 border-t border-line pt-4">
+      <div className="mt-5 flex flex-col gap-1.5 border-t-2 border-ink pt-4">
         {footnotes.map((f) => (
-          <p key={f.code} className="max-w-[72ch] text-xs text-ink-3">
+          <p key={f.code} className="max-w-[72ch] text-sm text-ink-2">
             {f.message}
           </p>
         ))}

@@ -15,12 +15,12 @@ export function Deadlines({ result, className }: { result: TaxResult; className?
 
   return (
     <section aria-labelledby="deadlines-title" className={cx("min-w-0", className)}>
-      <h2 id="deadlines-title" className="text-xl font-bold tracking-[-0.015em] text-ink">
+      <h2 id="deadlines-title" className="font-display text-2xl leading-tight font-extrabold tracking-[-0.03em] text-ink sm:text-[1.75rem]">
         Your 2026 deadlines
       </h2>
-      <p className="mt-1 text-sm text-ink-2">Federal estimated tax, Form 1040-ES.</p>
+      <p className="mt-2 text-base text-ink-2">Federal estimated tax, Form 1040-ES.</p>
 
-      <div className="mt-5 rounded-lg border border-line bg-surface">
+      <div className="mt-5 overflow-hidden rounded-lg border-3 border-ink bg-surface shadow-hard">
         <ol>
           {result.installments.map((i) => {
             const { amount, note } = installmentRow(result, i);
@@ -30,18 +30,18 @@ export function Deadlines({ result, className }: { result: TaxResult; className?
                 key={i.quarter}
                 aria-current={isNext ? "step" : undefined}
                 className={cx(
-                  "relative grid grid-cols-[2.25rem_minmax(0,1fr)_auto] items-center gap-x-3 border-b border-line px-4 py-3.5 sm:grid-cols-[2.5rem_minmax(0,1fr)_7rem_6.5rem] sm:px-5",
-                  isNext && "bg-accent-soft/40",
+                  "relative grid grid-cols-[2.25rem_minmax(0,1fr)_auto] items-center gap-x-3 border-b-2 border-ink px-4 py-4 sm:grid-cols-[2.75rem_minmax(0,1fr)_7rem_7rem] sm:px-5",
+                  i.status === "pastDue" ? "bg-hot-soft" : isNext && "bg-sun-soft",
                 )}
               >
-                {isNext && <span aria-hidden className="absolute inset-y-0 left-0 w-1 rounded-r-sm bg-accent" />}
-                <span className="text-sm font-semibold text-ink-3">Q{i.quarter}</span>
+                {isNext && <span aria-hidden className="absolute inset-y-0 left-0 w-1.5 bg-ink" />}
+                <span className="font-mono text-sm font-bold tracking-[0.04em] text-ink">Q{i.quarter}</span>
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-ink">{longDate(i.due)}</span>
-                  <span className="block text-xs text-ink-2">{note}</span>
+                  <span className="block text-base font-bold text-ink">{longDate(i.due)}</span>
+                  <span className="block text-sm text-ink-2">{note}</span>
                 </span>
-                <span className="flex flex-col items-end gap-1 sm:contents">
-                  <span className="text-right text-sm font-semibold text-ink">{money(amount)}</span>
+                <span className="flex flex-col items-end gap-1.5 sm:contents">
+                  <span className="text-right font-display text-lg leading-none font-extrabold text-ink tabular-nums">{money(amount)}</span>
                   <span className="sm:justify-self-end">
                     <Badge status={i.status} />
                   </span>
@@ -49,15 +49,15 @@ export function Deadlines({ result, className }: { result: TaxResult; className?
               </li>
             );
           })}
-          <li className="grid grid-cols-[2.25rem_minmax(0,1fr)] items-start gap-x-3 px-4 py-3.5 sm:grid-cols-[2.5rem_minmax(0,1fr)] sm:px-5">
-            <span className="text-sm font-semibold text-ink-3">Apr</span>
+          <li className="grid grid-cols-[2.25rem_minmax(0,1fr)] items-start gap-x-3 bg-paper px-4 py-4 sm:grid-cols-[2.75rem_minmax(0,1fr)] sm:px-5">
+            <span className="font-mono text-sm font-bold tracking-[0.04em] text-ink">Apr</span>
             <span className="min-w-0">
-              <span className="block text-sm font-semibold text-ink">{longDate(RETURN_DUE)}, your 2026 return</span>
+              <span className="block text-base font-bold text-ink">{longDate(RETURN_DUE)}, your 2026 return</span>
               <span className="block text-sm text-ink-2">
                 {trueUp > 0.5
-                  ? <>Estimated balance with your return: <span className="font-semibold text-ink">{money(trueUp)}</span></>
+                  ? <>Estimated balance with your return: <span className="font-bold text-ink">{money(trueUp)}</span></>
                   : trueUp < -0.5
-                    ? <>Estimated refund with your return: <span className="font-semibold text-accent-ink">{money(-trueUp)}</span></>
+                    ? <>Estimated refund with your return: <span className="font-bold text-ink">{money(-trueUp)}</span></>
                     : "No federal balance expected with your return."}
               </span>
             </span>
@@ -65,9 +65,9 @@ export function Deadlines({ result, className }: { result: TaxResult; className?
         </ol>
       </div>
 
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <CalendarButton result={result} />
-        <p className="text-sm text-ink-3">{calendarNote(result)}</p>
+        <p className="text-sm text-ink-2">{calendarNote(result)}</p>
       </div>
     </section>
   );

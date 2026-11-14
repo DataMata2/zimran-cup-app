@@ -19,7 +19,7 @@ export function PlanActions({ isExample, className }: { isExample: boolean; clas
   }
 
   return (
-    <section aria-label="Change your plan" className={cx("min-w-0 border-t border-line pt-8", className)}>
+    <section aria-label="Change your plan" className={cx("min-w-0 border-t-2 border-dashed border-ink/50 pt-8", className)}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <Button href="/start" variant="secondary" className="w-full sm:w-auto">
           {isExample ? "Start with my own numbers" : "Edit my answers"}
@@ -33,10 +33,10 @@ export function PlanActions({ isExample, className }: { isExample: boolean; clas
       {confirming && (
         <div
           role="alert"
-          className="mt-4 flex flex-col gap-3 rounded-md border border-line-strong bg-surface px-4 py-3 text-sm text-ink sm:flex-row sm:items-center sm:justify-between"
+          className="mt-5 flex flex-col gap-3 rounded-lg border-3 border-ink bg-surface px-4 py-4 text-base font-medium text-ink shadow-hard sm:flex-row sm:items-center sm:justify-between sm:px-5"
         >
           <p>This clears your answers and payment log, here and in your saved copy.</p>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button size="sm" onClick={startOver}>
               Clear and start over
             </Button>

@@ -8,7 +8,7 @@ import { computeAnnualizedPlan, type AnnualizedHeadline, type AnnualizedRow } fr
 import { longDate, money } from "@/lib/product/format";
 import type { LogEntry, Profile } from "@/lib/product/types";
 import { TaxInputError } from "@/lib/tax";
-import { LockIcon } from "./LockIcon";
+import { ProCheck, proCardClasses, ProSticker } from "./LockIcon";
 import type { PaywallReason } from "./Paywall";
 
 const NOTE = "Uses IRS Form 2210 Schedule AI. You attach that form to your return to use it.";
@@ -47,37 +47,37 @@ export function AnnualizedCard({
   if (pro && !plan) return null;
 
   return (
-    <section aria-labelledby="annualized-title" className={cx("min-w-0", className)}>
+    <section aria-labelledby="annualized-title" className={cx(proCardClasses(!pro), className)}>
       <div className="flex items-center gap-2">
-        <h2 id="annualized-title" className="text-xl font-bold tracking-[-0.015em] text-ink">
+        <h2 id="annualized-title" className="font-display text-2xl leading-tight font-extrabold tracking-[-0.03em] text-ink sm:text-[1.75rem]">
           Paid unevenly? Your annualized plan
         </h2>
-        {!pro && <LockIcon />}
+        {!pro && <ProSticker />}
       </div>
-      <p className="mt-1 max-w-[62ch] text-sm text-ink-2">
+      <p className="mt-2 max-w-[62ch] text-base text-ink-2">
         The IRS lets each quarter&rsquo;s payment follow the income you had actually received by then, instead of
         four equal parts.
       </p>
 
       {plan ? (
-        <div className="mt-5 rounded-lg border border-line bg-surface">
-          <div className="border-b border-line px-4 py-4 sm:px-5">
+        <div className="mt-5 rounded-md border-2 border-ink bg-surface">
+          <div className="border-b-2 border-ink px-4 py-4 sm:px-5">
             <Headline headline={plan.headline} />
           </div>
           {plan.headline.kind !== "noneRequired" && <Comparison rows={plan.rows} />}
-          <div className="flex flex-col gap-1.5 border-t border-line px-4 py-3.5 sm:px-5">
+          <div className="flex flex-col gap-1.5 border-t-2 border-ink px-4 py-3.5 sm:px-5">
             <p className="text-sm text-ink-2">{NOTE}</p>
             <Disclaimer />
           </div>
         </div>
       ) : (
-        <div className="mt-4 rounded-lg border border-line bg-surface px-5 py-5 sm:px-6">
-          <ul className="flex flex-col gap-1.5 text-sm text-ink-2">
-            <li>Each quarter&rsquo;s required payment under both methods, side by side.</li>
-            <li>How much less you&rsquo;d owe by your next deadline if most of your income came late.</li>
-            <li>Built from the dates of the payments in your log.</li>
+        <div className="mt-5">
+          <ul className="flex flex-col gap-2.5 text-base text-ink">
+            <li className="flex gap-2.5"><ProCheck /><span>Each quarter&rsquo;s required payment under both methods, side by side.</span></li>
+            <li className="flex gap-2.5"><ProCheck /><span>How much less you&rsquo;d owe by your next deadline if most of your income came late.</span></li>
+            <li className="flex gap-2.5"><ProCheck /><span>Built from the dates of the payments in your log.</span></li>
           </ul>
-          <Button className="mt-5 w-full sm:w-auto" onClick={() => onNeedPro("annualized")}>
+          <Button size="lg" className="mt-6 w-full sm:w-auto" onClick={() => onNeedPro("annualized")}>
             Unlock with Pro
           </Button>
         </div>
@@ -133,11 +133,11 @@ function Comparison({ rows }: { rows: AnnualizedRow[] }) {
     <div className="px-4 pt-3 pb-4 sm:px-5">
       <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 pb-2 text-xs text-ink-2">
         <span className="flex items-center gap-1.5">
-          <span aria-hidden className="h-2 w-3 rounded-[2px] bg-line-strong" />
+          <span aria-hidden className="h-3 w-4 rounded-[3px] border-2 border-ink bg-ink-3" />
           Regular
         </span>
         <span className="flex items-center gap-1.5">
-          <span aria-hidden className="h-2 w-3 rounded-[2px] bg-accent" />
+          <span aria-hidden className="h-3 w-4 rounded-[3px] border-2 border-ink bg-mint" />
           Annualized
         </span>
       </div>
@@ -155,7 +155,7 @@ function Comparison({ rows }: { rows: AnnualizedRow[] }) {
             <tr
               key={r.quarter}
               aria-current={r.next ? "step" : undefined}
-              className={cx("border-t border-line first:border-t-0", r.next && "bg-accent-soft/40")}
+              className={cx("border-t-2 border-ink/25 first:border-t-0", r.next && "bg-sun-soft")}
             >
               <th scope="row" className="w-[6.5rem] py-3 pr-3 align-top font-normal sm:w-[9rem]">
                 <span className="block text-sm font-semibold text-ink">Q{r.quarter}</span>
@@ -166,15 +166,15 @@ function Comparison({ rows }: { rows: AnnualizedRow[] }) {
               </th>
               <td colSpan={2} className="py-3 align-top">
                 <div className="grid grid-cols-[minmax(0,1fr)_5.25rem] items-center gap-x-3 gap-y-1.5">
-                  <span aria-hidden className="h-2 rounded-[2px] bg-sunken">
-                    <span className="block h-full rounded-[2px] bg-line-strong" style={{ width: width(r.regular) }} />
+                  <span aria-hidden className="h-3.5 overflow-hidden rounded-[4px] border-2 border-ink bg-surface">
+                    <span className="block h-full bg-ink-3" style={{ width: width(r.regular) }} />
                   </span>
                   <span className="text-right text-sm text-ink-2">
                     <span className="sr-only">Regular </span>
                     {money(r.regular)}
                   </span>
-                  <span aria-hidden className="h-2 rounded-[2px] bg-sunken">
-                    <span className="block h-full rounded-[2px] bg-accent" style={{ width: width(r.annualized) }} />
+                  <span aria-hidden className="h-3.5 overflow-hidden rounded-[4px] border-2 border-ink bg-surface">
+                    <span className="block h-full bg-mint" style={{ width: width(r.annualized) }} />
                   </span>
                   <span className="text-right text-sm font-semibold text-ink">
                     <span className="sr-only">Annualized </span>

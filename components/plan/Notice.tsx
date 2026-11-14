@@ -17,8 +17,8 @@ export function Notice({
     <div
       role="status"
       className={cx(
-        "flex items-center justify-between gap-4 rounded-md border px-4 py-3 text-sm font-medium",
-        tone === "accent" ? "border-accent-mid/60 bg-accent-soft text-accent-ink" : "border-line bg-sunken text-ink-2",
+        "flex items-center justify-between gap-4 rounded-md border-2 border-ink py-2 pr-2 pl-4 text-sm font-medium text-ink shadow-chip",
+        tone === "accent" ? "bg-mint-soft" : "bg-surface",
         className,
       )}
     >
@@ -26,7 +26,7 @@ export function Notice({
       <button
         type="button"
         onClick={onDismiss}
-        className="shrink-0 rounded-sm px-1 py-0.5 text-sm font-semibold text-ink-2 underline-offset-4 hover:text-ink hover:underline"
+        className="inline-flex min-h-11 shrink-0 items-center rounded-sm px-2 text-sm font-bold text-ink underline decoration-2 underline-offset-4 hover:bg-ink/5"
       >
         Dismiss
       </button>

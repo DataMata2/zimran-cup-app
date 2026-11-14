@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/kit/Button";
 import { cx } from "@/components/kit/cx";
 import { AiCallError, streamText, type PlanBody } from "@/lib/product/aiClient";
-import { LockIcon } from "./LockIcon";
+import { proCardClasses, ProSticker } from "./LockIcon";
 import type { PaywallReason } from "./Paywall";
 
 /** History kept in the browser and sent with each question. */
@@ -33,14 +33,14 @@ export function AskCard({
   className?: string;
 }) {
   return (
-    <section aria-labelledby="ask-title" className={cx("min-w-0", className)}>
+    <section aria-labelledby="ask-title" className={cx(proCardClasses(!pro), className)}>
       <div className="flex items-center gap-2">
-        <h2 id="ask-title" className="text-xl font-bold tracking-[-0.015em] text-ink">
+        <h2 id="ask-title" className="font-display text-2xl leading-tight font-extrabold tracking-[-0.03em] text-ink sm:text-[1.75rem]">
           Ask about your numbers
         </h2>
-        {!pro && <LockIcon />}
+        {!pro && <ProSticker />}
       </div>
-      <p className="mt-1 text-sm text-ink-2">Questions about this plan, answered from its numbers.</p>
+      <p className="mt-2 text-base text-ink-2">Questions about this plan, answered from its numbers.</p>
       {pro ? <Chat plan={plan} suggestions={suggestions} onNeedPro={onNeedPro} /> : <Locked suggestions={suggestions} onNeedPro={onNeedPro} />}
     </section>
   );
@@ -48,16 +48,16 @@ export function AskCard({
 
 function Locked({ suggestions, onNeedPro }: { suggestions: readonly string[]; onNeedPro: (reason: PaywallReason) => void }) {
   return (
-    <div className="mt-4 rounded-lg border border-line bg-surface px-5 py-5 sm:px-6">
-      <p className="text-sm font-semibold text-ink">For example</p>
-      <ul className="mt-2 flex flex-col gap-1.5">
+    <div className="mt-5">
+      <p className="font-mono text-xs font-bold tracking-[0.08em] text-ink-3 uppercase">For example</p>
+      <ul className="mt-3 flex flex-col gap-2">
         {suggestions.map((q) => (
-          <li key={q} className="text-sm text-ink-2">
+          <li key={q} className="border-l-3 border-ink pl-3 text-base text-ink">
             &ldquo;{q}&rdquo;
           </li>
         ))}
       </ul>
-      <Button className="mt-5 w-full sm:w-auto" onClick={() => onNeedPro("ask")}>
+      <Button size="lg" className="mt-6 w-full sm:w-auto" onClick={() => onNeedPro("ask")}>
         Unlock with Pro
       </Button>
     </div>
@@ -114,7 +114,7 @@ function Chat({ plan, suggestions, onNeedPro }: { plan: PlanBody; suggestions: r
   }
 
   return (
-    <div className="mt-4 rounded-lg border border-line bg-surface">
+    <div className="mt-5 rounded-md border-2 border-ink bg-surface">
       {messages.length === 0 && pending === null && !failed ? (
         <div className="flex flex-wrap gap-2 px-4 pt-4 sm:px-5">
           {suggestions.map((q) => (
@@ -122,7 +122,7 @@ function Chat({ plan, suggestions, onNeedPro }: { plan: PlanBody; suggestions: r
               key={q}
               type="button"
               onClick={() => ask(q)}
-              className="rounded-full border border-line-strong bg-paper px-3.5 py-1.5 text-left text-sm text-ink hover:border-accent-mid hover:bg-accent-soft"
+              className="min-h-11 rounded-full border-2 border-ink bg-paper px-4 py-2 text-left text-sm font-medium text-ink hover:bg-sky-soft"
             >
               {q}
             </button>
@@ -156,7 +156,7 @@ function Chat({ plan, suggestions, onNeedPro }: { plan: PlanBody; suggestions: r
         </ol>
       )}
 
-      <form onSubmit={submit} className="mt-4 flex items-end gap-2 border-t border-line px-4 py-3 sm:px-5">
+      <form onSubmit={submit} className="mt-4 flex items-end gap-2 border-t-2 border-ink px-4 py-3 sm:px-5">
         <label htmlFor="ask-input" className="sr-only">
           Your question
         </label>
@@ -173,7 +173,7 @@ function Chat({ plan, suggestions, onNeedPro }: { plan: PlanBody; suggestions: r
           maxLength={MAX_CHARS}
           rows={1}
           placeholder="Ask about your plan"
-          className="min-h-11 flex-1 resize-none rounded-md border border-line-strong bg-surface px-3.5 py-2.5 text-base text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+          className="min-h-11 flex-1 resize-none rounded-md border-3 border-ink bg-surface px-3.5 py-2.5 text-base text-ink placeholder:text-ink-3 focus:outline-none focus-visible:shadow-[0_0_0_4px_var(--color-sky),0_0_0_6px_var(--color-ink)]"
         />
         <Button type="submit" disabled={busy || !draft.trim()}>
           Ask
@@ -189,8 +189,8 @@ function Bubble({ msg }: { msg: Msg }) {
     <li className={cx("flex", user ? "justify-end" : "justify-start")}>
       <p
         className={cx(
-          "max-w-[85%] rounded-lg px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-line",
-          user ? "bg-accent text-white" : "bg-sunken text-ink",
+          "max-w-[85%] rounded-md border-2 border-ink px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-line",
+          user ? "bg-ink text-white" : "bg-paper text-ink",
         )}
       >
         <span className="sr-only">{user ? "You: " : "Answer: "}</span>

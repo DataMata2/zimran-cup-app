@@ -3,7 +3,6 @@
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/kit/Button";
 import { Card } from "@/components/kit/Card";
-import { cx } from "@/components/kit/cx";
 import { Field, MoneyInput, TextInput } from "@/components/kit/Field";
 import { SegmentedControl } from "@/components/kit/SegmentedControl";
 import { longDate, moneyCents, pct, shortDate } from "@/lib/product/format";
@@ -119,10 +118,10 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
   return (
     <Card as="section" raised padding="none" aria-labelledby="meter-title" className="overflow-hidden">
       {/* Meter */}
-      <PaidMeter meter={meter} titleId="meter-title" className="px-5 pt-5 pb-6 sm:px-6 sm:pt-6" />
+      <PaidMeter meter={meter} titleId="meter-title" className="px-5 pt-6 pb-6 sm:px-7 sm:pt-7" />
 
       {/* Log a payment */}
-      <form onSubmit={submit} noValidate className="border-t border-line bg-paper/50 px-5 py-5 sm:px-6">
+      <form onSubmit={submit} noValidate className="border-t-3 border-ink bg-paper px-5 py-6 sm:px-7">
         <SegmentedControl
           options={KIND_OPTIONS}
           value={kind}
@@ -141,7 +140,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
               setReadOpen(true);
               setConfirmation(null);
             }}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-sm text-sm font-semibold text-accent underline-offset-4 hover:underline"
+            className="mt-2 inline-flex min-h-11 items-center gap-1.5 rounded-sm text-sm font-bold text-ink underline decoration-2 underline-offset-4 hover:bg-ink/5"
           >
             <svg aria-hidden viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3.5" y="2.5" width="9" height="11" rx="1.5" />
@@ -153,7 +152,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
 
         <div className="mt-4 flex flex-col gap-3">
           <div className="grid grid-cols-[8.25rem_minmax(0,1fr)] items-center gap-x-3">
-            <span aria-hidden className="whitespace-nowrap text-base font-medium text-ink-2">
+            <span aria-hidden className="whitespace-nowrap text-base font-bold text-ink">
               {kind === "income" ? "I just got paid" : "I paid the IRS"}
             </span>
             <Field label={kind === "income" ? "Amount you were paid" : "Amount you paid the IRS"} hideLabel>
@@ -172,7 +171,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
           </div>
           {kind === "income" && (
             <div className="grid grid-cols-[8.25rem_minmax(0,1fr)] items-center gap-x-3">
-              <span aria-hidden className="text-right text-base font-medium text-ink-2">
+              <span aria-hidden className="text-right text-base font-bold text-ink">
                 from
               </span>
               <Field label="Who paid you (optional)" hideLabel>
@@ -189,7 +188,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
           )}
           {kind === "income" && date !== null && (
             <div className="grid grid-cols-[8.25rem_minmax(0,1fr)] items-center gap-x-3">
-              <span aria-hidden className="text-right text-base font-medium text-ink-2">
+              <span aria-hidden className="text-right text-base font-bold text-ink">
                 on
               </span>
               <Field label="Date you were paid" hideLabel>
@@ -208,8 +207,8 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
             </div>
           )}
           {kind === "income" && filled && (
-            <p className="flex items-center gap-2 rounded-md bg-amber-soft px-3 py-2 text-sm font-medium text-amber">
-              <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-amber-mid" />
+            <p className="flex items-center gap-2 rounded-md border-2 border-ink bg-sun-soft px-3 py-2.5 text-sm font-semibold text-ink">
+              <span aria-hidden className="size-2 shrink-0 rounded-full bg-ink" />
               Check these before logging.
             </p>
           )}
@@ -228,20 +227,20 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
 
         <div aria-live="polite" aria-atomic>
           {confirmation && (
-            <div className="mt-4 animate-[pp-step-in_300ms_var(--ease-out-soft)_both] rounded-md border border-accent-mid/60 bg-accent-soft px-4 py-3">
+            <div className="mt-5 animate-[pp-step-in_300ms_var(--ease-out-soft)_both] rounded-md border-2 border-ink bg-mint-soft px-4 py-3.5">
               {confirmation.kind === "income" ? (
                 <>
-                  <p className="text-lg font-bold text-accent-ink">
+                  <p className="font-display text-xl leading-tight font-extrabold tracking-[-0.02em] text-ink">
                     Set aside {moneyCents(confirmation.setAside)} from this payment
                   </p>
-                  <p className="mt-0.5 text-sm text-ink-2">
+                  <p className="mt-1 text-sm text-ink-2">
                     {pct(confirmation.rate, 1)} of {moneyCents(confirmation.amount)}
                     {confirmation.payer ? ` from ${confirmation.payer.replace(/\.+$/, "")}` : ""}. {setAsideNextStep(result)}
                   </p>
                 </>
               ) : (
                 <>
-                  <p className="text-lg font-bold text-accent-ink">Logged {moneyCents(confirmation.amount)} paid to the IRS</p>
+                  <p className="font-display text-xl leading-tight font-extrabold tracking-[-0.02em] text-ink">Logged {moneyCents(confirmation.amount)} paid to the IRS</p>
                   <p className="mt-0.5 text-sm text-ink-2">
                     {nextStepText(result)}
                   </p>
@@ -253,11 +252,11 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
       </form>
 
       {/* Entries */}
-      <div className="border-t border-line px-5 py-5 sm:px-6">
+      <div className="border-t-3 border-ink px-5 py-6 sm:px-7">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h3 className="text-base font-semibold text-ink">Your log</h3>
+          <h3 className="font-display text-xl font-extrabold tracking-[-0.02em] text-ink">Your log</h3>
           {pro ? (
-            <p className="text-sm text-accent-ink">Pro: unlimited logging</p>
+            <p className="rounded-full border-2 border-ink bg-mint px-2.5 py-1 font-mono text-[11px] font-bold tracking-[0.06em] text-ink uppercase">Pro: unlimited logging</p>
           ) : (
             <p className="text-sm text-ink-2">
               {used} of {FREE_LOG_LIMIT} free client payments logged{deletedCounted ? ", deleted ones included" : ""}. IRS payments are free
@@ -265,7 +264,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
               <button
                 type="button"
                 onClick={() => onNeedPro("upgrade")}
-                className="rounded-sm font-semibold text-accent underline-offset-4 hover:underline"
+                className="-my-3 inline-block rounded-sm py-3 font-bold text-ink underline decoration-2 underline-offset-4 hover:bg-ink/5"
               >
                 Get unlimited
               </button>
@@ -278,7 +277,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
             Nothing logged yet. When a client pays you, log it here to see what to set aside from it.
           </p>
         ) : (
-          <ul className="mt-3 flex flex-col">
+          <ul className="mt-3 flex flex-col border-t-2 border-ink">
             {entries.map((e) => (
               <LogRow key={e.id} entry={e} />
             ))}
@@ -293,22 +292,22 @@ function LogRow({ entry }: { entry: LogEntry }) {
   const income = entry.kind === "income";
   const title = income ? entry.payer || "Client payment" : "Paid to the IRS";
   return (
-    <li className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 border-b border-line py-3 last:border-b-0">
+    <li className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 border-b-2 border-ink py-2.5 last:border-b-0">
       <span className="min-w-0">
         <span className="block truncate text-sm font-semibold text-ink">{title}</span>
-        <span className="block text-xs text-ink-3">
+        <span className="mt-0.5 block text-xs text-ink-2">
           {shortDate(entry.date)}
           {income && <> · set aside {moneyCents(entry.setAside)}</>}
         </span>
       </span>
-      <span className={cx("text-sm font-semibold", income ? "text-ink" : "text-accent-ink")}>
+      <span className="font-display text-base font-extrabold text-ink tabular-nums">
         {moneyCents(entry.amount)}
       </span>
       <button
         type="button"
         onClick={() => removeLogEntry(entry.id)}
         aria-label={`Remove ${title}, ${moneyCents(entry.amount)}`}
-        className="-mr-1.5 flex size-9 items-center justify-center rounded-md text-ink-3 hover:bg-sunken hover:text-ink"
+        className="-mr-2 flex size-11 items-center justify-center rounded-md text-ink-2 hover:bg-sunken hover:text-ink"
       >
         <svg aria-hidden viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
           <path d="M4 4l8 8M12 4l-8 8" />

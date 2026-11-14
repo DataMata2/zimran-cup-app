@@ -16,6 +16,7 @@ import {
   payTargetPurpose,
   type PayNow,
 } from "@/lib/product/payNow";
+import { safeHarborCopy } from "@/lib/product/safeHarborCopy";
 import { estimateAccruedPenalty, type TaxResult } from "@/lib/tax";
 
 const DIRECT_PAY_URL = "https://www.irs.gov/payments/direct-pay";
@@ -72,7 +73,7 @@ export function PlanHero({ result, className }: { result: TaxResult; className?:
           Set aside <span className="font-bold text-ink">{pct(rate, 0)}</span> of every payment.
         </p>
         {catchUp && <p className="mt-3 max-w-[60ch] text-base text-ink-2">{catchUp.text}</p>}
-        <p className="mt-5 max-w-[60ch] text-sm text-ink-2">{result.safeHarbor.reason}</p>
+        <p className="mt-5 max-w-[60ch] text-sm text-ink-2">{safeHarborCopy(result).says}</p>
         <Disclaimer className="mt-3" />
       </div>
     </section>

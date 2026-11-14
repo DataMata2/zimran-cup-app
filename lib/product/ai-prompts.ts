@@ -18,6 +18,7 @@ import {
   payTargetPurpose,
 } from "./payNow";
 import { computePlan } from "./plan";
+import { safeHarborCopy } from "./safeHarborCopy";
 import { stateName } from "./states";
 import type { LogEntry, Profile } from "./types";
 import { isLogEntry, isProfile } from "./validate";
@@ -119,6 +120,7 @@ export function planFacts(result: TaxResult, log: readonly LogEntry[], profile?:
   const catchUp = catchUpLine(result);
   const meter = penaltyMeter(result, log);
   const r = result;
+  const sh = safeHarborCopy(r);
 
   const headline = payNow
     ? {
@@ -158,10 +160,15 @@ export function planFacts(result: TaxResult, log: readonly LogEntry[], profile?:
     },
     safeHarbor: {
       rule: RULE_LABEL[r.safeHarbor.rule],
-      requiredFor2026: money(r.safeHarbor.requiredAnnualPayment),
-      ninetyPercentOfExpected2026Tax: money(r.safeHarbor.currentYearOption),
-      basedOn2025Tax: r.safeHarbor.priorYearOption === null ? "unknown (2025 tax not entered)" : money(r.safeHarbor.priorYearOption),
-      reason: r.safeHarbor.reason,
+      /** The screen's sentence, with both options in dollars. */
+      says: sh.says,
+      requiredFor2026: sh.minimumFor2026,
+      ninetyPercentOfExpected2026Tax: sh.ninetyPercentOfExpected2026Tax,
+      basedOn2025Tax: r.input.priorYearTax === 0 && r.input.priorYearFullYear
+        ? "$0 (your 2025 tax was $0)"
+        : sh.priorYearOption
+        ? `${sh.priorYearOption.amount} (${sh.priorYearOption.share} of your 2025 tax)`
+        : "not available (2025 tax not entered or not a full-year return)",
     },
     installments: r.installments.map((i) => ({
       quarter: `Q${i.quarter}`,

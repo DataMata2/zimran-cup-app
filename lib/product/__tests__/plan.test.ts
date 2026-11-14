@@ -255,22 +255,42 @@ describe("LIVE-PP-02: the IRS payment date", () => {
     id: `irs-${date}`, kind: "irs", amount: 2000, payer: "", date, setAside: 0, createdAt: "2026-11-15T10:00:00.000Z",
   });
 
-  it("defaults to today, within 2026", () => {
+  it("defaults to today, also in 2027 (no Dec 31 cap)", () => {
     expect(defaultIrsDate(NOV15)).toBe(NOV15);
-    expect(defaultIrsDate("2027-02-01")).toBe("2026-12-31");
+    expect(defaultIrsDate("2027-02-01")).toBe("2027-02-01");
   });
 
-  it("accepts Jan 1, 2026 through today; rejects future dates, 2025 and 2027 dates", () => {
-    expect(logDateError("2026-01-01", NOV15)).toBeNull();
-    expect(logDateError("2026-04-15", NOV15)).toBeNull();
-    expect(logDateError(NOV15, NOV15)).toBeNull();
-    const msg = "Use a date between Jan 1, 2026 and Nov 15, 2026.";
-    expect(logDateError("2026-11-16", NOV15)).toBe(msg);
-    expect(logDateError("2025-12-31", NOV15)).toBe(msg);
-    expect(logDateError("2027-01-10", NOV15)).toBe(msg);
-    expect(logDateError("", NOV15)).toBe(msg);
-    // In 2027 the latest date is still Dec 31, 2026 (2026 dates only).
-    expect(logDateError("2027-01-10", "2027-02-01")).toBe("Use a date between Jan 1, 2026 and Dec 31, 2026.");
+  it("accepts Jan 1, 2026 through today; rejects future dates, 2025 dates and a cleared field", () => {
+    for (const kind of ["irs", "income"] as const) {
+      expect(logDateError(kind, "2026-01-01", NOV15)).toBeNull();
+      expect(logDateError(kind, "2026-04-15", NOV15)).toBeNull();
+      expect(logDateError(kind, NOV15, NOV15)).toBeNull();
+      const msg = "Use a date between Jan 1, 2026 and Nov 15, 2026.";
+      expect(logDateError(kind, "2026-11-16", NOV15)).toBe(msg);
+      expect(logDateError(kind, "2025-12-31", NOV15)).toBe(msg);
+      expect(logDateError(kind, "2027-01-10", NOV15)).toBe(msg);
+      // A cleared date field is kept as "" (not snapped back to today) and rejected on submit.
+      expect(logDateError(kind, "", NOV15)).toBe(msg);
+    }
+  });
+
+  it("in 2027 an IRS payment may be dated up to today; income stays capped at Dec 31, 2026", () => {
+    const FEB1 = "2027-02-01";
+    expect(logDateError("irs", "2027-01-20", FEB1)).toBeNull();
+    expect(logDateError("irs", FEB1, FEB1)).toBeNull();
+    expect(logDateError("irs", "2027-02-02", FEB1)).toBe("Use a date between Jan 1, 2026 and Feb 1, 2027.");
+    expect(logDateError("income", "2027-01-20", FEB1)).toBe("Use a date between Jan 1, 2026 and Dec 31, 2026.");
+    expect(logDateError("income", "2026-12-31", FEB1)).toBeNull();
+  });
+
+  it("a late Q4 payment dated Jan 20, 2027 keeps its date and its penalty (vs. dated Dec 31, 2026)", () => {
+    const FEB1 = "2027-02-01";
+    const run = (date: string) => estimate(buildTaxInput(profile, [{ ...irsOn(date), amount: 8000 }], FEB1));
+    const late = run("2027-01-20");
+    expect(late.input.estimatedPaymentsMade).toEqual([{ date: "2027-01-20", amount: 8000 }]);
+    const q4 = (r: TaxResult) => estimateAccruedPenalty(r).perInstallment.find((i) => i.quarter === 4)!;
+    expect(q4(late).daysLate).toBeGreaterThan(0);
+    expect(q4(late).penalty).toBeGreaterThan(q4(run("2026-12-31")).penalty);
   });
 
   it("the entry keeps its payment date (not the logging time); server validation accepts a past date", () => {

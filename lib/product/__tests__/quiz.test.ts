@@ -293,6 +293,14 @@ describe("LIVE-PP-01 / SHARED-01: the field is only what was paid before logging
     expect(paidSoFarNote({ ...d, estimatedPaid: null })).toBe("Before logging $0 + In your log $1,000 = Total paid $1,000");
   });
 
+  it("cents add up as shown: 3,700.50 + 1,000.50 = 4,701", () => {
+    const withCents = [{ ...irs, amount: 1000.5 }];
+    const d = { ...draftFromProfile({ ...profile, estimatedPaid: 3700.5 }, withCents) };
+    expect(paidSoFarNote(d)).toBe("Before logging $3,700.50 + In your log $1,000.50 = Total paid $4,701");
+    const saved = draftToProfile(d, NOW)!;
+    expect(totalPaid(saved, withCents)).toBe(4701);
+  });
+
   it("6,000 + log 1,000 → total 7,000 (stored as entered, no guessing)", () => {
     const saved = saveWith(6000);
     expect(saved.estimatedPaid).toBe(6000);

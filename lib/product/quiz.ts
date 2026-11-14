@@ -3,7 +3,7 @@
 // No tax figures are computed here; the engine validates the finished answers (see `checkWithEngine`).
 
 import { estimate, TaxInputError, type FilingStatus, type StateCode } from "@/lib/tax";
-import { money } from "./format";
+import { money, moneyPay } from "./format";
 import { buildTaxInput } from "./input";
 import { isStateCode } from "./states";
 import type { LogEntry, Profile } from "./types";
@@ -106,7 +106,9 @@ export function paidSoFarLabel(draft: QuizDraft): string {
 export function paidSoFarNote(draft: QuizDraft): string | undefined {
   if (!draft.editing || !(draft.loggedIrs > 0)) return undefined;
   const lump = draft.estimatedPaid !== null && Number.isFinite(draft.estimatedPaid) && draft.estimatedPaid > 0 ? draft.estimatedPaid : 0;
-  return `Before logging ${money(lump)} + In your log ${money(draft.loggedIrs)} = Total paid ${money(lump + draft.loggedIrs)}`;
+  // moneyPay: whole dollars when whole, exact cents otherwise, so X + Y = Z as shown (rounding each part
+  // to whole dollars could show 3,701 + 1,001 = 4,701).
+  return `Before logging ${moneyPay(lump)} + In your log ${moneyPay(draft.loggedIrs)} = Total paid ${moneyPay(lump + draft.loggedIrs)}`;
 }
 
 /**

@@ -62,6 +62,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
    * the time it was logged.
    */
   const [date, setDate] = useState<string | null>(null);
+  /** The IRS date field's value: "" while cleared mid-edit (rejected on submit, never snapped back to today). */
   const irsDate = date ?? defaultIrsDate(asOf);
   const [readOpen, setReadOpen] = useState(false);
   /** The form was filled from a read payout and hasn't been logged yet. */
@@ -80,7 +81,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
       return;
     }
     const when = kind === "irs" ? irsDate : (date ?? asOf);
-    const dateError = logDateError(when, asOf);
+    const dateError = logDateError(kind, when, asOf);
     if (dateError) {
       setError(dateError);
       return;
@@ -213,9 +214,11 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
                   className="[&_input]:pr-2 [&_input]:pl-3"
                   value={kind === "irs" ? irsDate : (date ?? asOf)}
                   min={YEAR_START}
-                  max={latestLogDate(asOf)}
+                  max={latestLogDate(kind, asOf)}
                   onChange={(e) => {
-                    setDate(e.target.value || null);
+                    // IRS: keep the raw value, so clearing doesn't snap back to today. Income: as before, a
+                    // cleared date falls back to today and the row hides.
+                    setDate(kind === "irs" ? e.target.value : e.target.value || null);
                     setError(null);
                   }}
                 />
@@ -230,7 +233,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
           )}
           <p className="text-sm text-ink-2">
             {kind === "irs"
-              ? `A 2026 estimated payment, dated ${longDate(irsDate)}. It comes out of what you set aside.`
+              ? `A 2026 estimated payment${irsDate ? `, dated ${longDate(irsDate)}` : ""}. It comes out of what you set aside.`
               : "We treat each payment as profit. If it has big business expenses against it, log what’s left after them."}
           </p>
           {error && (

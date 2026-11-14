@@ -4,7 +4,7 @@
 import { estimate, setAsideForPayment, TaxInputError, type Flag, type FlagCode, type TaxInput, type TaxResult } from "@/lib/tax";
 import { longDate } from "./format";
 import { buildTaxInput } from "./input";
-import type { LogEntry, Profile } from "./types";
+import type { LogEntry, LogKind, Profile } from "./types";
 
 /** Free tier: this many "I got paid" entries (IRS payments are not counted). The next one needs Pro. */
 export const FREE_LOG_LIMIT = 3;
@@ -14,26 +14,30 @@ export function needsPro(used: number, pro: boolean): boolean {
   return !pro && used >= FREE_LOG_LIMIT;
 }
 
-/** First and last date a new log entry may carry: tax year 2026 only (LIVE-PP-02). */
+/** Earliest date a new log entry may carry, and the last day income counts for tax year 2026 (LIVE-PP-02). */
 export const LOG_YEAR_START = "2026-01-01";
 export const LOG_YEAR_END = "2026-12-31";
 
 /**
- * Latest date a new log entry (either kind) may carry: today (asOf), and never after Dec 31, 2026.
- * No future dates. A Jan 2027 Q4 payment can't be logged yet (controller ruling: 2026 dates only).
+ * Latest date a new log entry may carry: today (asOf); no future dates. Income counts for 2026 only through
+ * Dec 31, 2026. An IRS payment may be dated into 2027 up to asOf (a Q4 payment made in January keeps its real
+ * date, and the engine credits payments through asOf, so a late payment keeps its penalty).
  */
-export function latestLogDate(asOf: string): string {
-  return asOf > LOG_YEAR_END ? LOG_YEAR_END : asOf;
+export function latestLogDate(kind: LogKind, asOf: string): string {
+  return kind === "income" && asOf > LOG_YEAR_END ? LOG_YEAR_END : asOf;
 }
 
-/** The date an "I paid the IRS" entry starts with: today, within 2026. */
+/** The date an "I paid the IRS" entry starts with: today (asOf). */
 export function defaultIrsDate(asOf: string): string {
-  return latestLogDate(asOf);
+  return asOf;
 }
 
-/** The inline error for a log entry's date, or null when it is from Jan 1, 2026 through `latestLogDate(asOf)`. */
-export function logDateError(date: string, asOf: string): string | null {
-  const latest = latestLogDate(asOf);
+/**
+ * The inline error for a log entry's date, or null when it is from Jan 1, 2026 through
+ * `latestLogDate(kind, asOf)`. An empty or malformed date (a cleared date field) is an error.
+ */
+export function logDateError(kind: LogKind, date: string, asOf: string): string | null {
+  const latest = latestLogDate(kind, asOf);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < LOG_YEAR_START || date > latest) {
     return `Use a date between ${longDate(LOG_YEAR_START)} and ${longDate(latest)}.`;
   }

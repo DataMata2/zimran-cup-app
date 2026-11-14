@@ -1,6 +1,7 @@
 // Browser side of the AI routes: stream plain text from /api/explain and /api/ask, read a payout with
 // /api/read-payment, and turn a picked file into the request's image. No tax numbers here.
 
+import { ensureGuest } from "./guestClient";
 import type { LogEntry, Profile } from "./types";
 
 /** What the AI routes need to recompute the plan on the server. */
@@ -21,19 +22,9 @@ export class AiCallError extends Error {
   }
 }
 
-let guestReady: Promise<unknown> | null = null;
-
-/**
- * Make sure this browser has a guest cookie (idempotent), so the AI routes' per-guest limit applies to it
- * rather than the shared per-IP key. Once per page load; a failure is not fatal.
- */
-function ensureGuest(): Promise<unknown> {
-  guestReady ??= fetch("/api/guest", { method: "POST" }).catch(() => null);
-  return guestReady;
-}
-
 async function post(url: string, body: unknown, signal?: AbortSignal): Promise<Response> {
-  await ensureGuest();
+  // A guest cookie first, so the per-guest limit applies; shared with checkout and sync (./guestClient).
+  await ensureGuest(fetch);
   const res = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },

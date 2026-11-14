@@ -1,6 +1,7 @@
 // Pro adapter (client side). The truth about Pro lives on the server (GET /api/pro); the store's
 // pp.v1.pro flag is only a cache so the page knows right away. Checkout goes through POST /api/checkout.
 
+import { ensureGuest } from "./guestClient";
 import { isPro, setPro } from "./store";
 
 export type ProPlan = "yearly" | "monthly";
@@ -10,12 +11,15 @@ export const CHECKOUT_ERROR = "Checkout is unavailable right now. Try again in a
 
 interface Deps {
   fetch: typeof fetch;
+  /** Create the guest cookie, shared with the plan sync so only one guest id is minted (./guestClient). */
+  ensureGuest?: (fetchFn: typeof fetch) => Promise<unknown>;
   /** Send the browser to the checkout page. */
   navigate: (url: string) => void;
 }
 
 const browserDeps = (): Deps => ({
   fetch: (...args) => fetch(...args),
+  ensureGuest,
   navigate: (url) => window.location.assign(url),
 });
 
@@ -30,7 +34,7 @@ export async function startCheckout(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     // Idempotent; checkout would create the guest itself, so a failure here is not fatal.
-    await deps.fetch("/api/guest", { method: "POST" }).catch(() => null);
+    await (deps.ensureGuest ? deps.ensureGuest(deps.fetch) : deps.fetch("/api/guest", { method: "POST" })).catch(() => null);
     const res = await deps.fetch("/api/checkout", {
       method: "POST",
       headers: { "content-type": "application/json" },

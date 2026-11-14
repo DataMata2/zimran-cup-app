@@ -7,6 +7,7 @@
 // - if the restore check could not reach the server, nothing is sent for the rest of that page session.
 // Every failure is silent for the person and logged to the console only.
 
+import { ensureGuest } from "./guestClient";
 import { clearedBody, isLocalEmpty, parsePlanData, shouldRestore, syncBody, type PlanData } from "./planData";
 import { getPlanSnapshot, onStoreChange, restorePlan } from "./store";
 
@@ -36,7 +37,8 @@ function browserPageHide(flush: () => void): () => void {
 }
 
 const browserDeps = (): SyncDeps => ({
-  fetch: (...args) => fetch(...args),
+  // A save may create the guest: wait for the one guest request so it never mints a second id (./guestClient).
+  fetch: (input, init) => (init?.method === "PUT" ? ensureGuest(fetch) : Promise.resolve()).then(() => fetch(input, init)),
   snapshot: getPlanSnapshot,
   restore: restorePlan,
   onChange: onStoreChange,

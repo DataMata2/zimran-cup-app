@@ -1,6 +1,6 @@
-# Placeholder
+# Penaltyproof
 
-Placeholder product for Zimran Business Cup 2026. This repo currently holds the production plumbing only: guest mode (no sign-up), a Stripe test-mode paywall, Supabase storage and a health check. Product pages come later.
+Penaltyproof tells US freelancers how much to set aside from every client payment and the minimum to pay the IRS by each quarterly deadline, so they never owe an underpayment penalty (tax year 2026). No sign-up: guest mode, a Stripe test-mode Pro plan, Supabase storage, and Claude explaining numbers that a verified tax engine computes. Built for Zimran Business Cup 2026.
 
 ## Product: Penaltyproof
 
@@ -26,7 +26,7 @@ The model sees only display strings of the engine's results, plus filing status,
 
 ### Tests
 
-`pnpm test`: 234 tests in 14 files. 71 are the engine's (`lib/tax/__tests__`, including four personas checked by hand against the IRS worksheet, see below); 163 cover the product layer: input building, the meter, pay-now split, quiz validation, storage, server copy, the guest cookie, Pro helpers, CSV, AI facts, guards and post-checks.
+`pnpm test`: 245 tests in 15 files. 71 are the engine's (`lib/tax/__tests__`, including four personas checked by hand against the IRS worksheet, see below); 174 cover the product layer: input building, the meter, pay-now split, quiz validation, storage, server copy, the guest cookie, Pro helpers, CSV, AI facts, guards and post-checks.
 
 ### Guest mode
 

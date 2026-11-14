@@ -45,6 +45,15 @@ export function logDateError(kind: LogKind, date: string, asOf: string): string 
   return null;
 }
 
+/**
+ * The line under the "I paid the IRS" form. It names the entered date only while that date is valid, so an
+ * invalid or cleared date is never restated as "dated <bad date>" next to its error (R8-3).
+ */
+export function irsLogNote(date: string, asOf: string): string {
+  const dated = logDateError("irs", date, asOf) === null ? `, dated ${longDate(date)}` : "";
+  return `A 2026 estimated payment${dated}. It comes out of what you set aside.`;
+}
+
 /** The hint under the IRS date when the payment may already be in the pre-log lump (see `showIrsBackdateHint`). */
 export const IRS_BACKDATE_HINT = "Already counted in \u2018paid before logging\u2019? Then don\u2019t add it here.";
 

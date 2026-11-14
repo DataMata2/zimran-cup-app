@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { estimate, estimateAccruedPenalty, type TaxResult } from "@/lib/tax";
 import { buildTaxInput } from "@/lib/product/input";
 import {
-  computePlan, defaultIrsDate, FREE_LOG_LIMIT, IRS_BACKDATE_HINT, logDateError, needsPro, planNotes, showIrsBackdateHint,
+  computePlan, defaultIrsDate, FREE_LOG_LIMIT, IRS_BACKDATE_HINT, irsLogNote, logDateError, needsPro, planNotes, showIrsBackdateHint,
 } from "@/lib/product/plan";
 import { buildCsv } from "@/lib/product/csv";
 import { isLogEntry } from "@/lib/product/validate";
@@ -321,6 +321,16 @@ describe("LIVE-PP-02: the IRS payment date", () => {
     const log = [irsOn("2026-04-15")];
     const csv = buildCsv({ log, result: estimate(buildTaxInput(profile, log, NOV15)), asOf: NOV15 });
     expect(csv).toContain("2026-04-15,Estimated tax paid to IRS,,2000.00,");
+  });
+});
+
+describe("R8-3: the IRS form's note never restates an invalid date", () => {
+  it("names a valid date, and leaves an invalid, future or cleared one out", () => {
+    expect(irsLogNote("2026-04-15", "2026-11-15")).toBe("A 2026 estimated payment, dated Apr 15, 2026. It comes out of what you set aside.");
+    const plain = "A 2026 estimated payment. It comes out of what you set aside.";
+    expect(irsLogNote("2027-01-10", "2026-11-15")).toBe(plain);
+    expect(irsLogNote("2025-12-31", "2026-11-15")).toBe(plain);
+    expect(irsLogNote("", "2026-11-15")).toBe(plain);
   });
 });
 

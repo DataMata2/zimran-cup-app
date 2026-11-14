@@ -13,6 +13,7 @@ import {
   defaultIrsDate,
   FREE_LOG_LIMIT,
   IRS_BACKDATE_HINT,
+  irsLogNote,
   latestLogDate,
   LOG_YEAR_END as YEAR_END,
   LOG_YEAR_START as YEAR_START,
@@ -58,6 +59,12 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
   const [amount, setAmount] = useState<number | null>(null);
   const [payer, setPayer] = useState("");
   const [error, setError] = useState<string | null>(null);
+  /** Which field the error is about: it gets the red outline and aria-invalid (R8-3). */
+  const [errorOn, setErrorOn] = useState<"amount" | "date">("amount");
+  const fail = (message: string, on: "amount" | "date") => {
+    setError(message);
+    setErrorOn(on);
+  };
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   /**
    * Date the money moved; null = the default: today (asOf) for income, `defaultIrsDate(asOf)` for an IRS
@@ -74,19 +81,19 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (amount === null || !(amount > 0)) {
-      setError(kind === "income" ? "Enter the amount you were paid." : "Enter the amount you paid the IRS.");
+      fail(kind === "income" ? "Enter the amount you were paid." : "Enter the amount you paid the IRS.", "amount");
       return;
     }
     if (kind === "income" && date === null && asOf > YEAR_END) {
       // Today is in 2027: income received now belongs to next year. Show the date field to pick a 2026 date.
       setDate(YEAR_END);
-      setError("Income received in 2027 counts toward next year. Enter the 2026 date you were paid.");
+      fail("Income received in 2027 counts toward next year. Enter the 2026 date you were paid.", "date");
       return;
     }
     const when = kind === "irs" ? irsDate : (date ?? asOf);
     const dateError = logDateError(kind, when, asOf);
     if (dateError) {
-      setError(dateError);
+      fail(dateError, "date");
       return;
     }
     if (kind === "income" && needsPro(added, pro)) {
@@ -183,8 +190,8 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
                   setError(null);
                   setConfirmation(null);
                 }}
-                invalid={error !== null}
-                aria-describedby={error ? "log-error" : undefined}
+                invalid={error !== null && errorOn === "amount"}
+                aria-describedby={error && errorOn === "amount" ? "log-error" : undefined}
                 enterKeyHint="done"
               />
             </Field>
@@ -222,6 +229,8 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
                   value={kind === "irs" ? irsDate : (date ?? asOf)}
                   min={YEAR_START}
                   max={latestLogDate(kind, asOf)}
+                  invalid={error !== null && errorOn === "date"}
+                  aria-describedby={error && errorOn === "date" ? "log-error" : undefined}
                   onChange={(e) => {
                     // IRS: keep the raw value, so clearing doesn't snap back to today. Income: as before, a
                     // cleared date falls back to today and the row hides.
@@ -240,7 +249,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
           )}
           <p className="text-sm text-ink-2">
             {kind === "irs"
-              ? `A 2026 estimated payment${irsDate ? `, dated ${longDate(irsDate)}` : ""}. It comes out of what you set aside.`
+              ? irsLogNote(irsDate, asOf)
               : "We treat each payment as profit. If it has big business expenses against it, log what’s left after them."}
           </p>
           {error && (

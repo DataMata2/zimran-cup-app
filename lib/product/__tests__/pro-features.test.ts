@@ -5,7 +5,7 @@ import {
   buildAnnualizedInput, computeAnnualizedPlan, payments1099, summarizeAnnualized,
 } from "@/lib/product/annualizedPlan";
 import { buildCsv, csvField, csvRows } from "@/lib/product/csv";
-import { entriesUsed, nextAdded } from "@/lib/product/freeLimit";
+import { countedEntries, entriesUsed, nextAdded } from "@/lib/product/freeLimit";
 import { needsPro } from "@/lib/product/plan";
 import type { LogEntry, Profile } from "@/lib/product/types";
 
@@ -201,6 +201,13 @@ describe("free-limit counter", () => {
     expect(needsPro(entriesUsed(added, len), true)).toBe(false);
   });
 
+  it("A6: counts only \"I got paid\" entries, never IRS payments", () => {
+    const log = [{ kind: "income" as const }, { kind: "irs" as const }, { kind: "irs" as const }, { kind: "income" as const }];
+    expect(countedEntries(log)).toBe(2);
+    expect(entriesUsed(0, countedEntries(log))).toBe(2);
+    expect(needsPro(entriesUsed(0, countedEntries([...log, { kind: "irs" as const }])), false)).toBe(false);
+  });
+
   it("counts entries a log started with (the example's), and never less than the log", () => {
     expect(entriesUsed(0, 1)).toBe(1);
     expect(nextAdded(0, 1)).toBe(2);
@@ -232,9 +239,13 @@ describe("store counter", () => {
     expect(store.getAddedCount()).toBe(1);
     const a = store.addLogEntry({ kind: "income", amount: 2, payer: "", date: "2026-05-02", setAside: 0 });
     const b = store.addLogEntry({ kind: "irs", amount: 3, payer: "", date: "2026-05-03", setAside: 0 });
+    // A6: IRS payments are free, only "I got paid" entries count.
+    expect(store.getAddedCount()).toBe(2);
+    const c = store.addLogEntry({ kind: "income", amount: 4, payer: "", date: "2026-05-04", setAside: 0 });
     expect(store.getAddedCount()).toBe(3);
     store.removeLogEntry(a.id);
     store.removeLogEntry(b.id);
+    store.removeLogEntry(c.id);
     expect(store.getLog()).toHaveLength(1);
     expect(store.getAddedCount()).toBe(3);
     expect(data.get(store.STORAGE_KEYS.added)).toBe("3");

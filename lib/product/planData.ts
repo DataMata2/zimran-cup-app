@@ -1,6 +1,7 @@
 // The server copy of a guest's plan: what is stored, how it is checked, and when it replaces local data.
 // Pure (no Next or browser imports) so the API route and the client sync share it and it is unit-tested.
 
+import { countedEntries } from "./freeLimit";
 import type { LogEntry, Profile } from "./types";
 import { isLogEntry, isProfile } from "./validate";
 
@@ -32,7 +33,7 @@ export function parsePlanData(value: unknown): PlanData | null {
   if (typeof added !== "number" || !Number.isSafeInteger(added) || added < 0) return null;
   const profile = o.profile === null ? null : pickProfile(o.profile as Profile);
   if (profile === null && o.log.length > 0) return null;
-  return { v: 1, profile, log: (o.log as LogEntry[]).map(pickEntry), added: Math.max(added, o.log.length) };
+  return { v: 1, profile, log: (o.log as LogEntry[]).map(pickEntry), added: Math.max(added, countedEntries(o.log as LogEntry[])) };
 }
 
 /** Keep only the known fields, so nothing extra is stored. */

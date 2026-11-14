@@ -5,7 +5,7 @@
 
 import { useSyncExternalStore } from "react";
 import type { LogEntry, NewLogEntry, Profile } from "./types";
-import { entriesUsed, nextAdded } from "./freeLimit";
+import { countedEntries, entriesUsed, nextAdded } from "./freeLimit";
 import { isLogEntry, isProfile } from "./validate";
 
 export const STORAGE_KEYS = {
@@ -118,8 +118,8 @@ const readAddedRaw = cachedReader<number>(
   0,
 );
 
-/** Entries counted against the free tier: never fewer than are in the log now. */
-const readAdded = (): number => entriesUsed(readAddedRaw(), readLog().length);
+/** "I got paid" entries counted against the free tier: never fewer than are in the log now. */
+const readAdded = (): number => entriesUsed(readAddedRaw(), countedEntries(readLog()));
 
 function newId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID();
@@ -162,14 +162,15 @@ export function getLog(): readonly LogEntry[] {
 export function addLogEntry(entry: NewLogEntry): LogEntry {
   const saved = toEntry(entry, new Date().toISOString());
   const log = readLog();
-  writeRaw(STORAGE_KEYS.added, String(nextAdded(readAddedRaw(), log.length)));
+  // Only "I got paid" entries count toward the free tier; IRS payments are free.
+  if (entry.kind === "income") writeRaw(STORAGE_KEYS.added, String(nextAdded(readAddedRaw(), countedEntries(log))));
   writeRaw(STORAGE_KEYS.log, JSON.stringify([...log, saved]));
   emit();
   return saved;
 }
 
 /**
- * How many entries were added to this log, counting deleted ones (at least the current log length).
+ * How many "I got paid" entries were added to this log, counting deleted ones (at least as many as it holds now).
  * The free tier counts this, so deleting an entry doesn't free a slot.
  */
 export function getAddedCount(): number {

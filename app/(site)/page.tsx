@@ -117,7 +117,7 @@ export default function LandingPage() {
                 $59 per tax year — less than one penalty.
               </h2>
               <p className="mt-2 max-w-[60ch] text-sm text-ink-2">
-                Your plan and your first three logged payments are free. Pro adds unlimited logging, reading
+                Your plan, every IRS payment you log and your first three client payments are free. Pro adds unlimited logging, reading
                 payouts from a screenshot, a plan for uneven income, and a CSV for your accountant. Or $9.99 a
                 month.
               </p>

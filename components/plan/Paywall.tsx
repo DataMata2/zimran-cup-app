@@ -12,8 +12,8 @@ export type PaywallReason = "limit" | "upgrade" | "screenshot" | "ask" | "annual
 
 const HEADINGS: Record<PaywallReason, { title: string; body: string }> = {
   limit: {
-    title: `You've used your ${FREE_LOG_LIMIT} free entries`,
-    body: "Pro keeps logging every payment, so your set-aside and meter stay right through April.",
+    title: `You've logged your ${FREE_LOG_LIMIT} free client payments`,
+    body: "Pro logs every client payment, so your set-aside stays right through April. Logging IRS payments stays free.",
   },
   upgrade: { title: "Penaltyproof Pro", body: "Log every payment for the whole tax year, and more." },
   screenshot: {
@@ -46,7 +46,8 @@ const PLAN_OPTIONS = [
 
 const FEATURES: { label: string; free: string | boolean; pro: string | boolean }[] = [
   { label: "Your plan, deadlines and calendar file", free: true, pro: true },
-  { label: "Payment log", free: `${FREE_LOG_LIMIT} entries`, pro: "Unlimited" },
+  { label: "Log client payments", free: `${FREE_LOG_LIMIT} payments`, pro: "Unlimited" },
+  { label: "Log IRS payments", free: true, pro: true },
   { label: "Read payouts from a screenshot", free: false, pro: true },
   { label: "Annualized plan for uneven income", free: false, pro: true },
   { label: "“Ask why” chat", free: false, pro: true },

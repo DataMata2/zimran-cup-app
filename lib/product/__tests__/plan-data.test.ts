@@ -26,6 +26,10 @@ describe("parsePlanData", () => {
     expect(extra).toEqual(stored);
   });
 
+  it("A6: IRS entries don't raise the floor", () => {
+    expect(parsePlanData({ profile, log: [entry, { ...entry, id: "b", kind: "irs" }], added: 0 })?.added).toBe(1);
+  });
+
   it("never lets added be below the log length, and defaults it to the log length", () => {
     expect(parsePlanData({ profile, log: [entry, { ...entry, id: "b" }], added: 1 })?.added).toBe(2);
     expect(parsePlanData({ profile, log: [entry] })?.added).toBe(1);

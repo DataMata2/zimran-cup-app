@@ -9,6 +9,7 @@ import { SegmentedControl } from "@/components/kit/SegmentedControl";
 import { longDate, moneyCents, pct, shortDate } from "@/lib/product/format";
 import { penaltyMeter } from "@/lib/product/meter";
 import { nextStepText } from "@/lib/product/payNow";
+import { countedEntries } from "@/lib/product/freeLimit";
 import { FREE_LOG_LIMIT, needsPro } from "@/lib/product/plan";
 import { addLogEntry, removeLogEntry, useAddedCount } from "@/lib/product/store";
 import type { LogEntry, LogKind } from "@/lib/product/types";
@@ -40,7 +41,7 @@ type Confirmation = { kind: "income"; amount: number; setAside: number; rate: nu
 /** The return mechanic: the paid-to-IRS meter, the "I just got paid" row, and the log of entries. */
 export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
   const meter = penaltyMeter(result, log);
-  /** Entries ever added to this log (deleting one doesn't free a slot). */
+  /** "I got paid" entries ever added to this log (deleting one doesn't free a slot; IRS payments don't count). */
   const added = useAddedCount();
 
   const [kind, setKind] = useState<LogKind>("income");
@@ -72,7 +73,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
       setError(`Use a date between ${longDate(YEAR_START)} and ${longDate(latest)}.`);
       return;
     }
-    if (needsPro(added, pro)) {
+    if (kind === "income" && needsPro(added, pro)) {
       onNeedPro("limit");
       return;
     }
@@ -113,6 +114,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
 
   const entries = [...log].reverse();
   const used = Math.min(added, FREE_LOG_LIMIT);
+  const deletedCounted = added > countedEntries(log);
 
   return (
     <Card as="section" raised padding="none" aria-labelledby="meter-title" className="overflow-hidden">
@@ -261,7 +263,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
             <p className="text-sm text-accent-ink">Pro: unlimited logging</p>
           ) : (
             <p className="text-sm text-ink-2">
-              {used} of {FREE_LOG_LIMIT} free entries used{added > log.length ? ", deleted ones included" : ""}
+              {used} of {FREE_LOG_LIMIT} free client payments logged{deletedCounted ? ", deleted ones included" : ""}. IRS payments are free
               <span aria-hidden> · </span>
               <button
                 type="button"

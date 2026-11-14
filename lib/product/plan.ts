@@ -5,10 +5,10 @@ import { estimate, TaxInputError, type Flag, type FlagCode, type TaxInput, type 
 import { buildTaxInput } from "./input";
 import type { LogEntry, Profile } from "./types";
 
-/** Free tier: this many logged entries (income + IRS payments together). The next one needs Pro. */
+/** Free tier: this many "I got paid" entries (IRS payments are not counted). The next one needs Pro. */
 export const FREE_LOG_LIMIT = 3;
 
-/** True when adding one more entry needs Pro. `used` = entries ever added (see ./freeLimit), not the log length. */
+/** True when adding one more entry needs Pro. `used` = "I got paid" entries ever added (see ./freeLimit), not the log length. */
 export function needsPro(used: number, pro: boolean): boolean {
   return !pro && used >= FREE_LOG_LIMIT;
 }

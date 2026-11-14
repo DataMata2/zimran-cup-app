@@ -113,29 +113,8 @@ export function Paywall({ reason, onClose }: { reason: PaywallReason | null; onC
           </button>
         </div>
 
-        <table className="mt-5 w-full border-collapse text-left">
-          <caption className="sr-only">Free and Pro compared</caption>
-          <thead>
-            <tr className="border-b border-line">
-              <th scope="col" className="py-2 text-xs font-semibold text-ink-3">
-                <span className="sr-only">Feature</span>
-              </th>
-              <th scope="col" className="w-20 py-2 text-center text-xs font-semibold text-ink-3">Free</th>
-              <th scope="col" className="w-24 py-2 text-center text-xs font-semibold text-accent-ink">Pro</th>
-            </tr>
-          </thead>
-          <tbody>
-            {FEATURES.map((f) => (
-              <tr key={f.label} className="border-b border-line last:border-b-0">
-                <th scope="row" className="py-2.5 pr-2 text-sm font-normal text-ink">{f.label}</th>
-                <td className="py-2.5 text-center"><span className="inline-flex justify-center"><Cell value={f.free} /></span></td>
-                <td className="bg-accent-soft/50 py-2.5 text-center"><span className="inline-flex justify-center"><Cell value={f.pro} pro /></span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
 
-        <div className="mt-6">
+        <div className="mt-5">
           <SegmentedControl options={PLAN_OPTIONS} value={plan} onChange={setPlan} aria-label="Billing" fullWidth />
           <p className="mt-4 flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <span className="text-3xl font-bold tracking-[-0.02em] text-ink">{price.price}</span>
@@ -156,7 +135,29 @@ export function Paywall({ reason, onClose }: { reason: PaywallReason | null; onC
         )}
         <p className="mt-3 text-xs text-ink-3">Demo: use test card 4242 4242 4242 4242, any future date, any CVC.</p>
 
-        <Button variant="ghost" fullWidth className="mt-2" onClick={onClose}>
+        <table className="mt-6 w-full border-collapse text-left">
+          <caption className="sr-only">Free and Pro compared</caption>
+          <thead>
+            <tr className="border-b border-line">
+              <th scope="col" className="py-2 text-xs font-semibold text-ink-3">
+                <span className="sr-only">Feature</span>
+              </th>
+              <th scope="col" className="w-20 py-2 text-center text-xs font-semibold text-ink-3">Free</th>
+              <th scope="col" className="w-24 py-2 text-center text-xs font-semibold text-accent-ink">Pro</th>
+            </tr>
+          </thead>
+          <tbody>
+            {FEATURES.map((f) => (
+              <tr key={f.label} className="border-b border-line last:border-b-0">
+                <th scope="row" className="py-2 pr-2 text-sm font-normal text-ink">{f.label}</th>
+                <td className="py-2 text-center"><span className="inline-flex justify-center"><Cell value={f.free} /></span></td>
+                <td className="bg-accent-soft/50 py-2 text-center"><span className="inline-flex justify-center"><Cell value={f.pro} pro /></span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <Button variant="ghost" fullWidth className="mt-3" onClick={onClose}>
           Not now
         </Button>
       </div>

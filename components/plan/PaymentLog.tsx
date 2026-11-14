@@ -8,7 +8,7 @@ import { Field, MoneyInput, TextInput } from "@/components/kit/Field";
 import { ProgressBar } from "@/components/kit/ProgressBar";
 import { SegmentedControl } from "@/components/kit/SegmentedControl";
 import { longDate, money, moneyCents, pct, shortDate } from "@/lib/product/format";
-import { meterLabel, meterSegments, penaltyMeter } from "@/lib/product/meter";
+import { meterLabel, meterPctLabel, meterSegments, penaltyMeter } from "@/lib/product/meter";
 import { FREE_LOG_LIMIT, needsPro, payTarget } from "@/lib/product/plan";
 import { addLogEntry, removeLogEntry } from "@/lib/product/store";
 import type { LogEntry, LogKind } from "@/lib/product/types";
@@ -124,8 +124,8 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
         />
 
         <div className="mt-4 flex flex-col gap-3">
-          <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-x-3">
-            <span aria-hidden className="text-base font-medium text-ink-2">
+          <div className="grid grid-cols-[8.25rem_minmax(0,1fr)] items-center gap-x-3">
+            <span aria-hidden className="whitespace-nowrap text-base font-medium text-ink-2">
               {kind === "income" ? "I just got paid" : "I paid the IRS"}
             </span>
             <Field label={kind === "income" ? "Amount you were paid" : "Amount you paid the IRS"} hideLabel>
@@ -143,7 +143,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
             </Field>
           </div>
           {kind === "income" ? (
-            <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-x-3">
+            <div className="grid grid-cols-[8.25rem_minmax(0,1fr)] items-center gap-x-3">
               <span aria-hidden className="text-right text-base font-medium text-ink-2">
                 from
               </span>
@@ -181,7 +181,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
                   </p>
                   <p className="mt-0.5 text-sm text-ink-2">
                     {pct(confirmation.rate, 0)} of {moneyCents(confirmation.amount)}
-                    {confirmation.payer ? ` from ${confirmation.payer}` : ""}. Move it to savings now.
+                    {confirmation.payer ? ` from ${confirmation.payer}` : ""}. Move it to savings now. You&rsquo;re {meterPctLabel(meter)}% penalty-proof.
                   </p>
                 </>
               ) : (

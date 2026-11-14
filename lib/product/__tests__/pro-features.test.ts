@@ -145,9 +145,9 @@ describe("annualized plan summary", () => {
     expect(html).not.toMatch(/Annualized <\/span>\$0</);
   });
 
-  it("PP-QA-02: no reconciliation when nothing is past due; the method label is the overseer's text", () => {
+  it("PP-QA-02: no reconciliation when nothing is past due; the method label is the reviewer's exact wording", () => {
     expect(ANNUALIZED_METHOD_LABEL).toBe(
-      "Annualized method: if most of your income came late in the year, the IRS lets you pay less early. Based on the payment dates you logged.",
+      "Annualized method: if most of your income came late in the year, the IRS lets you pay less early. Uses the dates of the client payments you logged; the profit you entered in the questions is counted as earned evenly from January to the month you answered.",
     );
     const lumpy: Profile = { ...profile, ytdIncome: 0, expectedIncome: 60000, priorYearTax: null, priorYearAgi: null };
     const plan = computeAnnualizedPlan(lumpy, [entry({ amount: 2000, date: "2026-02-10" })], "2026-04-01");

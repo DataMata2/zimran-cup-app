@@ -9,7 +9,7 @@ import type { LogEntry, Profile } from "./types";
 
 /** PP-QA-02: the card's label for the method and its assumption. */
 export const ANNUALIZED_METHOD_LABEL =
-  "Annualized method: if most of your income came late in the year, the IRS lets you pay less early. Based on the payment dates you logged.";
+  "Annualized method: if most of your income came late in the year, the IRS lets you pay less early. Uses the dates of the client payments you logged; the profit you entered in the questions is counted as earned evenly from January to the month you answered.";
 
 /** Smallest saving worth a headline: a whole dollar (smaller differences are rounding). */
 const MIN_SAVING = 1;

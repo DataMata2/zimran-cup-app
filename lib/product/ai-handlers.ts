@@ -112,7 +112,7 @@ async function guardedText(opts: {
   /** What the person typed (Ask): any number in it is allowed. */
   loose?: string[];
   fallback: () => string;
-}): Promise<{ text: string; outcome: "clean" | "retried" | "fallback" }> {
+}): Promise<{ text: string; outcome: GuardOutcome }> {
   const { deps, request, route, system, messages, facts, loose = [], fallback } = opts;
   const warn = deps.warn ?? console.warn;
   const first = await generate(deps, request, system, messages);
@@ -132,14 +132,17 @@ async function guardedText(opts: {
     if (again.length === 0) return { text: second, outcome: "retried" };
     warn(`${route}: numbers not in the plan after the retry, using the template: ${again.map((n) => n.raw).join(", ")}`);
   }
-  return { text: fallback(), outcome: "fallback" };
+  return { text: fallback(), outcome: "template" };
 }
+
+/** Which path the answer took through the guard; sent as the `x-guard` response header. */
+export type GuardOutcome = "clean" | "retried" | "template";
 
 /** Characters per chunk when the checked text is streamed out (keeps the client's typing effect). */
 const CHUNK_CHARS = 24;
 
 /** Send already-checked text as a plain-text stream in small chunks. */
-function checkedTextResponse(text: string): Response {
+function checkedTextResponse(text: string, outcome: GuardOutcome): Response {
   const encoder = new TextEncoder();
   let i = 0;
   const body = new ReadableStream<Uint8Array>({
@@ -152,7 +155,7 @@ function checkedTextResponse(text: string): Response {
       i += CHUNK_CHARS;
     },
   });
-  return new Response(body, { headers: TEXT_HEADERS });
+  return new Response(body, { headers: { ...TEXT_HEADERS, "x-guard": outcome } });
 }
 
 /** POST /api/explain `{ profile, log, asOf }` → 4–6 sentences explaining the plan, checked, then sent as plain text. */
@@ -163,7 +166,7 @@ export function explainHandler(deps: AiDeps) {
       const { profile, log, result } = parsePlanRequest(body);
       const facts = planFacts(result, log, profile);
       const user = explainUserMessage(facts);
-      const { text } = await guardedText({
+      const { text, outcome } = await guardedText({
         deps,
         request,
         route: "explain",
@@ -172,7 +175,7 @@ export function explainHandler(deps: AiDeps) {
         facts: [user],
         fallback: () => templateExplanation(facts),
       });
-      return checkedTextResponse(text);
+      return checkedTextResponse(text, outcome);
     }, "POST /api/explain", request);
 }
 
@@ -191,7 +194,7 @@ export function askHandler(deps: AiDeps) {
       const facts = planFacts(result, log, profile);
       const system = askSystem(facts, logFacts(log), profile.isExample ? "Start with my own numbers" : "Edit my answers");
       const question = messages[messages.length - 1]!.content;
-      const { text } = await guardedText({
+      const { text, outcome } = await guardedText({
         deps,
         request,
         route: "ask",
@@ -202,7 +205,7 @@ export function askHandler(deps: AiDeps) {
         loose: messages.filter((m) => m.role === "user").map((m) => m.content),
         fallback: () => safeAskAnswer(facts, question),
       });
-      return checkedTextResponse(`${text.trim()}\n\n${ASK_DISCLAIMER}`);
+      return checkedTextResponse(`${text.trim()}\n\n${ASK_DISCLAIMER}`, outcome);
     }, "POST /api/ask", request);
 }
 

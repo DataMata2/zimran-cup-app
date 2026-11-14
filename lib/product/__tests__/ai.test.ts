@@ -16,6 +16,7 @@ import { ASK_SAFE_ANSWER, extractNumbers, safeAskAnswer, templateExplanation, un
 import {
   ASK_DISCLAIMER,
   askSystem,
+  EXPLAIN_SYSTEM,
   dollarAmounts,
   explainUserMessage,
   knownDollarAmounts,
@@ -216,6 +217,23 @@ describe("planFacts", () => {
     expect(facts.headline.says).toMatch(/^Missed Q3 payment: pay \$[\d,]+ now\.$/);
     expect(facts.today).toBe("Nov 14, 2026");
   });
+  it("live-test fixes: one labelled meter block, past-due wording, the sentence limit", () => {
+    expect(facts).not.toHaveProperty("paidSoFar");
+    expect(Object.keys(facts.paidToIrsMeter)).toEqual([
+      "says", "estimatedTaxPaymentsFor2026", "paidIncludingWithholdingCreditedThroughNextDeadline",
+      "minimumDueThroughNextDeadline", "setAsideNotYetPaidToIrs",
+    ]);
+    // W-2 withholding: estimated payments and the meter's figure differ, and each key says what it counts.
+    const w2 = { ...profile, isExample: false, w2Wages: 60000, w2Withholding: 7000, estimatedPaid: 0 };
+    const f = planFacts(parsePlanRequest({ profile: w2, log: [], asOf: ASOF }).result, [], w2);
+    expect(f.paidToIrsMeter.estimatedTaxPaymentsFor2026).toBe("$0");
+    expect(f.paidToIrsMeter.paidIncludingWithholdingCreditedThroughNextDeadline).toBe("$7,000");
+    expect(EXPLAIN_SYSTEM).toContain("4 to 6 sentences, never more");
+    for (const prompt of [EXPLAIN_SYSTEM, askSystem(facts, logFacts(log))]) {
+      expect(prompt).toContain("Only if headline.accruedPenalty is present was a quarter paid late");
+      expect(prompt).toContain("missed and are still unpaid");
+    }
+  });
   it("puts the facts into the prompts", () => {
     expect(explainUserMessage(facts)).toContain(facts.safeHarbor.requiredFor2026);
     const sys = askSystem(facts, logFacts(log));
@@ -380,6 +398,15 @@ describe("PP-QA-09: the number guard blocks unknown numbers before they reach th
     expect(text).not.toContain("987");
     expect(calls).toHaveLength(2);
     expect(calls[1]!.system).toContain("Use only these exact figures:");
+  });
+
+  it("x-guard header says which path the answer took, on explain and ask", async () => {
+    expect((await run(explainHandler, [clean])).res.headers.get("x-guard")).toBe("clean");
+    expect((await run(explainHandler, [invented, clean])).res.headers.get("x-guard")).toBe("retried");
+    expect((await run(explainHandler, [invented, invented])).res.headers.get("x-guard")).toBe("template");
+    expect((await run(askHandler, [clean], ask)).res.headers.get("x-guard")).toBe("clean");
+    expect((await run(askHandler, [invented, clean], ask)).res.headers.get("x-guard")).toBe("retried");
+    expect((await run(askHandler, [invented, invented], ask)).res.headers.get("x-guard")).toBe("template");
   });
 
   it("explain: first output fails, the retry is clean → the clean text", async () => {

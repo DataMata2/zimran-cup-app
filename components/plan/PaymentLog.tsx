@@ -154,7 +154,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
         )}
 
         <div className="mt-4 flex flex-col gap-3">
-          <div className="grid grid-cols-[8.25rem_minmax(0,1fr)] items-center gap-x-3">
+          <div className="grid grid-cols-[8.25rem_minmax(0,1fr)] items-center gap-x-3 max-[400px]:grid-cols-1 max-[400px]:gap-y-1">
             <span aria-hidden className="whitespace-nowrap text-base font-bold text-ink">
               {kind === "income" ? "I just got paid" : "I paid the IRS"}
             </span>
@@ -173,8 +173,8 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
             </Field>
           </div>
           {kind === "income" && (
-            <div className="grid grid-cols-[8.25rem_minmax(0,1fr)] items-center gap-x-3">
-              <span aria-hidden className="text-right text-base font-bold text-ink">
+            <div className="grid grid-cols-[8.25rem_minmax(0,1fr)] items-center gap-x-3 max-[400px]:grid-cols-1 max-[400px]:gap-y-1">
+              <span aria-hidden className="text-right text-base font-bold text-ink max-[400px]:text-left">
                 from
               </span>
               <Field label="Who paid you (optional)" hideLabel>
@@ -190,8 +190,8 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
             </div>
           )}
           {kind === "income" && date !== null && (
-            <div className="grid grid-cols-[8.25rem_minmax(0,1fr)] items-center gap-x-3">
-              <span aria-hidden className="text-right text-base font-bold text-ink">
+            <div className="grid grid-cols-[8.25rem_minmax(0,1fr)] items-center gap-x-3 max-[400px]:grid-cols-1 max-[400px]:gap-y-1">
+              <span aria-hidden className="text-right text-base font-bold text-ink max-[400px]:text-left">
                 on
               </span>
               <Field label="Date you were paid" hideLabel>

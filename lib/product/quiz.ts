@@ -28,13 +28,11 @@ export interface QuizDraft {
   loggedIncome: number;
   loggedCount: number;
   /**
-   * Editing only: IRS payments already logged on /plan (sum). "Paid so far" holds only the quiz lump
-   * (profile.estimatedPaid); the logged IRS payments stay in the log and are never re-entered here
-   * (one source of truth). See `paidSoFarNote`.
+   * Editing only: IRS payments already logged on /plan (sum). The field holds only what was paid before
+   * logging (profile.estimatedPaid); the logged IRS payments stay in the log and are never re-entered here
+   * (one source of truth). See `paidSoFarNote` for the sum line.
    */
   loggedIrs: number;
-  /** Editing only: the saved profile's lump (profile.estimatedPaid), to spot an entry that includes the log. */
-  lumpAtOpen: number;
   filingStatus: QuizFilingStatus | null;
   state: StateCode | null;
   ytdIncome: number | null;
@@ -57,7 +55,6 @@ export function emptyDraft(): QuizDraft {
     loggedIncome: 0,
     loggedCount: 0,
     loggedIrs: 0,
-    lumpAtOpen: 0,
     filingStatus: null,
     state: null,
     ytdIncome: null,
@@ -102,26 +99,14 @@ export function paidSoFarLabel(draft: QuizDraft): string {
 }
 
 /**
- * Editing with IRS payments in the log, and the entered amount is at least the saved lump plus the logged
- * IRS total: it evidently includes the logged payments, so it is counted once (see draftToProfile).
- */
-export function includesLoggedIrs(draft: QuizDraft): boolean {
-  const v = draft.estimatedPaid;
-  return (
-    draft.editing && draft.loggedIrs > 0 && v !== null && Number.isFinite(v) && v >= draft.lumpAtOpen + draft.loggedIrs
-  );
-}
-
-/**
- * The read-only note under "Paid so far" while editing with IRS payments in the log, else undefined.
- * The field is only the quiz lump; the note says the logged payments are counted separately and gives the
- * total the plan uses (lump + logged IRS payments, exactly as buildTaxInput sums them).
+ * The read-only sum line under the field while editing with IRS payments in the log, else undefined.
+ * The field is always only what was paid before logging (stored as profile.estimatedPaid, never adjusted);
+ * the logged IRS payments stay in the log. Z = field + log, exactly what buildTaxInput sums (LIVE-PP-01).
  */
 export function paidSoFarNote(draft: QuizDraft): string | undefined {
   if (!draft.editing || !(draft.loggedIrs > 0)) return undefined;
-  if (includesLoggedIrs(draft)) return `Looks like this includes the ${money(draft.loggedIrs)} you logged; we’ll count it once.`;
   const lump = draft.estimatedPaid !== null && Number.isFinite(draft.estimatedPaid) && draft.estimatedPaid > 0 ? draft.estimatedPaid : 0;
-  return `Not counting the ${money(draft.loggedIrs)} you logged as IRS payments. Those stay in your log. Total paid: ${money(lump + draft.loggedIrs)}.`;
+  return `Before logging ${money(lump)} + In your log ${money(draft.loggedIrs)} = Total paid ${money(lump + draft.loggedIrs)}`;
 }
 
 /**
@@ -141,7 +126,6 @@ export function draftFromProfile(p: Profile, log: readonly LogEntry[] = []): Qui
     loggedIncome: logged.total,
     loggedCount: logged.count,
     loggedIrs: loggedIrsOf(log),
-    lumpAtOpen: p.estimatedPaid,
     filingStatus: status,
     state: p.state,
     ytdIncome: p.ytdIncome + logged.total,
@@ -152,7 +136,7 @@ export function draftFromProfile(p: Profile, log: readonly LogEntry[] = []): Qui
     priorKnown,
     priorYearTax: priorKnown ? p.priorYearTax : null,
     priorYearAgi: priorKnown ? p.priorYearAgi : null,
-    // Only the quiz lump: logged IRS payments stay in the log (shown in the note, not in the field).
+    // Only what was paid before logging: logged IRS payments stay in the log (shown in the sum line).
     estimatedPaid: p.estimatedPaid,
   };
 }
@@ -263,10 +247,8 @@ export function draftToProfile(
     w2Withholding: draft.hasW2 ? (draft.w2Withholding as number) : 0,
     priorYearTax: known ? (draft.priorYearTax as number) : null,
     priorYearAgi: known ? (draft.priorYearAgi as number) : null,
-    // An entry that includes the logged IRS payments is stored without them (counted once, SHARED-01).
-    estimatedPaid: includesLoggedIrs(draft)
-      ? Math.max(0, (draft.estimatedPaid as number) - draft.loggedIrs)
-      : (draft.estimatedPaid as number),
+    // Always the value entered: the field is only what was paid before logging (LIVE-PP-01).
+    estimatedPaid: draft.estimatedPaid as number,
     createdAt: now.toISOString(),
     isExample: false,
   };
@@ -380,7 +362,7 @@ export function parseDraft(raw: string | null): QuizDraft | null {
     loggedIncome: o.editing === true ? (numOrNull(o.loggedIncome) ?? 0) : 0,
     loggedCount: o.editing === true && Number.isInteger(o.loggedCount) && (o.loggedCount as number) > 0 ? (o.loggedCount as number) : 0,
     loggedIrs: o.editing === true ? (numOrNull(o.loggedIrs) ?? 0) : 0,
-    lumpAtOpen: o.editing === true ? (numOrNull(o.lumpAtOpen) ?? 0) : 0,
+    // An older saved draft may still carry `lumpAtOpen` (the removed heuristic); it is ignored.
     filingStatus: (QUIZ_FILING_STATUSES as readonly unknown[]).includes(o.filingStatus)
       ? (o.filingStatus as QuizFilingStatus)
       : null,

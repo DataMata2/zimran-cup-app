@@ -20,6 +20,9 @@ import {
 import { money } from "@/lib/product/format";
 import { buildTaxInput } from "@/lib/product/input";
 import { pastDue } from "@/lib/product/payNow";
+import { penaltyMeter } from "@/lib/product/meter";
+import { buildCsv } from "@/lib/product/csv";
+import { planFacts } from "@/lib/product/ai-prompts";
 import type { LogEntry, Profile } from "@/lib/product/types";
 import { estimate } from "@/lib/tax";
 
@@ -263,7 +266,7 @@ describe("editing with logged income", () => {
   });
 });
 
-describe("SHARED-01: Paid so far is the quiz lump only; logged IRS payments stay in the log", () => {
+describe("LIVE-PP-01 / SHARED-01: the field is only what was paid before logging; the log is added once", () => {
   // qa-A repro: TX single, $60k, 2025 tax $8k (AGI $50k), paid $3,700 in the quiz, then log an IRS payment of $1,000.
   const ASOF = "2026-11-14";
   const profile: Profile = {
@@ -273,22 +276,76 @@ describe("SHARED-01: Paid so far is the quiz lump only; logged IRS payments stay
   const irs: LogEntry = { id: "i1", kind: "irs", amount: 1000, payer: "", date: ASOF, setAside: 0, createdAt: NOW.toISOString() };
   const log = [irs];
   const payNowOf = (p: Profile) => pastDue(estimate(buildTaxInput(p, log, ASOF)))?.amount ?? 0;
+  const totalPaid = (p: Profile, l: readonly LogEntry[] = log) =>
+    (buildTaxInput(p, l, ASOF).estimatedPaymentsMade ?? []).reduce((s, x) => s + x.amount, 0);
+  const saveWith = (v: number) => draftToProfile({ ...draftFromProfile(profile, log), estimatedPaid: v }, NOW)!;
 
-  it("Edit shows 3,700 in the field and the $1,000 in the note, with the total", () => {
+  it("Edit shows 3,700 in the field and the sum line with all three numbers", () => {
     const d = draftFromProfile(profile, log);
     expect(d.estimatedPaid).toBe(3700);
     expect(d.loggedIrs).toBe(1000);
-    expect(paidSoFarNote(d)).toBe(
-      "Not counting the $1,000 you logged as IRS payments. Those stay in your log. Total paid: $4,700.",
-    );
+    expect(paidSoFarNote(d)).toBe("Before logging $3,700 + In your log $1,000 = Total paid $4,700");
   });
 
-  it("saving unchanged keeps the total at $4,700 and the plan at Pay $1,300 now", () => {
-    const saved = draftToProfile(draftFromProfile(profile, log), NOW)!;
-    expect(saved.estimatedPaid).toBe(3700);
-    const input = buildTaxInput(saved, log, ASOF);
-    expect((input.estimatedPaymentsMade ?? []).reduce((s, p) => s + p.amount, 0)).toBe(4700);
-    expect(money(payNowOf(saved))).toBe("$1,300");
+  it("the sum line follows the field as it is typed", () => {
+    const d = { ...draftFromProfile(profile, log), estimatedPaid: 6000 };
+    expect(paidSoFarNote(d)).toBe("Before logging $6,000 + In your log $1,000 = Total paid $7,000");
+    expect(paidSoFarNote({ ...d, estimatedPaid: null })).toBe("Before logging $0 + In your log $1,000 = Total paid $1,000");
+  });
+
+  it("6,000 + log 1,000 → total 7,000 (stored as entered, no guessing)", () => {
+    const saved = saveWith(6000);
+    expect(saved.estimatedPaid).toBe(6000);
+    expect(totalPaid(saved)).toBe(7000);
+  });
+
+  it("3,000 + log 1,000 → total 4,000", () => {
+    const saved = saveWith(3000);
+    expect(saved.estimatedPaid).toBe(3000);
+    expect(totalPaid(saved)).toBe(4000);
+  });
+
+  it("4,700 (what used to trip the heuristic) is stored as 4,700: total 5,700", () => {
+    expect(saveWith(4700).estimatedPaid).toBe(4700);
+    expect(totalPaid(saveWith(4700))).toBe(5700);
+    expect(paidSoFarNote({ ...draftFromProfile(profile, log), estimatedPaid: 4700 })).not.toMatch(/once|includes/);
+  });
+
+  it("open → save unchanged keeps the total, twice over, and the plan at Pay $1,300 now", () => {
+    const once = draftToProfile(draftFromProfile(profile, log), NOW)!;
+    const twice = draftToProfile(draftFromProfile(once, log), NOW)!;
+    expect(once.estimatedPaid).toBe(3700);
+    expect(twice.estimatedPaid).toBe(3700);
+    expect(totalPaid(once)).toBe(4700);
+    expect(totalPaid(twice)).toBe(4700);
+    expect(money(payNowOf(profile))).toBe("$1,300");
+    expect(money(payNowOf(once))).toBe("$1,300");
+    expect(money(payNowOf(twice))).toBe("$1,300");
+  });
+
+  it("the hero meter, the CSV and the AI facts all agree on the total paid (6,000 + 1,000 = 7,000)", () => {
+    const saved = saveWith(6000);
+    const result = estimate(buildTaxInput(saved, log, ASOF));
+    // Hero: the "Paid to the IRS" meter.
+    const meter = penaltyMeter(result, log);
+    expect(meter.paid).toBe(7000);
+    // CSV: the Credited column of the instalment rows.
+    const csv = buildCsv({ log, result, asOf: ASOF });
+    const lines = csv.split("\r\n");
+    const head = lines.findIndex((l) => l.startsWith("Quarter,Due,Required,Credited"));
+    const credited = lines.slice(head + 1, head + 5).reduce((s, l) => s + Number(l.split(",")[3]), 0);
+    expect(credited).toBe(7000);
+    // planFacts (ai-prompts).
+    const facts = planFacts(result, log, saved);
+    expect(facts.paidToIrsMeter.estimatedTaxPaymentsFor2026).toBe("$7,000");
+    expect(facts.paidToIrsMeter.paidIncludingWithholdingCreditedThroughNextDeadline).toBe("$7,000");
+    expect(paidSoFarNote(draftFromProfile(saved, log))).toContain("Total paid $7,000");
+  });
+
+  it("the log is untouched by editing", () => {
+    const before = JSON.stringify(log);
+    draftToProfile({ ...draftFromProfile(profile, log), estimatedPaid: 6000 }, NOW);
+    expect(JSON.stringify(log)).toBe(before);
   });
 
   it("the label says the field is only what was paid before the log", () => {
@@ -297,37 +354,18 @@ describe("SHARED-01: Paid so far is the quiz lump only; logged IRS payments stay
     expect(paidSoFarLabel(complete)).toBe("Paid so far for 2026");
   });
 
-  it("qa's 4,700 (lump + logged): the hint shows, it is counted once → stored 3,700, Pay $1,300", () => {
-    const d = { ...draftFromProfile(profile, log), estimatedPaid: 4700 };
-    expect(paidSoFarNote(d)).toBe("Looks like this includes the $1,000 you logged; we’ll count it once.");
-    const saved = draftToProfile(d, NOW)!;
-    expect(saved.estimatedPaid).toBe(3700);
-    expect(money(payNowOf(saved))).toBe("$1,300");
-  });
-
-  it("3,700 unchanged: no hint, stored as is, Pay $1,300", () => {
-    const d = draftFromProfile(profile, log);
-    expect(paidSoFarNote(d)).not.toContain("Looks like");
-    const saved = draftToProfile(d, NOW)!;
-    expect(saved.estimatedPaid).toBe(3700);
-    expect(money(payNowOf(saved))).toBe("$1,300");
-  });
-
-  it("5,000 (≥ the total): stored 4,000; below the total (4,000) stored as entered", () => {
-    const at = (v: number) => draftToProfile({ ...draftFromProfile(profile, log), estimatedPaid: v }, NOW)!.estimatedPaid;
-    expect(at(5000)).toBe(4000);
-    expect(at(4000)).toBe(4000);
-    expect(paidSoFarNote({ ...draftFromProfile(profile, log), estimatedPaid: 4000 })).toContain("Total paid: $5,000.");
-  });
-
-  it("no note without logged IRS payments or outside edit mode", () => {
+  it("no sum line without logged IRS payments or outside edit mode", () => {
     expect(paidSoFarNote(draftFromProfile(profile, []))).toBeUndefined();
     expect(paidSoFarNote({ ...complete, loggedIrs: 1000 })).toBeUndefined();
   });
 
-  it("parseDraft keeps loggedIrs only for edits", () => {
+  it("parseDraft keeps loggedIrs only for edits, and still loads an old draft that carries lumpAtOpen", () => {
     expect(parseDraft(JSON.stringify(draftFromProfile(profile, log)))?.loggedIrs).toBe(1000);
     expect(parseDraft(JSON.stringify({ ...complete, loggedIrs: 1000 }))?.loggedIrs).toBe(0);
+    const old = parseDraft(JSON.stringify({ ...draftFromProfile(profile, log), lumpAtOpen: 3700, estimatedPaid: 6000 }));
+    expect(old).not.toBeNull();
+    expect(old).not.toHaveProperty("lumpAtOpen");
+    expect(draftToProfile(old!, NOW)!.estimatedPaid).toBe(6000);
   });
 });
 

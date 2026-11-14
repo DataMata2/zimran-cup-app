@@ -8,7 +8,7 @@ import { computePlan } from "@/lib/product/plan";
 import { refreshPro } from "@/lib/product/pro";
 import { startSync } from "@/lib/product/sync";
 import { useRestoreSavedPlan } from "@/lib/product/useRestoreSavedPlan";
-import { useHydrated, useLog, usePro, useProfile } from "@/lib/product/store";
+import { useHydrated, useLog, usePro, useProfile, useUnreadableProfile } from "@/lib/product/store";
 import { useTodayIso } from "@/lib/product/useTodayIso";
 import { Breakdown } from "./Breakdown";
 import { CheckoutReturn, type CheckoutNotice } from "./CheckoutReturn";
@@ -32,6 +32,7 @@ export function PlanApp() {
   const profile = useProfile();
   const log = useLog();
   const pro = usePro();
+  const unreadable = useUnreadableProfile();
   const asOf = useTodayIso();
   const [paywall, setPaywall] = useState<PaywallReason | null>(null);
   const [notice, setNotice] = useState<CheckoutNotice | null>(null);
@@ -45,10 +46,11 @@ export function PlanApp() {
   const syncOn = restore !== "checking" && restore !== "failed";
   useEffect(() => (syncOn ? startSync() : undefined), [syncOn]);
 
-  // No saved answers here or on the server: this page has nothing to show yet.
+  // No saved answers here or on the server: this page has nothing to show yet. (Answers that are saved
+  // but unreadable get the recovery card below instead, so the person sees what happened.)
   useEffect(() => {
-    if (hydrated && !restoring && !profile) router.replace("/start");
-  }, [hydrated, restoring, profile, router]);
+    if (hydrated && !restoring && !profile && !unreadable) router.replace("/start");
+  }, [hydrated, restoring, profile, unreadable, router]);
 
   // The server knows whether this guest paid; the stored flag is only a cache.
   useEffect(() => {
@@ -56,6 +58,8 @@ export function PlanApp() {
   }, []);
 
   const openPaywall = useCallback((reason: PaywallReason) => setPaywall(reason), []);
+
+  if (hydrated && !restoring && !profile && unreadable) return <RecoveryCard />;
 
   if (!hydrated || !profile || !plan) {
     return (
@@ -65,21 +69,7 @@ export function PlanApp() {
     );
   }
 
-  if (!plan.ok) {
-    return (
-      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col px-4 py-16 sm:px-6">
-        <Card padding="lg" role="alert">
-          <h1 className="text-xl font-bold tracking-[-0.015em] text-ink">We couldn&rsquo;t read your saved answers.</h1>
-          <p className="mt-2 text-base text-ink-2">
-            They may be from an older version of Penaltyproof. Your payment log is kept.
-          </p>
-          <Button href="/start" size="lg" className="mt-6 w-full sm:w-auto">
-            Re-enter them →
-          </Button>
-        </Card>
-      </main>
-    );
-  }
+  if (!plan.ok) return <RecoveryCard />;
 
   const { result, input } = plan;
   const aiPlan = { profile, log, asOf: input.asOf };
@@ -120,6 +110,24 @@ export function PlanApp() {
       </div>
 
       <Paywall reason={paywall} onClose={() => setPaywall(null)} />
+    </main>
+  );
+}
+
+/** Saved answers that can't be used (unreadable, or rejected by the tax engine): offer to re-enter them. */
+function RecoveryCard() {
+  return (
+    <main className="mx-auto flex w-full max-w-xl flex-1 flex-col px-4 py-16 sm:px-6">
+      <Card padding="lg" role="alert">
+        <h1 className="text-xl font-bold tracking-[-0.015em] text-ink">We couldn&rsquo;t read your saved answers.</h1>
+        <p className="mt-2 text-base text-ink-2">
+          They may be from an older version of Penaltyproof. Enter them again to see your plan. Your payment log is
+          kept.
+        </p>
+        <Button href="/start" size="lg" className="mt-6 w-full sm:w-auto">
+          Re-enter my answers
+        </Button>
+      </Card>
     </main>
   );
 }

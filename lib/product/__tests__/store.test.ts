@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { refreshPro } from "@/lib/product/pro";
 import {
-  addLogEntry, getLog, getProfile, isPro, removeLogEntry, resetAll, setPro, setProfile, STORAGE_KEYS,
+  addLogEntry, getLog, getProfile, hasUnreadableProfile, isPro, removeLogEntry, resetAll, setPro, setProfile, STORAGE_KEYS,
 } from "@/lib/product/store";
 import { EXAMPLE_ANSWERS } from "@/lib/product/example";
 
@@ -28,6 +28,17 @@ describe("store", () => {
   beforeEach(() => {
     storageFull = false;
     resetAll();
+  });
+
+  it("tells unreadable saved answers apart from none", () => {
+    expect(hasUnreadableProfile()).toBe(false);
+    data.set(STORAGE_KEYS.profile, JSON.stringify({ filingStatus: "single" }));
+    expect(getProfile()).toBeNull();
+    expect(hasUnreadableProfile()).toBe(true);
+    data.set(STORAGE_KEYS.profile, "{not json");
+    expect(hasUnreadableProfile()).toBe(true);
+    setProfile(profile);
+    expect(hasUnreadableProfile()).toBe(false);
   });
 
   it("saves the profile and optionally replaces the log", () => {

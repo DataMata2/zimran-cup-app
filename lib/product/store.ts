@@ -226,6 +226,18 @@ export function useProfile(): Profile | null {
   return useSyncExternalStore(subscribe, readProfile, () => null);
 }
 
+/**
+ * True when answers are saved but can't be read (edited by hand, cut off, or from another version), so
+ * a page can offer to re-enter them instead of acting as if there were none. False on the server.
+ */
+export function hasUnreadableProfile(): boolean {
+  return readRaw(STORAGE_KEYS.profile) !== null && readProfile() === null;
+}
+
+export function useUnreadableProfile(): boolean {
+  return useSyncExternalStore(subscribe, hasUnreadableProfile, () => false);
+}
+
 /** The payment log (oldest first); empty on the server and during hydration. */
 export function useLog(): readonly LogEntry[] {
   return useSyncExternalStore(subscribe, readLog, () => EMPTY_LOG);

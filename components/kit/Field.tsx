@@ -14,9 +14,9 @@ import {
 import { cx } from "./cx";
 import {
   caretAfterSignificant,
-  formatMoneyText,
   moneyTextFromValue,
   parseMoneyText,
+  readMoneyInput,
   significantBefore,
 } from "./moneyText";
 
@@ -102,7 +102,7 @@ export function TextInput({ className, id, invalid, "aria-describedby": describe
 
 export interface MoneyInputProps
   extends Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "defaultValue" | "onChange" | "type" | "size" | "inputMode"> {
-  /** Dollars, or null when empty. */
+  /** Dollars, null when empty, NaN when the text typed isn't an amount (e.g. "1e5"). */
   value: number | null;
   onValueChange: (value: number | null) => void;
   /** Accept cents (default true). Whole dollars only when false. */
@@ -132,9 +132,10 @@ export function MoneyInput({
   const pendingCaret = useRef<number | null>(null);
 
   // A new value from outside (reset, prefill) replaces the text unless it already means that value.
-  if (value !== lastValue) {
+  // Object.is: NaN (text that isn't an amount) equals itself, so it doesn't re-render forever.
+  if (!Object.is(value, lastValue)) {
     setLastValue(value);
-    if (parseMoneyText(text) !== value) setText(moneyTextFromValue(value, allowCents));
+    if (!Number.isNaN(value) && parseMoneyText(text) !== value) setText(moneyTextFromValue(value, allowCents));
   }
 
   useLayoutEffect(() => {
@@ -148,9 +149,8 @@ export function MoneyInput({
   function onChange(e: ChangeEvent<HTMLInputElement>) {
     const raw = e.target.value;
     const caret = e.target.selectionStart ?? raw.length;
-    const next = formatMoneyText(raw, allowCents);
-    pendingCaret.current = caretAfterSignificant(next, significantBefore(raw, caret));
-    const parsed = parseMoneyText(next);
+    const { text: next, value: parsed } = readMoneyInput(raw, allowCents);
+    pendingCaret.current = Number.isNaN(parsed) ? caret : caretAfterSignificant(next, significantBefore(raw, caret));
     setText(next);
     setLastValue(parsed);
     onValueChange(parsed);

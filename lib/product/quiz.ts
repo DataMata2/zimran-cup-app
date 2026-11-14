@@ -117,8 +117,26 @@ export type StepErrors = Partial<Record<string, string>>;
  * What is missing or wrong on `step`. Missing answers are reported with key "_missing" (the UI keeps
  * Continue disabled and does not shout about empty fields); real conflicts get a field key and a message.
  */
+/** The money fields each step asks for (checked for text that isn't an amount). */
+const STEP_MONEY_FIELDS: Record<QuizStep, readonly (keyof QuizDraft)[]> = {
+  1: [],
+  2: [],
+  3: ["ytdIncome", "expectedIncome"],
+  4: ["w2Wages", "w2Withholding"],
+  5: ["priorYearTax", "priorYearAgi"],
+  6: ["estimatedPaid"],
+};
+
+export const NOT_AN_AMOUNT = "Enter an amount in dollars, like 60,000 or 60,000.50.";
+
 export function stepErrors(draft: QuizDraft, step: QuizStep): StepErrors {
   const e: StepErrors = {};
+  // Text that isn't an amount (MoneyInput reports NaN, e.g. "1e5"): say so on the field, block Continue.
+  const skip = (step === 4 && !draft.hasW2) || (step === 5 && !draft.priorKnown);
+  if (!skip) {
+    for (const f of STEP_MONEY_FIELDS[step]) if (Number.isNaN(draft[f])) e[f] = NOT_AN_AMOUNT;
+    if (Object.keys(e).length > 0) return e;
+  }
   switch (step) {
     case 1:
       if (draft.filingStatus === null) e._missing = "Choose a filing status.";
@@ -228,10 +246,10 @@ export function stepForEngineField(field: string): QuizStep {
 const ENGINE_MESSAGES: Record<QuizStep, string> = {
   1: "Please choose your filing status again.",
   2: "Please choose your state again.",
-  3: "Please check these amounts. Enter whole dollars, 0 or more.",
-  4: "Please check your W-2 amounts. Enter whole dollars, 0 or more.",
+  3: "Please check these amounts. Enter dollars, 0 or more.",
+  4: "Please check your W-2 amounts. Enter dollars, 0 or more.",
   5: "Please check last year’s amounts, or choose I don’t know.",
-  6: "Please check this amount. Enter whole dollars, 0 or more, or choose None yet.",
+  6: "Please check this amount. Enter dollars, 0 or more, or choose None yet.",
 };
 
 export interface EngineProblem {

@@ -132,7 +132,6 @@ export function IncomeStep({ draft, update, errors, touch, asOf }: StepProps & {
           value={draft.ytdIncome}
           onValueChange={(ytdIncome) => update({ ytdIncome })}
           onBlur={() => touch("ytdIncome")}
-          allowCents={false}
           enterKeyHint="next"
           data-autofocus
         />
@@ -150,7 +149,6 @@ export function IncomeStep({ draft, update, errors, touch, asOf }: StepProps & {
           value={draft.expectedIncome}
           onValueChange={(expectedIncome) => update({ expectedIncome })}
           onBlur={() => touch("expectedIncome")}
-          allowCents={false}
           enterKeyHint="go"
           placeholder={suggestion !== null ? money(suggestion).slice(1) : "0"}
         />
@@ -228,7 +226,6 @@ export function W2Step({ draft, update, errors, touch }: StepProps) {
               value={draft.w2Wages}
               onValueChange={(w2Wages) => update({ w2Wages })}
               onBlur={() => touch("w2Wages")}
-              allowCents={false}
               enterKeyHint="next"
             />
           </Field>
@@ -241,7 +238,6 @@ export function W2Step({ draft, update, errors, touch }: StepProps) {
               value={draft.w2Withholding}
               onValueChange={(w2Withholding) => update({ w2Withholding })}
               onBlur={() => touch("w2Withholding")}
-              allowCents={false}
               enterKeyHint="go"
             />
           </Field>
@@ -264,7 +260,6 @@ export function PriorYearStep({ draft, update, errors, touch }: StepProps) {
               value={draft.priorYearTax}
               onValueChange={(priorYearTax) => update({ priorYearTax })}
               onBlur={() => touch("priorYearTax")}
-              allowCents={false}
               enterKeyHint="next"
               data-autofocus
             />
@@ -274,7 +269,6 @@ export function PriorYearStep({ draft, update, errors, touch }: StepProps) {
               value={draft.priorYearAgi}
               onValueChange={(priorYearAgi) => update({ priorYearAgi })}
               onBlur={() => touch("priorYearAgi")}
-              allowCents={false}
               enterKeyHint="go"
             />
           </Field>
@@ -331,7 +325,6 @@ export function PaymentsStep({ draft, update, errors, touch, noneYet }: StepProp
           value={draft.estimatedPaid}
           onValueChange={(estimatedPaid) => update({ estimatedPaid })}
           onBlur={() => touch("estimatedPaid")}
-          allowCents={false}
           enterKeyHint="go"
           data-autofocus
         />

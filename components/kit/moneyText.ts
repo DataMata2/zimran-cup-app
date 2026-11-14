@@ -19,6 +19,26 @@ export function formatMoneyText(raw: string, allowCents = true): string {
   return cleaned;
 }
 
+/**
+ * Typed text that is a plain dollar amount: digits, thousands commas, at most one decimal point with up to
+ * two cents, optional "$" and spaces. Anything else ("1e5", "12abc", "1.2.3", "-5") is not an amount.
+ */
+const AMOUNT_TEXT = /^\s*\$?\s*[\d,]*(\.\d{0,2})?\s*$/;
+
+/**
+ * What MoneyInput does with a keystroke: the text to show and the value to report.
+ * A valid amount is reformatted ("60000.50" → "60,000.50", 60000.5). Anything else is kept exactly as typed
+ * and reported as NaN, so the form can show an error and block Continue instead of silently reading
+ * "1e5" as 15. With `allowCents` false the cents are still read (so "60000.50" never becomes 6,000,050)
+ * and the value is rounded to whole dollars.
+ */
+export function readMoneyInput(raw: string, allowCents = true): { text: string; value: number | null } {
+  if (!AMOUNT_TEXT.test(raw)) return { text: raw, value: Number.NaN };
+  const text = formatMoneyText(raw, true);
+  const value = parseMoneyText(text);
+  return { text, value: value !== null && !allowCents ? Math.round(value) : value };
+}
+
 /** Parse formatted text to dollars; null when empty or just ".". */
 export function parseMoneyText(text: string): number | null {
   const plain = text.replace(/,/g, "");

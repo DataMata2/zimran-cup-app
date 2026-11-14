@@ -56,6 +56,21 @@ describe("step validation", () => {
     expect(isStepValid({ ...complete, ytdIncome: 0, expectedIncome: 30000 }, 3)).toBe(true);
   });
 
+  it("A2: an amount that isn't one (NaN from the input) gets a field error and blocks the step", () => {
+    const e3 = stepErrors({ ...complete, expectedIncome: Number.NaN }, 3);
+    expect(e3.expectedIncome).toMatch(/Enter an amount/);
+    expect(isStepValid({ ...complete, ytdIncome: Number.NaN }, 3)).toBe(false);
+    expect(stepErrors({ ...complete, priorYearTax: Number.NaN }, 5).priorYearTax).toMatch(/Enter an amount/);
+    expect(isStepValid({ ...complete, priorKnown: false, priorYearTax: Number.NaN }, 5)).toBe(true);
+    expect(stepErrors({ ...complete, estimatedPaid: Number.NaN }, 6).estimatedPaid).toMatch(/Enter an amount/);
+  });
+
+  it("A2: cents are kept through to the profile", () => {
+    const p = draftToProfile({ ...complete, ytdIncome: 52000.5, expectedIncome: 60000.5, priorYearTax: 8000.75 }, NOW);
+    expect(p?.expectedIncome).toBe(60000.5);
+    expect(p?.priorYearTax).toBe(8000.75);
+  });
+
   it("step 4 is optional; with a W-2 job both amounts are required and withholding ≤ wages", () => {
     expect(isStepValid({ ...complete, hasW2: false, w2Wages: null }, 4)).toBe(true);
     expect(stepErrors({ ...complete, hasW2: true }, 4)._missing).toBeDefined();

@@ -14,7 +14,7 @@ const STEPS = [
   },
   {
     title: "Log each payment as it lands",
-    body: "Tell us when a client pays. You see what to set aside from it, and your meter fills toward the safe-harbor target.",
+    body: "Tell us when a client pays and you see what to set aside from it. Log what you pay the IRS and the meter shows how much of the minimum is covered.",
   },
 ] as const;
 

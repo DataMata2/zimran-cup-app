@@ -31,7 +31,7 @@ export function PaidMeter({ meter, titleAs: Title = "h2", titleId, label = "Paid
         {pct !== null && <span className="text-lg font-bold text-accent-ink">{pct}%</span>}
       </div>
       <p className="mt-0.5 text-sm text-ink-2">
-        {meter ? meterSummary(meter) : <span aria-hidden className="inline-block h-4 w-56 rounded-sm bg-sunken align-middle" />}
+        {meter ? keepDateTogether(meterSummary(meter)) : <span aria-hidden className="inline-block h-4 w-56 rounded-sm bg-sunken align-middle" />}
       </p>
       <ProgressBar
         className="mt-3"
@@ -65,4 +65,9 @@ export function PaidMeter({ meter, titleAs: Title = "h2", titleId, label = "Paid
       </div>
     </div>
   );
+}
+
+/** "Jan 15, 2027" never breaks across lines. */
+function keepDateTogether(text: string): string {
+  return text.replace(/([A-Z][a-z]{2}) (\d{1,2}), (\d{4})/g, "$1\u00a0$2,\u00a0$3");
 }

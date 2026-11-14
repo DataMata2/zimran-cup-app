@@ -1,0 +1,195 @@
+import { describe, expect, it } from "vitest";
+import { EXAMPLE_ANSWERS } from "@/lib/product/example";
+import {
+  checkWithEngine,
+  clampStep,
+  draftFromProfile,
+  draftToProfile,
+  emptyDraft,
+  firstIncompleteStep,
+  isStepValid,
+  monthsElapsed,
+  parseDraft,
+  stepErrors,
+  stepForEngineField,
+  suggestExpectedIncome,
+  type QuizDraft,
+} from "@/lib/product/quiz";
+import type { Profile } from "@/lib/product/types";
+
+const complete: QuizDraft = {
+  ...emptyDraft(),
+  filingStatus: "single",
+  state: "CA",
+  ytdIncome: 52000,
+  expectedIncome: 64000,
+  hasW2: false,
+  priorKnown: true,
+  priorYearTax: 7400,
+  priorYearAgi: 49000,
+  estimatedPaid: 3700,
+};
+
+const NOW = new Date("2026-11-14T12:00:00.000Z");
+
+describe("step validation", () => {
+  it("an empty draft is incomplete from step 1", () => {
+    const d = emptyDraft();
+    expect(firstIncompleteStep(d)).toBe(1);
+    expect(stepErrors(d, 1)._missing).toBeDefined();
+  });
+
+  it("a complete draft passes every step", () => {
+    expect(firstIncompleteStep(complete)).toBeNull();
+  });
+
+  it("step 2 needs a known state", () => {
+    expect(isStepValid({ ...complete, state: null }, 2)).toBe(false);
+    expect(isStepValid({ ...complete, state: "ZZ" as never }, 2)).toBe(false);
+  });
+
+  it("step 3: both amounts, expected ≥ so far, expected > 0", () => {
+    expect(stepErrors({ ...complete, expectedIncome: null }, 3)._missing).toBeDefined();
+    expect(stepErrors({ ...complete, expectedIncome: 40000 }, 3).expectedIncome).toMatch(/less than/);
+    expect(isStepValid({ ...complete, expectedIncome: 52000 }, 3)).toBe(true);
+    expect(stepErrors({ ...complete, ytdIncome: 0, expectedIncome: 0 }, 3).expectedIncome).toBeDefined();
+    expect(isStepValid({ ...complete, ytdIncome: 0, expectedIncome: 30000 }, 3)).toBe(true);
+  });
+
+  it("step 4 is optional; with a W-2 job both amounts are required and withholding ≤ wages", () => {
+    expect(isStepValid({ ...complete, hasW2: false, w2Wages: null }, 4)).toBe(true);
+    expect(stepErrors({ ...complete, hasW2: true }, 4)._missing).toBeDefined();
+    expect(stepErrors({ ...complete, hasW2: true, w2Wages: 0, w2Withholding: 0 }, 4).w2Wages).toBeDefined();
+    expect(stepErrors({ ...complete, hasW2: true, w2Wages: 1000, w2Withholding: 2000 }, 4).w2Withholding).toBeDefined();
+    expect(isStepValid({ ...complete, hasW2: true, w2Wages: 40000, w2Withholding: 0 }, 4)).toBe(true);
+  });
+
+  it("step 5: both amounts, or I don't know", () => {
+    expect(isStepValid({ ...complete, priorYearAgi: null }, 5)).toBe(false);
+    expect(isStepValid({ ...complete, priorKnown: false, priorYearTax: null, priorYearAgi: null }, 5)).toBe(true);
+    expect(isStepValid({ ...complete, priorYearTax: 0 }, 5)).toBe(true);
+  });
+
+  it("step 6: a total (0 is fine)", () => {
+    expect(isStepValid({ ...complete, estimatedPaid: null }, 6)).toBe(false);
+    expect(isStepValid({ ...complete, estimatedPaid: 0 }, 6)).toBe(true);
+  });
+
+  it("clampStep never lets you past the first unanswered step", () => {
+    expect(clampStep(emptyDraft(), 5)).toBe(1);
+    expect(clampStep({ ...complete, state: null }, 6)).toBe(2);
+    expect(clampStep(complete, 9)).toBe(6);
+    expect(clampStep(complete, 0)).toBe(1);
+    expect(clampStep(complete, Number.NaN)).toBe(1);
+  });
+});
+
+describe("draft → Profile", () => {
+  it("maps a complete draft", () => {
+    expect(draftToProfile(complete, NOW)).toEqual({
+      filingStatus: "single",
+      state: "CA",
+      ytdIncome: 52000,
+      expectedIncome: 64000,
+      w2Wages: 0,
+      w2Withholding: 0,
+      priorYearTax: 7400,
+      priorYearAgi: 49000,
+      estimatedPaid: 3700,
+      createdAt: NOW.toISOString(),
+      isExample: false,
+    });
+  });
+
+  it("returns null when incomplete", () => {
+    expect(draftToProfile({ ...complete, estimatedPaid: null }, NOW)).toBeNull();
+  });
+
+  it("drops W-2 amounts when the toggle is off, and nulls prior year on I don't know", () => {
+    const p = draftToProfile(
+      { ...complete, hasW2: false, w2Wages: 50000, w2Withholding: 5000, priorKnown: false },
+      NOW,
+    );
+    expect(p).toMatchObject({ w2Wages: 0, w2Withholding: 0, priorYearTax: null, priorYearAgi: null });
+  });
+
+  it("keeps W-2 amounts when the toggle is on", () => {
+    const p = draftToProfile({ ...complete, filingStatus: "mfj", hasW2: true, w2Wages: 50000, w2Withholding: 5000 }, NOW);
+    expect(p).toMatchObject({ filingStatus: "mfj", w2Wages: 50000, w2Withholding: 5000 });
+  });
+
+  it("round-trips through draftFromProfile (editing)", () => {
+    const profile: Profile = { ...EXAMPLE_ANSWERS, isExample: false, createdAt: NOW.toISOString() };
+    const d = draftFromProfile(profile);
+    expect(d.editing).toBe(true);
+    expect(d.step).toBe(1);
+    expect(draftToProfile(d, NOW)).toEqual(profile);
+  });
+
+  it("draftFromProfile: unknown prior year and W-2 job", () => {
+    const profile: Profile = {
+      ...EXAMPLE_ANSWERS, isExample: false, createdAt: NOW.toISOString(),
+      priorYearTax: null, priorYearAgi: null, w2Wages: 30000, w2Withholding: 2000,
+    };
+    const d = draftFromProfile(profile);
+    expect(d).toMatchObject({ priorKnown: false, hasW2: true, w2Wages: 30000, w2Withholding: 2000 });
+  });
+});
+
+describe("engine check", () => {
+  it("accepts a valid profile", () => {
+    const p = draftToProfile(complete, NOW)!;
+    expect(checkWithEngine(p, [], "2026-11-14")).toBeNull();
+  });
+
+  it("maps a TaxInputError to the step that owns the field", () => {
+    const p = { ...draftToProfile(complete, NOW)!, w2Wages: -1 };
+    expect(checkWithEngine(p, [], "2026-11-14")?.step).toBe(4);
+    const q = { ...draftToProfile(complete, NOW)!, state: "ZZ" as never };
+    expect(checkWithEngine(q, [], "2026-11-14")?.step).toBe(2);
+  });
+
+  it("stepForEngineField handles nested fields and unknowns", () => {
+    expect(stepForEngineField("estimatedPaymentsMade[2].date")).toBe(6);
+    expect(stepForEngineField("priorYearAgi")).toBe(5);
+    expect(stepForEngineField("asOf")).toBe(6);
+  });
+});
+
+describe("income suggestion", () => {
+  it("monthsElapsed is fractional by day, at least 1, 12 after the year", () => {
+    expect(monthsElapsed("2026-01-01")).toBe(1);
+    expect(monthsElapsed("2026-12-31")).toBeCloseTo(12, 5);
+    expect(monthsElapsed("2026-07-02")).toBeCloseTo((183 / 365) * 12, 5);
+    expect(monthsElapsed("2027-03-01")).toBe(12);
+  });
+
+  it("projects so far × 12 / months elapsed, rounded to $100", () => {
+    // Nov 14 is day 318: 52,000 × 12 / (318/365×12) = 52,000 × 365/318 = 59,685 → 59,700.
+    expect(suggestExpectedIncome(52000, "2026-11-14")).toBe(59700);
+    expect(suggestExpectedIncome(10000, "2026-01-10")).toBe(120000);
+  });
+
+  it("is null with nothing to project and never below so far", () => {
+    expect(suggestExpectedIncome(null, "2026-11-14")).toBeNull();
+    expect(suggestExpectedIncome(0, "2026-11-14")).toBeNull();
+    expect(suggestExpectedIncome(52040, "2027-02-01")).toBe(52040);
+  });
+});
+
+describe("parseDraft", () => {
+  it("rejects junk and keeps only valid fields", () => {
+    expect(parseDraft(null)).toBeNull();
+    expect(parseDraft("{")).toBeNull();
+    expect(parseDraft(JSON.stringify({ v: 2 }))).toBeNull();
+    const d = parseDraft(JSON.stringify({ v: 1, step: 4, filingStatus: "qss", state: "CA", ytdIncome: -5 }));
+    expect(d).toMatchObject({ filingStatus: null, state: "CA", ytdIncome: null, step: 1 });
+  });
+
+  it("restores a saved draft and clamps the step", () => {
+    const saved = JSON.stringify({ ...complete, step: 6 });
+    expect(parseDraft(saved)).toEqual({ ...complete, step: 6 });
+    const partial = JSON.stringify({ ...complete, estimatedPaid: null, priorYearTax: null, step: 6 });
+    expect(parseDraft(partial)?.step).toBe(5);
+  });
+});

@@ -34,7 +34,7 @@ function payNowEvent(result: TaxResult, due: PastDue): string[] {
   const quarters = quarterList(due.quarters);
   const summary = payNowSummary(due);
   const description =
-    `Federal estimated tax (Form 1040-ES) for ${quarters} ${TAX_YEAR} was due ${dateList(due.dues)} ` +
+    `Federal estimated tax (Form 1040-ES) for ${quarters} ${TAX_YEAR} ${due.quarters.length > 1 ? "were" : "was"} due ${dateList(due.dues)} ` +
     `and is still unpaid: ${money(due.amount)}. The IRS penalty grows every day it stays unpaid. ` +
     `Pay with IRS Direct Pay: ${DIRECT_PAY_URL} (choose "Estimated Tax" and tax year ${TAX_YEAR}). ` +
     `Amounts are estimates from Penaltyproof as of ${result.asOf}; reopen the app to refresh them.`;

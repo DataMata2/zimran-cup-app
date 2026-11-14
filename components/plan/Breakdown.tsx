@@ -3,6 +3,7 @@ import { Disclaimer } from "@/components/kit/Disclaimer";
 import { money, pct } from "@/lib/product/format";
 import { planNotes } from "@/lib/product/plan";
 import { stateName } from "@/lib/product/states";
+import { ENGINE_TEST_COUNT, VERIFIED_URL } from "@/lib/product/trust";
 import type { StateCode, TaxResult } from "@/lib/tax";
 
 /** Where the set-aside rate comes from: the year's tax by kind, the total and the effective rate. */
@@ -57,6 +58,20 @@ export function Breakdown({ result, state, className }: { result: TaxResult; sta
           ))}
         </ul>
       )}
+
+      <p className="mt-4 text-sm text-ink-2">
+        Tax maths matches the IRS Form 1040-ES worksheet to the cent:{" "}
+        <a
+          href={VERIFIED_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-accent underline decoration-accent-mid underline-offset-2 hover:text-accent-hover"
+        >
+          {ENGINE_TEST_COUNT} tests
+          <span className="sr-only"> (opens GitHub in a new tab)</span>
+        </a>
+        .
+      </p>
 
       <div className="mt-5 flex flex-col gap-1.5 border-t border-line pt-4">
         {footnotes.map((f) => (

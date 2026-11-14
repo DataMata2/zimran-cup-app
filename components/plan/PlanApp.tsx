@@ -6,6 +6,7 @@ import { Button } from "@/components/kit/Button";
 import { Card } from "@/components/kit/Card";
 import { computePlan } from "@/lib/product/plan";
 import { refreshPro } from "@/lib/product/pro";
+import { restoreIfEmpty, startSync } from "@/lib/product/sync";
 import { useHydrated, useLog, usePro, useProfile } from "@/lib/product/store";
 import { useTodayIso } from "@/lib/product/useTodayIso";
 import { Breakdown } from "./Breakdown";
@@ -36,10 +37,28 @@ export function PlanApp() {
 
   const plan = useMemo(() => (profile && asOf ? computePlan(profile, log, asOf) : null), [profile, log, asOf]);
 
-  // No saved answers: this page has nothing to show yet.
+  /** True until the server copy has been checked (it is restored only into an empty browser). */
+  const [restoring, setRestoring] = useState(true);
+
+  // Restore the server copy into an empty browser, then keep the copy up to date while this page is open.
   useEffect(() => {
-    if (hydrated && !profile) router.replace("/start");
-  }, [hydrated, profile, router]);
+    let stop: (() => void) | null = null;
+    let cancelled = false;
+    void restoreIfEmpty().then(() => {
+      if (cancelled) return;
+      setRestoring(false);
+      stop = startSync();
+    });
+    return () => {
+      cancelled = true;
+      stop?.();
+    };
+  }, []);
+
+  // No saved answers here or on the server: this page has nothing to show yet.
+  useEffect(() => {
+    if (hydrated && !restoring && !profile) router.replace("/start");
+  }, [hydrated, restoring, profile, router]);
 
   // The server knows whether this guest paid; the stored flag is only a cache.
   useEffect(() => {

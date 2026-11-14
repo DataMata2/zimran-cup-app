@@ -176,6 +176,24 @@ export function getAddedCount(): number {
   return readAdded();
 }
 
+/** Everything the server copy holds (see ./planData): profile, log and the added count. */
+export function getPlanSnapshot(): { profile: Profile | null; log: readonly LogEntry[]; added: number } {
+  return { profile: readProfile(), log: readLog(), added: readAdded() };
+}
+
+/** Put a server copy back into this browser (profile, log and added count; the Pro flag is not touched). */
+export function restorePlan(data: { profile: Profile; log: readonly LogEntry[]; added: number }): void {
+  writeRaw(STORAGE_KEYS.profile, JSON.stringify(data.profile));
+  writeRaw(STORAGE_KEYS.log, JSON.stringify(data.log));
+  writeRaw(STORAGE_KEYS.added, String(data.added));
+  emit();
+}
+
+/** Run `listener` after any change to the stored data. Returns the unsubscribe function. */
+export function onStoreChange(listener: () => void): () => void {
+  return subscribe(listener);
+}
+
 /** Remove an entry by id (no-op if it isn't there). The added count stays. */
 export function removeLogEntry(id: string): void {
   writeRaw(STORAGE_KEYS.log, JSON.stringify(readLog().filter((e) => e.id !== id)));

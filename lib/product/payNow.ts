@@ -160,6 +160,21 @@ export function nextStepText(result: TaxResult): string {
   return target ? `Next: ${money(target.amount)} by ${longDate(target.due)}.` : "That covers your safe-harbor amount for 2026.";
 }
 
+/**
+ * What to do with money just set aside from a client payment. With a quarter past due it goes toward the
+ * missed amount now, not to the next deadline.
+ */
+export function setAsideNextStep(result: TaxResult): string {
+  const due = pastDue(result);
+  if (due) {
+    const missed = due.quarters.length === 1 ? `missed ${quarterList(due.quarters)} payment` : `missed ${quarterList(due.quarters)} payments`;
+    return `Pay it toward your ${missed} now with IRS Direct Pay.`;
+  }
+  return result.nextDeadline
+    ? `Move it to savings now, then pay it to the IRS by ${longDate(result.nextDeadline.due)}.`
+    : "Move it to savings now, and keep it for your April 15, 2027 return.";
+}
+
 /** "about $123", or "less than $1" when it would round to $0. */
 export function aboutMoney(amount: number): string {
   return amount < 0.5 ? "less than $1" : `about ${money(amount)}`;

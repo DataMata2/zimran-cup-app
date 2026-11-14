@@ -8,7 +8,7 @@ import { Field, MoneyInput, TextInput } from "@/components/kit/Field";
 import { SegmentedControl } from "@/components/kit/SegmentedControl";
 import { longDate, moneyCents, pct, shortDate } from "@/lib/product/format";
 import { penaltyMeter } from "@/lib/product/meter";
-import { nextStepText } from "@/lib/product/payNow";
+import { nextStepText, setAsideNextStep } from "@/lib/product/payNow";
 import { countedEntries } from "@/lib/product/freeLimit";
 import { FREE_LOG_LIMIT, needsPro } from "@/lib/product/plan";
 import { addLogEntry, removeLogEntry, useAddedCount } from "@/lib/product/store";
@@ -236,10 +236,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
                   </p>
                   <p className="mt-0.5 text-sm text-ink-2">
                     {pct(confirmation.rate, 1)} of {moneyCents(confirmation.amount)}
-                    {confirmation.payer ? ` from ${confirmation.payer.replace(/\.+$/, "")}` : ""}. Move it to savings now,{" "}
-                    {result.nextDeadline
-                      ? `then pay it to the IRS by ${longDate(result.nextDeadline.due)}.`
-                      : "and keep it for your April 15, 2027 return."}
+                    {confirmation.payer ? ` from ${confirmation.payer.replace(/\.+$/, "")}` : ""}. {setAsideNextStep(result)}
                   </p>
                 </>
               ) : (

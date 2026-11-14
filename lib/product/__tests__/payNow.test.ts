@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { estimate, estimateAccruedPenalty, type PenaltyEstimate, type TaxResult } from "@/lib/tax";
 import { buildExample } from "@/lib/product/example";
 import { buildTaxInput } from "@/lib/product/input";
-import { aboutMoney, missedLabel, nextLabel, pastDue, pastDueSentence, payNowPlan, quarterList, WEEKLY_PENALTY_MIN } from "@/lib/product/payNow";
+import { aboutMoney, missedLabel, nextLabel, pastDue, pastDueSentence, payNowPlan, quarterList, setAsideNextStep, WEEKLY_PENALTY_MIN } from "@/lib/product/payNow";
 import { ENGINE_TEST_COUNT } from "@/lib/product/trust";
 import type { LogEntry, Profile } from "@/lib/product/types";
 
@@ -158,5 +158,17 @@ describe("ENGINE_TEST_COUNT", () => {
       .filter((f) => f.endsWith(".test.ts"))
       .reduce((n, f) => n + (readFileSync(join(dir, f), "utf8").match(/^\s*(it|test)\(/gm)?.length ?? 0), 0);
     expect(count).toBe(ENGINE_TEST_COUNT);
+  });
+});
+
+describe("set-aside next step (A5)", () => {
+  it("with a quarter past due, points the money at the missed payment now", () => {
+    const r = estimate(buildTaxInput(fresh, [], AS_OF)); // nothing paid: Q1–Q3 past due
+    expect(setAsideNextStep(r)).toBe("Pay it toward your missed Q1–Q3 payments now with IRS Direct Pay.");
+  });
+  it("with nothing past due, says savings then the next deadline", () => {
+    const r = estimate(buildTaxInput({ ...fresh, estimatedPaid: 20000 }, [], AS_OF));
+    expect(pastDue(r)).toBeNull();
+    expect(setAsideNextStep(r)).toMatch(/^Move it to savings now, (then pay it to the IRS by Jan 15, 2027\.|and keep it)/);
   });
 });

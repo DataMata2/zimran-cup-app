@@ -148,7 +148,7 @@ export function askHandler(deps: AiDeps) {
       if (!(await deps.checkPro())) return errorJson(402, "pro_required");
 
       const facts = planFacts(result, log, profile);
-      const system = askSystem(facts, logFacts(log));
+      const system = askSystem(facts, logFacts(log), profile.isExample ? "Start with my own numbers" : "Edit my answers");
       const stream = deps.getClient().beta.messages.stream({
         model: deps.model,
         max_tokens: 2048,

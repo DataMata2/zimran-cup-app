@@ -32,6 +32,8 @@ export interface PenaltyEstimate {
   ratePerYear: number;
   /** Penalty added per extra day if the past-due balance stays unpaid: balance × ratePerYear / 365. */
   dailyCostIfUnpaid: number;
+  /** Penalty added per extra week if the past-due balance stays unpaid: balance × ratePerYear × 7 / 365. */
+  weeklyCostIfUnpaid: number;
   asOf: string;
   method: string;
 }
@@ -41,6 +43,9 @@ const METHOD =
   "its due date × IRS underpayment rate (per calendar quarter) × days late / 365. Withholding counts as paid in " +
   "4 equal parts on the due dates; estimated payments are applied in date order to the earliest unpaid instalment " +
   "and reduce the underpayment from their payment date. The penalty stops at 2027-04-15.";
+
+/** Remaining balance (dollars) treated as fully paid: under half a cent (rounding tolerance, not a tax number). */
+const PAID_TOLERANCE = 0.005;
 
 function rateOn(iso: string): number {
   const p = UNDERPAYMENT_RATES.find((r) => iso >= r.from && iso <= r.to) ?? UNDERPAYMENT_RATES[UNDERPAYMENT_RATES.length - 1];
@@ -103,7 +108,8 @@ export function estimateAccruedPenalty(result: TaxResult, opts: PenaltyOptions =
       for (let i = 0; i < rem.length && left > 0; i++) {
         const take = Math.min(left, rem[i] ?? 0);
         if (take <= 0) continue;
-        rem[i] = (rem[i] ?? 0) - take;
+        // A balance under half a cent is paid: cent amounts leave binary residue such as 1.1e-13.
+        rem[i] = (rem[i] ?? 0) - take <= PAID_TOLERANCE ? 0 : (rem[i] ?? 0) - take;
         left -= take;
         if (started[i] && rem[i] === 0) paidOffDay[i] = day;
       }
@@ -140,6 +146,7 @@ export function estimateAccruedPenalty(result: TaxResult, opts: PenaltyOptions =
     perInstallment,
     ratePerYear: roundRate(ratePerYear),
     dailyCostIfUnpaid: round2((pastDueBalance * ratePerYear) / PENALTY_DAYS_PER_YEAR),
+    weeklyCostIfUnpaid: round2((pastDueBalance * ratePerYear * 7) / PENALTY_DAYS_PER_YEAR),
     asOf,
     method: METHOD,
   };

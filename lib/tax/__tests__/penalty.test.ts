@@ -33,7 +33,7 @@ describe("estimateAccruedPenalty", () => {
     //   6/30 -> 9/1 : 63 days at 7%  -> 2000 × 0.07 × 63 = 8820
     //   (1800 + 8820) / 365 = 10620 / 365 = 29.0958... -> 29.10
     // Q1: paid before its due date -> underpayment 0, penalty 0.
-    // Daily cost: 2000 × 0.07 / 365 = 0.38356 -> 0.38.
+    // Daily cost: 2000 × 0.07 / 365 = 0.38356 -> 0.38. Weekly: 2000 × 0.07 × 7 / 365 = 980/365 = 2.6849 -> 2.68.
     expect(p).toEqual({
       total: 29.1,
       perInstallment: [
@@ -42,6 +42,7 @@ describe("estimateAccruedPenalty", () => {
       ],
       ratePerYear: 0.07,
       dailyCostIfUnpaid: 0.38,
+      weeklyCostIfUnpaid: 2.68,
       asOf: "2026-09-01",
       method: expect.stringContaining("estimate"),
     });
@@ -129,6 +130,7 @@ describe("estimateAccruedPenalty", () => {
     expect(early.total).toBe(0);
     expect(early.perInstallment).toEqual([]);
     expect(early.dailyCostIfUnpaid).toBe(0);
+    expect(early.weeklyCostIfUnpaid).toBe(0);
     expect(early.ratePerYear).toBe(0.06); // 4/10 is in Q2 2026
 
     // Q1 and Q2 paid on or before their due dates (a payment on the due date is on time).
@@ -145,6 +147,76 @@ describe("estimateAccruedPenalty", () => {
     expect(p.dailyCostIfUnpaid).toBe(0);
     expect(p.perInstallment.every((x) => x.penalty === 0 && x.underpayment === 0 && x.daysLate === 0)).toBe(true);
     expect(JSON.parse(JSON.stringify(p))).toEqual(p);
+  });
+
+  it("cent payments that pay an instalment off exactly stop the clock (no float residue)", () => {
+    // Q1 paid 4/10. Q2 ($2,000) paid late in two cent amounts: 1500.10 on 7/1 and 499.90 on 7/10. asOf 8/1.
+    // 2000 − 1500.10 − 499.90 leaves ~1.1e-13 in binary floating point; it must count as paid on 7/10.
+    //   6/15 -> 6/30: 2000   × 6% × 15 = 1800
+    //   6/30 -> 7/1 : 2000   × 7% × 1  = 140
+    //   7/1  -> 7/10: 499.90 × 7% × 9  = 314.937
+    //   (1800 + 140 + 314.937) / 365 = 2254.937 / 365 = 6.1779 -> 6.18; daysLate 6/15 -> 7/10 = 25.
+    // Nothing past due is left on 8/1, so daily and weekly cost are 0.
+    const r = estimate({
+      ...persona,
+      asOf: "2026-08-01",
+      estimatedPaymentsMade: [
+        { date: "2026-04-10", amount: 2000 },
+        { date: "2026-07-01", amount: 1500.1 },
+        { date: "2026-07-10", amount: 499.9 },
+      ],
+    });
+    const p = estimateAccruedPenalty(r);
+    expect(p.perInstallment).toEqual([
+      { quarter: 1, due: "2026-04-15", underpayment: 0, daysLate: 0, penalty: 0 },
+      { quarter: 2, due: "2026-06-15", underpayment: 2000, daysLate: 25, penalty: 6.18 },
+    ]);
+    expect(p.total).toBe(6.18);
+    expect(p.dailyCostIfUnpaid).toBe(0);
+    expect(p.weeklyCostIfUnpaid).toBe(0);
+  });
+
+  it("a late overpayment of Q1 carries to Q2 before Q2 is due", () => {
+    // $3,000 on 5/15, nothing else; asOf 7/1. $2,000 pays off Q1 (30 days late); $1,000 goes to Q2 early,
+    // so Q2's underpayment on 6/15 is $1,000.
+    //   Q1: 2000 × 6% × 30 = 3600; /365 = 9.8630 -> 9.86.
+    //   Q2: 1000 × 6% × 15 (6/15 -> 6/30) + 1000 × 7% × 1 (-> 7/1) = 900 + 70 = 970; /365 = 2.6575 -> 2.66.
+    //   Total (3600 + 970) / 365 = 4570 / 365 = 12.5205 -> 12.52.
+    //   Daily 1000 × 0.07 / 365 = 0.1918 -> 0.19; weekly 1000 × 0.07 × 7 / 365 = 490/365 = 1.3425 -> 1.34.
+    const r = estimate({ ...persona, asOf: "2026-07-01", estimatedPaymentsMade: [{ date: "2026-05-15", amount: 3000 }] });
+    expect(r.installments.map((x) => x.paymentsCredited)).toEqual([2000, 1000, 0, 0]);
+    const p = estimateAccruedPenalty(r);
+    expect(p.perInstallment).toEqual([
+      { quarter: 1, due: "2026-04-15", underpayment: 2000, daysLate: 30, penalty: 9.86 },
+      { quarter: 2, due: "2026-06-15", underpayment: 1000, daysLate: 16, penalty: 2.66 },
+    ]);
+    expect(p.total).toBe(12.52);
+    expect(p.dailyCostIfUnpaid).toBe(0.19);
+    expect(p.weeklyCostIfUnpaid).toBe(1.34);
+  });
+
+  it("asOf 2027-04-15 with nothing paid: all four instalments, across every rate period", () => {
+    // Quarter ends: 6/30 (Q2 2026, 6%), 9/30, 12/31, 3/31 (7%), then 4/1-4/15 2027 (7%, UNVERIFIED for 2027).
+    // Q1 (4/15/26): 76 days at 6% (-> 6/30) + 92 (-> 9/30) + 92 (-> 12/31) + 90 (-> 3/31) + 15 at 7% = 365 days.
+    //   2000 × (0.06 × 76 + 0.07 × 289) = 2000 × (4.56 + 20.23) = 49580; /365 = 135.8356 -> 135.84.
+    // Q2 (6/15/26): 15 days at 6% + 289 at 7% = 304 days. 2000 × (0.9 + 20.23) = 42260; /365 = 115.7808 -> 115.78.
+    // Q3 (9/15/26): 15 + 92 + 90 + 15 = 212 days at 7%. 2000 × 0.07 × 212 = 29680; /365 = 81.3151 -> 81.32.
+    // Q4 (1/15/27): 16 + 28 + 31 + 15 = 90 days at 7%. 2000 × 0.07 × 90 = 12600; /365 = 34.5205 -> 34.52.
+    // Total (49580 + 42260 + 29680 + 12600) / 365 = 134120 / 365 = 367.4521 -> 367.45.
+    // Daily 8000 × 0.07 / 365 = 1.5342 -> 1.53; weekly 8000 × 0.07 × 7 / 365 = 3920/365 = 10.7397 -> 10.74.
+    const r = estimate({ ...persona, asOf: "2027-04-15" });
+    expect(r.installments.map((x) => x.required)).toEqual([2000, 2000, 2000, 2000]);
+    const p = estimateAccruedPenalty(r);
+    expect(p.perInstallment).toEqual([
+      { quarter: 1, due: "2026-04-15", underpayment: 2000, daysLate: 365, penalty: 135.84 },
+      { quarter: 2, due: "2026-06-15", underpayment: 2000, daysLate: 304, penalty: 115.78 },
+      { quarter: 3, due: "2026-09-15", underpayment: 2000, daysLate: 212, penalty: 81.32 },
+      { quarter: 4, due: "2027-01-15", underpayment: 2000, daysLate: 90, penalty: 34.52 },
+    ]);
+    expect(p.total).toBe(367.45);
+    expect(p.ratePerYear).toBe(0.07);
+    expect(p.dailyCostIfUnpaid).toBe(1.53);
+    expect(p.weeklyCostIfUnpaid).toBe(10.74);
   });
 
   it("rejects an asOf outside the penalty window", () => {

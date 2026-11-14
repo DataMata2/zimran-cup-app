@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { estimate, estimateAccruedPenalty, toICS, type TaxResult } from "@/lib/tax";
 import { calendarFile, calendarNote } from "@/lib/product/calendar";
 import { buildExample } from "@/lib/product/example";
-import { money } from "@/lib/product/format";
 import { buildTaxInput } from "@/lib/product/input";
 import { pastDue, payNowPlan } from "@/lib/product/payNow";
 import type { LogEntry, Profile } from "@/lib/product/types";
@@ -85,8 +84,8 @@ describe("calendarFile with a missed quarter (Maya)", () => {
   it("starts with a pay-now event for tomorrow at 09:00 local, at the hero's missed amount", () => {
     expect(plan.quarters).toEqual([3]);
     const first = evs[0]!;
-    expect(first.props.get("SUMMARY")).toBe(`Pay missed Q3 estimated tax: ${money(plan.amount).replace(",", "\\,")}`);
-    expect(first.props.get("SUMMARY")).toBe("Pay missed Q3 estimated tax: $1\\,850");
+    expect(first.props.get("SUMMARY")).toBe(`Pay missed Q3 estimated tax: $${plan.amount.toFixed(2)}`);
+    expect(first.props.get("SUMMARY")).toBe("Pay missed Q3 estimated tax: $1850.00");
     expect(first.props.get("DTSTART")).toBe("20261115T090000");
     expect(first.props.get("DTEND")).toBe("20261115T093000");
     expect(amountOf(first.props.get("SUMMARY")!)).toBe(Math.round(plan.amount));
@@ -144,7 +143,7 @@ describe("calendarFile with several missed quarters", () => {
     const due = pastDue(result)!;
     expect(due.quarters).toEqual([1, 2, 3]);
     const ics = calendarFile(result);
-    expect(events(ics)[0]!.props.get("SUMMARY")).toBe(`Pay missed Q1–Q3 estimated tax: ${money(due.amount).replace(",", "\\,")}`);
+    expect(events(ics)[0]!.props.get("SUMMARY")).toBe(`Pay missed Q1–Q3 estimated tax: $${due.amount.toFixed(2)}`);
     expectWellFormed(ics);
   });
 });

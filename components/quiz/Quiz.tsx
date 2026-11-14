@@ -300,23 +300,26 @@ function Quiz({ useUrlStep }: { useUrlStep: boolean }) {
         }}
         className="flex flex-1 flex-col"
       >
-        <div className="mx-auto w-full max-w-xl flex-1 px-4 pt-7 pb-36 sm:flex-none sm:px-6 sm:pt-[9vh] sm:pb-0">
+        <div className="w-full flex-1 px-5 pt-6 pb-36 sm:flex-none sm:px-10 sm:pt-8 sm:pb-0">
           <div key={step} className="animate-[pp-step-in_260ms_var(--ease-out-soft)_both]">
             <h1
               id={questionId}
-              className="text-[1.625rem] leading-[2rem] font-bold tracking-[-0.02em] text-ink sm:text-[2.125rem] sm:leading-[2.5rem]"
+              className="font-display text-[clamp(1.625rem,7.7vw,1.875rem)] leading-[1.05] font-extrabold tracking-[-0.04em] text-ink sm:text-5xl sm:leading-[1.02]"
             >
               {STEP_COPY[step].question}
             </h1>
-            <p className="mt-2 text-base text-ink-2">{STEP_COPY[step].lead}</p>
+            <p className="mt-2 text-[15px] leading-snug text-ink-3 sm:mt-3 sm:text-[17px]">{STEP_COPY[step].lead}</p>
 
             {problem && problem.step === step && (
-              <p role="alert" className="mt-5 rounded-md border border-red/30 bg-red-soft px-4 py-3 text-sm text-red">
+              <p
+                role="alert"
+                className="mt-5 rounded-md border-2 border-ink bg-hot-soft px-4 py-3 text-sm font-medium text-red shadow-chip"
+              >
                 {problem.message}
               </p>
             )}
 
-            <div ref={bodyRef} className="mt-6 sm:mt-8">
+            <div ref={bodyRef} className="mt-5 sm:mt-7">
               {body[step]}
             </div>
           </div>
@@ -328,13 +331,13 @@ function Quiz({ useUrlStep }: { useUrlStep: boolean }) {
               {missingNote}
             </p>
           )}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 sm:justify-between">
             {step === 1 ? (
               <Button
                 href={draft.editing ? "/plan" : "/"}
                 variant="secondary"
                 size="lg"
-                className="px-5"
+                className={backClasses}
                 onClick={() => {
                   // Leaving an edit drops it: next time "Edit my answers" starts from the saved plan.
                   if (draft.editing) {
@@ -347,7 +350,7 @@ function Quiz({ useUrlStep }: { useUrlStep: boolean }) {
                 Back
               </Button>
             ) : (
-              <Button variant="secondary" size="lg" className="px-5" onClick={back}>
+              <Button variant="secondary" size="lg" className={backClasses} onClick={back}>
                 <BackIcon />
                 Back
               </Button>
@@ -356,7 +359,7 @@ function Quiz({ useUrlStep }: { useUrlStep: boolean }) {
               type="submit"
               size="lg"
               disabled={!valid || leaving}
-              className="flex-1 sm:min-w-44 sm:flex-none"
+              className={continueClasses}
             >
               {primaryLabel}
             </Button>
@@ -367,16 +370,27 @@ function Quiz({ useUrlStep }: { useUrlStep: boolean }) {
   );
 }
 
-/** Mobile: pinned to the bottom (lifted above the iOS keyboard). Desktop: right under the question. */
+const backClasses = "flex-1 px-5 sm:min-w-40 sm:flex-none";
+
+/**
+ * Continue / See my plan. Disabled must not read as a faded sun button: it drops to paper with a dashed
+ * edge, muted text and no ledge, so "not yet" is plain at a glance.
+ */
+const continueClasses = cx(
+  "flex-[1.4] sm:min-w-44 sm:flex-none",
+  "disabled:border-dashed disabled:border-ink-3 disabled:bg-paper disabled:text-ink-3 disabled:opacity-100! disabled:shadow-none",
+);
+
+/** Mobile: pinned to the bottom (lifted above the iOS keyboard). Desktop: in the card, right under the question. */
 function ActionBar({ children, barRef }: { children: ReactNode; barRef: Ref<HTMLDivElement> }) {
   const inset = useKeyboardInset();
   return (
     <div
       ref={barRef}
       style={{ "--kb": `${inset}px` } as CSSProperties}
-      className="fixed inset-x-0 bottom-[var(--kb)] z-10 border-t border-line bg-paper/95 backdrop-blur-sm sm:static sm:border-0 sm:bg-transparent sm:backdrop-blur-none"
+      className="fixed inset-x-0 bottom-[var(--kb)] z-10 border-t-2 border-ink bg-surface sm:static sm:border-0 sm:bg-transparent"
     >
-      <div className="mx-auto flex w-full max-w-xl flex-col px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:pt-10 sm:pb-16">
+      <div className="mx-auto flex w-full max-w-xl flex-col px-5 pt-3.5 pb-[max(1rem,env(safe-area-inset-bottom))] sm:max-w-none sm:px-10 sm:pt-9 sm:pb-10">
         {children}
       </div>
     </div>
@@ -391,41 +405,55 @@ function BackIcon() {
   );
 }
 
-/** Slim top bar (home link, step count) over a six-segment progress bar. */
+/**
+ * Wordmark on the paper, then the question card: six chunky progress segments with a "1/6" counter, the
+ * step, and (desktop) the actions. On a phone the card is the page itself and the actions are pinned.
+ */
 function QuizFrame({ step, editing, children }: { step: QuizStep; editing: boolean; children?: ReactNode }) {
   return (
     <div data-quiz className="flex min-h-dvh flex-col">
-      <header className="mx-auto w-full max-w-xl px-4 sm:px-6">
-        <div className="flex h-14 items-center justify-between gap-4 sm:h-16">
-          <Link href="/" aria-label="Penaltyproof home" className="-mx-1 rounded-sm px-1 py-1">
+      <header className="mx-auto w-full max-w-[55rem] px-5 sm:px-6">
+        <div className="flex h-14 items-center sm:h-20">
+          <Link href="/" aria-label="Penaltyproof home" className="-mx-1 rounded-sm px-1 py-1.5">
             <Wordmark />
           </Link>
-          <p className="text-sm text-ink-2" aria-live="polite">
-            {editing && <span className="sr-only">Editing your answers. </span>}
-            Step {step} of {QUIZ_STEPS}
-          </p>
-        </div>
-        <div
-          role="progressbar"
-          aria-label="Quiz progress"
-          aria-valuemin={1}
-          aria-valuemax={QUIZ_STEPS}
-          aria-valuenow={step}
-          aria-valuetext={`Step ${step} of ${QUIZ_STEPS}`}
-          className="flex gap-1"
-        >
-          {Array.from({ length: QUIZ_STEPS }, (_, i) => (
-            <span
-              key={i}
-              className={cx(
-                "h-1 flex-1 rounded-full transition-colors duration-300",
-                i < step ? "bg-accent" : "bg-line",
-              )}
-            />
-          ))}
         </div>
       </header>
-      <main className="flex flex-1 flex-col">{children}</main>
+      <main className="flex flex-1 flex-col sm:px-6 sm:pb-16">
+        <div className="flex flex-1 flex-col sm:mx-auto sm:w-full sm:max-w-[55rem] sm:flex-none sm:rounded-lg sm:border-3 sm:border-ink sm:bg-surface sm:shadow-hard">
+          <div className="flex items-center gap-3 px-5 pt-1 sm:gap-4 sm:px-10 sm:pt-9">
+            <div
+              role="progressbar"
+              aria-label="Quiz progress"
+              aria-valuemin={1}
+              aria-valuemax={QUIZ_STEPS}
+              aria-valuenow={step}
+              aria-valuetext={`Step ${step} of ${QUIZ_STEPS}`}
+              className="grid flex-1 grid-cols-6 gap-1.5"
+            >
+              {Array.from({ length: QUIZ_STEPS }, (_, i) => (
+                <span
+                  key={i}
+                  className={cx(
+                    "h-4 rounded-[6px] border-2 border-ink transition-colors duration-300",
+                    i < step ? "bg-mint shadow-[inset_0_-4px_0_rgb(0_0_0/0.18)]" : "bg-surface",
+                  )}
+                />
+              ))}
+            </div>
+            <p className="shrink-0 font-mono text-[13px] font-bold tabular-nums text-ink" aria-live="polite">
+              {editing && <span className="sr-only">Editing your answers. </span>}
+              <span className="sr-only">
+                Step {step} of {QUIZ_STEPS}
+              </span>
+              <span aria-hidden>
+                {step}/{QUIZ_STEPS}
+              </span>
+            </p>
+          </div>
+          {children}
+        </div>
+      </main>
     </div>
   );
 }

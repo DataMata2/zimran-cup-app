@@ -94,9 +94,9 @@ export function StatePicker({ value, onChange, onPicked, labelledBy, inputRef }:
   const activeId = activeIndex >= 0 ? `${listId}-${matches[activeIndex]?.code}` : undefined;
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex h-12 w-full items-center rounded-md border border-line-strong bg-surface text-base text-ink transition-[border-color,box-shadow] duration-150 focus-within:border-accent focus-within:shadow-[0_0_0_3px_var(--color-accent-soft)]">
-        <svg aria-hidden viewBox="0 0 20 20" className="ml-3.5 size-4.5 shrink-0 fill-none stroke-ink-3 stroke-[1.75]">
+    <div className="flex flex-col gap-3">
+      <div className="flex h-14 w-full items-center rounded-md border-3 border-ink bg-surface text-lg font-medium text-ink transition-[border-color,box-shadow] duration-150 focus-within:shadow-[0_0_0_4px_var(--color-sky),0_0_0_6px_var(--color-ink)]">
+        <svg aria-hidden viewBox="0 0 20 20" className="ml-3.5 size-5 shrink-0 fill-none stroke-ink stroke-[2.25]">
           <circle cx="8.5" cy="8.5" r="5.5" />
           <path d="m13 13 4 4" strokeLinecap="round" />
         </svg>
@@ -122,7 +122,7 @@ export function StatePicker({ value, onChange, onPicked, labelledBy, inputRef }:
       </div>
 
       {matches.length === 0 ? (
-        <p className="px-1 py-3 text-sm text-ink-2" role="status">
+        <p className="rounded-md border-2 border-ink bg-sky-soft px-4 py-3 text-sm text-ink" role="status">
           No state matches “{query.trim()}”. Check the spelling, or type the two-letter code.
         </p>
       ) : (
@@ -131,7 +131,7 @@ export function StatePicker({ value, onChange, onPicked, labelledBy, inputRef }:
           id={listId}
           role="listbox"
           aria-labelledby={labelledBy}
-          className="relative max-h-[13.5rem] overflow-y-auto overscroll-contain rounded-md border border-line bg-surface py-1 sm:max-h-[18rem]"
+          className="relative max-h-[13.75rem] overflow-y-auto overscroll-contain rounded-md border-3 border-ink bg-surface p-1 shadow-[0_4px_0_var(--color-ink)] sm:max-h-[18.25rem]"
         >
           {matches.map((o, i) => {
             const selected = o.code === value;
@@ -146,18 +146,20 @@ export function StatePicker({ value, onChange, onPicked, labelledBy, inputRef }:
                 onClick={() => pick(o)}
                 onMouseMove={() => i !== activeIndex && setActive(i)}
                 className={cx(
-                  "flex h-11 cursor-pointer items-center justify-between gap-3 px-3.5 text-base",
-                  i === activeIndex && "bg-sunken",
-                  selected ? "font-semibold text-accent-ink" : "text-ink",
+                  "flex h-11 cursor-pointer items-center justify-between gap-3 rounded-[8px] px-3 text-base text-ink",
+                  selected ? "bg-sun font-bold" : i === activeIndex && "bg-sky-soft",
+                  selected && i === activeIndex && "outline-2 -outline-offset-2 outline-ink",
                 )}
               >
                 <span>{o.name}</span>
-                <span className="flex items-center gap-2 text-sm text-ink-3">
+                <span className={cx("flex items-center gap-2 font-mono text-xs font-bold", selected ? "text-ink" : "text-ink-3")}>
                   {o.code}
                   {selected && (
-                    <svg aria-hidden viewBox="0 0 16 16" className="size-4 fill-none stroke-accent stroke-2">
-                      <path d="m3.5 8.5 3 3 6-7" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                    <span className="grid size-5 place-items-center rounded-full bg-ink">
+                      <svg aria-hidden viewBox="0 0 14 14" className="size-3 fill-none stroke-white stroke-[2.6]">
+                        <path d="m2.5 7.5 3 3 6-7" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
                   )}
                 </span>
               </li>

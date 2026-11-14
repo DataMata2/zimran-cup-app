@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/kit/Button";
 import { cx } from "@/components/kit/cx";
-import { SegmentedControl } from "@/components/kit/SegmentedControl";
 import { FREE_LOG_LIMIT } from "@/lib/product/plan";
 import { DEFAULT_PRO_PLAN, startCheckout, type ProPlan } from "@/lib/product/pro";
 
@@ -56,14 +55,16 @@ const FEATURES: { label: string; free: string | boolean; pro: string | boolean }
 
 function Cell({ value, pro }: { value: string | boolean; pro?: boolean }) {
   if (typeof value === "string") {
-    return <span className={cx("text-sm font-semibold", pro ? "text-accent-ink" : "text-ink-2")}>{value}</span>;
+    return <span className={cx("font-mono text-xs font-bold", pro ? "text-ink" : "text-ink-2")}>{value}</span>;
   }
   return value ? (
-    <svg role="img" aria-label="Included" viewBox="0 0 16 16" className={cx("size-4", pro ? "text-accent" : "text-ink-2")} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 8.5l3 3 7-7" />
-    </svg>
+    <span className="inline-grid size-7 place-items-center rounded-full border-2 border-ink bg-mint">
+      <svg role="img" aria-label="Included" viewBox="0 0 12 12" className="size-3 text-ink" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M2 6.5l2.5 2.5L10 3" />
+      </svg>
+    </span>
   ) : (
-    <span role="img" aria-label="Not included" className="block h-0.5 w-3 rounded-full bg-line-strong" />
+    <span role="img" aria-label="Not included" className="block h-0.5 w-3 rounded-full bg-ink-3" />
   );
 }
 
@@ -119,18 +120,21 @@ export function Paywall({ reason, onClose }: { reason: PaywallReason | null; onC
         if (e.target === e.currentTarget) onClose();
       }}
       className={cx(
-        "m-0 mt-auto max-h-[92dvh] w-full max-w-none overflow-y-auto overscroll-contain rounded-t-lg bg-surface p-0 text-ink",
-        "backdrop:bg-ink/45 sm:m-auto sm:max-w-lg sm:rounded-lg",
+        "m-0 mt-auto max-h-[92dvh] w-full max-w-none overflow-y-auto overscroll-contain rounded-t-lg border-3 border-b-0 border-ink bg-surface p-0 text-ink",
+        "backdrop:bg-ink/45 sm:m-auto sm:max-w-lg sm:rounded-lg sm:border-b-3 sm:shadow-hard lg:max-w-4xl",
         "open:animate-[pp-step-in_250ms_var(--ease-out-soft)_both]",
       )}
     >
-      <div className="px-5 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-7 sm:pt-7">
-        <div className="flex items-start justify-between gap-4">
+      <div className="px-5 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-7 sm:pt-7 lg:px-10 lg:pt-9 lg:pb-9">
+        <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 id="paywall-title" className="text-xl font-bold tracking-[-0.015em] text-ink">
+            <h2
+              id="paywall-title"
+              className="font-display text-[1.625rem] leading-[1.05] font-extrabold tracking-[-0.035em] text-ink sm:text-3xl lg:text-[2.5rem]"
+            >
               {HEADINGS[reason ?? "upgrade"].title}
             </h2>
-            <p className="mt-1.5 text-sm text-ink-2">
+            <p className="mt-2 max-w-[60ch] text-[0.9375rem] leading-snug text-ink-2 lg:text-base">
               {HEADINGS[reason ?? "upgrade"].body}
             </p>
           </div>
@@ -138,59 +142,108 @@ export function Paywall({ reason, onClose }: { reason: PaywallReason | null; onC
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="-mt-1 -mr-2 flex size-10 shrink-0 items-center justify-center rounded-md text-ink-3 hover:bg-sunken hover:text-ink"
+            className="-mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-md border-2 border-ink bg-surface text-ink hover:bg-sky-soft"
           >
-            <svg aria-hidden viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+            <svg aria-hidden viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
               <path d="M4 4l8 8M12 4l-8 8" />
             </svg>
           </button>
         </div>
 
+        <div className="mt-5 grid gap-6 lg:mt-7 lg:grid-cols-[1fr_1.05fr] lg:gap-10">
+          <div className="min-w-0">
+            <fieldset>
+              <legend className="sr-only">Billing</legend>
+              <div className="grid grid-cols-2 gap-3 pt-2.5 pb-1.5">
+                {PLAN_OPTIONS.map((o) => {
+                  const checked = plan === o.value;
+                  return (
+                    <label
+                      key={o.value}
+                      className={cx(
+                        "relative flex min-h-[5.25rem] cursor-pointer flex-col justify-between gap-2 rounded-md border-3 border-ink px-3.5 pt-3 pb-3 text-ink transition-[background-color,box-shadow,transform]",
+                        "has-[input:focus-visible]:outline-3 has-[input:focus-visible]:outline-offset-3 has-[input:focus-visible]:outline-ink",
+                        checked ? "bg-[#fff9e6] shadow-[0_5px_0_var(--color-ink)]" : "bg-surface hover:bg-sky-soft",
+                      )}
+                    >
+                      <input
+                        type="radio"
+                        name="paywall-plan"
+                        value={o.value}
+                        checked={checked}
+                        onChange={() => setPlan(o.value)}
+                        className="sr-only"
+                      />
+                      {o.value === "yearly" && (
+                        <span className="absolute -top-3 right-2.5 rounded-full border-2 border-ink bg-sun px-2 py-0.5 font-mono text-[0.6875rem] leading-tight font-bold tracking-[0.08em] uppercase">
+                          Best value
+                        </span>
+                      )}
+                      <span className="flex items-center gap-2">
+                        <span aria-hidden className="grid size-5 shrink-0 place-items-center rounded-full border-3 border-ink bg-surface">
+                          {checked && <span className="size-2 rounded-full bg-ink" />}
+                        </span>
+                        <span className="font-display text-lg leading-none font-extrabold tracking-[-0.02em]">{o.label}</span>
+                      </span>
+                      <span className="font-display text-[1.75rem] leading-none font-extrabold tracking-[-0.03em] tabular-nums">
+                        {PRICES[o.value].price}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
 
-        <div className="mt-5">
-          <SegmentedControl options={PLAN_OPTIONS} value={plan} onChange={setPlan} aria-label="Billing" fullWidth />
-          <p className="mt-4 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-            <span className="text-3xl font-bold tracking-[-0.02em] text-ink">{price.price}</span>
-            <span className="text-sm text-ink-2">{price.per}</span>
-            {plan === "yearly" && (
-              <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-accent-ink">Best value</span>
+            <p className="mt-3 text-sm leading-snug text-ink-2">
+              <span className="font-bold text-ink tabular-nums">{price.price}</span> {price.per}
+            </p>
+
+            <Button size="lg" fullWidth className="mt-4 max-sm:px-3 max-sm:text-[1.0625rem]" onClick={checkout} disabled={busy} aria-busy={busy}>
+              {busy ? "Opening checkout…" : price.cta}
+            </Button>
+            {error && (
+              <p role="alert" className="mt-3 text-sm font-medium text-red">
+                {error}
+              </p>
             )}
-          </p>
+            <p className="mt-4 flex items-start gap-2.5 rounded-[10px] border-2 border-ink bg-sky-soft px-3.5 py-3 text-sm leading-snug text-ink">
+              <svg aria-hidden viewBox="0 0 22 22" className="mt-px size-5 shrink-0" fill="none">
+                <rect x="2" y="5" width="18" height="13" rx="2.5" fill="#fff" stroke="currentColor" strokeWidth="2.2" />
+                <path d="M2 9h18" stroke="currentColor" strokeWidth="2.2" />
+              </svg>
+              <span>
+                Demo: use test card <span className="font-mono font-bold whitespace-nowrap">4242 4242 4242 4242</span>, any future
+                date, any CVC.
+              </span>
+            </p>
+          </div>
+
+          <div className="min-w-0">
+            <table className="w-full border-separate border-spacing-0 overflow-hidden rounded-lg border-3 border-ink text-left">
+              <caption className="sr-only">Free and Pro compared</caption>
+              <thead>
+                <tr className="bg-ink text-white">
+                  <th scope="col" className="px-3 py-2.5">
+                    <span className="sr-only">Feature</span>
+                  </th>
+                  <th scope="col" className="w-18 border-l-2 border-ink px-2 py-2.5 text-center font-mono text-xs font-bold tracking-[0.08em] uppercase">Free</th>
+                  <th scope="col" className="w-22 border-l-2 border-ink px-2 py-2.5 text-center font-mono text-xs font-bold tracking-[0.08em] uppercase">Pro</th>
+                </tr>
+              </thead>
+              <tbody>
+                {FEATURES.map((f) => (
+                  <tr key={f.label} className="[&:last-child>*]:border-b-0">
+                    <th scope="row" className="border-b-2 border-ink px-3 py-2.5 text-sm font-normal text-ink">{f.label}</th>
+                    <td className="border-b-2 border-l-2 border-ink px-2 py-2.5 text-center"><span className="inline-flex justify-center"><Cell value={f.free} /></span></td>
+                    <td className="border-b-2 border-l-2 border-ink bg-[#fff9e6] px-2 py-2.5 text-center"><span className="inline-flex justify-center"><Cell value={f.pro} pro /></span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <Button size="lg" fullWidth className="mt-5" onClick={checkout} disabled={busy} aria-busy={busy}>
-          {busy ? "Opening checkout…" : price.cta}
-        </Button>
-        {error && (
-          <p role="alert" className="mt-3 text-sm font-medium text-red">
-            {error}
-          </p>
-        )}
-        <p className="mt-3 text-xs text-ink-3">Demo: use test card 4242 4242 4242 4242, any future date, any CVC.</p>
-
-        <table className="mt-6 w-full border-collapse text-left">
-          <caption className="sr-only">Free and Pro compared</caption>
-          <thead>
-            <tr className="border-b border-line">
-              <th scope="col" className="py-2 text-xs font-semibold text-ink-3">
-                <span className="sr-only">Feature</span>
-              </th>
-              <th scope="col" className="w-20 py-2 text-center text-xs font-semibold text-ink-3">Free</th>
-              <th scope="col" className="w-24 py-2 text-center text-xs font-semibold text-accent-ink">Pro</th>
-            </tr>
-          </thead>
-          <tbody>
-            {FEATURES.map((f) => (
-              <tr key={f.label} className="border-b border-line last:border-b-0">
-                <th scope="row" className="py-2 pr-2 text-sm font-normal text-ink">{f.label}</th>
-                <td className="py-2 text-center"><span className="inline-flex justify-center"><Cell value={f.free} /></span></td>
-                <td className="bg-accent-soft/50 py-2 text-center"><span className="inline-flex justify-center"><Cell value={f.pro} pro /></span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        <Button variant="ghost" fullWidth className="mt-3" onClick={onClose}>
+        <Button variant="ghost" fullWidth className="mt-4" onClick={onClose}>
           Not now
         </Button>
       </div>

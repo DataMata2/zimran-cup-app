@@ -52,7 +52,7 @@ export function Field({ label, hint, error, hideLabel = false, children, classNa
   return (
     <FieldContext.Provider value={{ id, describedBy, invalid: hasError }}>
       <div className={cx("flex flex-col gap-1.5", className)}>
-        <label htmlFor={id} className={cx("text-sm font-semibold text-ink", hideLabel && "sr-only")}>
+        <label htmlFor={id} className={cx("text-sm font-bold text-ink", hideLabel && "sr-only")}>
           {label}
         </label>
         {children}
@@ -80,8 +80,8 @@ function useFieldWiring(id?: string, describedBy?: string, invalid?: boolean) {
 }
 
 const inputBox =
-  "flex h-12 w-full items-center rounded-md border bg-surface text-base text-ink transition-[border-color,box-shadow] duration-150 " +
-  "focus-within:border-accent focus-within:shadow-[0_0_0_3px_var(--color-accent-soft)]";
+  "flex h-13 w-full items-center rounded-md border-3 bg-surface text-base text-ink transition-[border-color,box-shadow] duration-150 " +
+  "focus-within:border-ink focus-within:shadow-[0_0_0_4px_var(--color-sky)]";
 
 const inputReset =
   "h-full w-full min-w-0 bg-transparent outline-none placeholder:text-ink-3 focus-visible:outline-none";
@@ -94,7 +94,7 @@ export interface TextInputProps extends Omit<InputHTMLAttributes<HTMLInputElemen
 export function TextInput({ className, id, invalid, "aria-describedby": describedBy, ...rest }: TextInputProps) {
   const wiring = useFieldWiring(id, describedBy, invalid);
   return (
-    <div className={cx(inputBox, wiring["aria-invalid"] ? "border-red" : "border-line-strong", className)}>
+    <div className={cx(inputBox, wiring["aria-invalid"] ? "border-red" : "border-ink", className)}>
       <input {...rest} {...wiring} className={cx(inputReset, "px-3.5")} />
     </div>
   );
@@ -157,8 +157,8 @@ export function MoneyInput({
   }
 
   return (
-    <div className={cx(inputBox, wiring["aria-invalid"] ? "border-red" : "border-line-strong", className)}>
-      <span aria-hidden className="pl-3.5 pr-1 font-medium text-ink-2">
+    <div className={cx(inputBox, wiring["aria-invalid"] ? "border-red" : "border-ink", className)}>
+      <span aria-hidden className="pl-3.5 pr-1 font-display font-extrabold text-ink-2">
         $
       </span>
       <input
@@ -171,7 +171,7 @@ export function MoneyInput({
         placeholder={placeholder}
         value={text}
         onChange={onChange}
-        className={cx(inputReset, "pr-3.5 font-medium")}
+        className={cx(inputReset, "pr-3.5 font-display text-lg font-extrabold")}
       />
     </div>
   );

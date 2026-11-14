@@ -24,8 +24,9 @@ const DEFAULT_TICKS = [25, 50, 75, 100] as const;
 const clamp = (n: number) => (Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : 0);
 
 /**
- * Two-segment progress bar with tick marks. Segment widths transition, so the bar animates whenever a
- * value changes.
+ * Two-segment progress bar drawn as a chunky segmented track: 3px ink frame, ticks as ink cell dividers,
+ * the value in solid mint, the secondary segment hatched (set aside, not yet paid). Segment widths
+ * transition, so the bar animates whenever a value changes.
  */
 export function ProgressBar({
   value,
@@ -52,13 +53,13 @@ export function ProgressBar({
         aria-valuenow={total}
         aria-valuetext={valueText ?? `${total}%`}
         className={cx(
-          "relative w-full overflow-hidden rounded-full bg-sunken ring-1 ring-inset ring-line",
-          size === "lg" ? "h-4" : "h-2.5",
+          "relative w-full overflow-hidden rounded-md border-3 border-ink bg-surface",
+          size === "lg" ? "h-9" : "h-6",
         )}
       >
         <div className={cx("flex h-full w-full origin-left", animateIn && "animate-[pp-grow_900ms_var(--ease-out-soft)_150ms_both]")}>
           <div
-            className="h-full bg-accent transition-[width] duration-700 ease-out-soft"
+            className="h-full bg-mint transition-[width] duration-700 ease-out-soft"
             style={{ width: `${solid}%` }}
           />
           <div
@@ -72,13 +73,13 @@ export function ProgressBar({
             <span
               key={t}
               aria-hidden
-              className="absolute inset-y-0 w-0.5 -translate-x-1/2 bg-paper/90"
+              className="absolute inset-y-0 w-[3px] -translate-x-1/2 bg-ink"
               style={{ left: `${t}%` }}
             />
           ))}
       </div>
       {tickLabels && tickLabels.length > 0 && (
-        <div aria-hidden className="relative mt-1.5 h-4 text-xs leading-4 text-ink-3">
+        <div aria-hidden className="relative mt-2 h-4 font-mono text-[11px] leading-4 font-bold tracking-[0.04em] text-ink uppercase">
           {ticks.map((t, i) => (
             <span
               key={t}

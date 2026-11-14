@@ -20,7 +20,7 @@ export interface SegmentedControlProps<T extends string> {
 }
 
 /**
- * A radio group drawn as segments. Arrow keys move and select, as in a native radio group; only the
+ * A radio group drawn as chunky pressable tiles; the selected one is sun. Arrow keys move and select, as in a native radio group; only the
  * selected segment is in the tab order.
  */
 export function SegmentedControl<T extends string>({
@@ -55,7 +55,8 @@ export function SegmentedControl<T extends string>({
       role="radiogroup"
       aria-label={ariaLabel}
       className={cx(
-        "inline-flex gap-1 rounded-md border border-line bg-sunken p-1",
+        // pb leaves room for the tiles' 5px pressable ledge.
+        "inline-flex gap-2 pb-1.5",
         fullWidth && "flex w-full",
         className,
       )}
@@ -75,12 +76,10 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(option.value)}
             onKeyDown={(e) => onKeyDown(e, i)}
             className={cx(
-              "rounded-sm px-3 font-semibold whitespace-nowrap transition-[background-color,color,box-shadow] duration-150",
-              size === "sm" ? "h-8 text-xs" : "h-10 text-sm",
+              "press rounded-md border-3 border-ink px-4 font-bold whitespace-nowrap text-ink",
+              size === "sm" ? "min-h-11 text-sm" : "min-h-12 text-base",
               fullWidth && "flex-1",
-              checked
-                ? "bg-surface text-ink shadow-[0_0_0_1px_var(--color-line-strong)]"
-                : "text-ink-2 hover:text-ink",
+              checked ? "bg-sun" : "bg-surface hover:bg-sky-soft",
             )}
           >
             {option.label}

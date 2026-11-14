@@ -4,9 +4,9 @@ import { cx } from "./cx";
 export type CardTone = "surface" | "sunken" | "accent";
 
 export interface CardProps extends HTMLAttributes<HTMLElement> {
-  /** surface = white on paper (default); sunken = a quiet inset; accent = the soft green "safe" panel. */
+  /** surface = white card, ink border, hard shadow (default); sunken = a paper inset; accent = a pale sun panel. */
   tone?: CardTone;
-  /** Lift the card with the single page elevation. Use for at most one card per screen. */
+  /** Add the hard ink shadow to a tone that has none (surface always has it). */
   raised?: boolean;
   /** Inner padding. */
   padding?: "none" | "md" | "lg";
@@ -16,17 +16,17 @@ export interface CardProps extends HTMLAttributes<HTMLElement> {
 }
 
 const tones: Record<CardTone, string> = {
-  surface: "bg-surface border border-line",
-  sunken: "bg-sunken border border-transparent",
-  accent: "bg-accent-soft border border-accent-mid/50",
+  surface: "bg-surface border-3 border-ink shadow-hard",
+  sunken: "bg-paper border-2 border-ink",
+  accent: "bg-accent-soft border-3 border-ink",
 };
 
 const paddings = { none: "", md: "p-5 sm:p-6", lg: "p-6 sm:p-8" } as const;
 
-/** A bordered panel. Borders do the separating; shadow only when `raised`. */
+/** A bordered panel: 3px ink lines, 14px radius, hard blur-free shadow. */
 export function Card({ tone = "surface", raised = false, padding = "md", as: Tag = "div", className, children, ...rest }: CardProps) {
   return (
-    <Tag className={cx("rounded-lg", tones[tone], paddings[padding], raised && "shadow-raised", className)} {...rest}>
+    <Tag className={cx("rounded-lg", tones[tone], paddings[padding], raised && "shadow-hard", className)} {...rest}>
       {children}
     </Tag>
   );

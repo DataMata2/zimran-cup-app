@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 // On Android, let the keyboard shrink the layout so the pinned Continue bar stays above it.
 export const viewport: Viewport = {
-  themeColor: "#f5f5f0",
+  themeColor: "#FFF3D6",
   colorScheme: "light",
   interactiveWidget: "resizes-content",
 };

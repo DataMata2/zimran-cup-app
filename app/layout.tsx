@@ -1,12 +1,26 @@
 import type { Metadata, Viewport } from "next";
-import { Public_Sans } from "next/font/google";
+import { Bricolage_Grotesque, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import type { ReactNode } from "react";
 import "./globals.css";
 
-// Public Sans: a plain, sturdy grotesque with true tabular figures, so every amount lines up.
-const publicSans = Public_Sans({
+// Space Grotesk carries the body copy; Bricolage Grotesque (800, optical size axis) sets headings and money;
+// JetBrains Mono sets the uppercase micro-labels. Each is exposed as a CSS variable read by @theme in globals.css.
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
-  variable: "--font-public-sans",
+  variable: "--font-space-grotesk",
+  display: "swap",
+});
+
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin"],
+  axes: ["opsz"],
+  variable: "--font-bricolage",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains-mono",
   display: "swap",
 });
 
@@ -35,13 +49,13 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f5f5f0",
+  themeColor: "#FFF3D6",
   colorScheme: "light",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${publicSans.variable} h-full antialiased`}>
+    <html lang="en" className={`${spaceGrotesk.variable} ${bricolage.variable} ${jetbrainsMono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );

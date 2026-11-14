@@ -12,10 +12,10 @@ export interface BadgeProps {
 }
 
 const styles: Record<BadgeStatus, string> = {
-  paid: "bg-accent-soft text-accent-ink",
-  due: "bg-amber-soft text-amber",
-  pastDue: "bg-red-soft text-red",
-  upcoming: "bg-sunken text-ink-2",
+  paid: "bg-mint",
+  due: "bg-sun",
+  pastDue: "bg-hot",
+  upcoming: "bg-sun-soft",
 };
 
 const labels: Record<BadgeStatus, string> = {
@@ -25,24 +25,20 @@ const labels: Record<BadgeStatus, string> = {
   upcoming: "Upcoming",
 };
 
-const dots: Record<BadgeStatus, string> = {
-  paid: "bg-accent",
-  due: "bg-amber-mid",
-  pastDue: "bg-red",
-  upcoming: "bg-ink-3",
-};
-
-/** Status pill for a deadline. Colour is never the only signal: the label always says the status. */
+/**
+ * Status chip for a deadline: 2px ink border, ink text on mint (paid), sun (due, upcoming) or hot (past due).
+ * Colour is never the only signal: the label always says the status.
+ */
 export function Badge({ status, children, className }: BadgeProps) {
   return (
     <span
       className={cx(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap",
+        "inline-flex items-center gap-1.5 rounded-full border-2 border-ink px-2.5 py-1 font-mono text-[11px] leading-none font-bold tracking-[0.08em] whitespace-nowrap text-ink uppercase",
         styles[status],
         className,
       )}
     >
-      <span aria-hidden className={cx("size-1.5 rounded-full", dots[status])} />
+      <span aria-hidden className="size-1.5 rounded-full bg-ink" />
       {children ?? labels[status]}
     </span>
   );

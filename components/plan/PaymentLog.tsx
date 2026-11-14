@@ -233,7 +233,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
                     Set aside {moneyCents(confirmation.setAside)} from this payment
                   </p>
                   <p className="mt-0.5 text-sm text-ink-2">
-                    {pct(confirmation.rate, 0)} of {moneyCents(confirmation.amount)}
+                    {pct(confirmation.rate, 1)} of {moneyCents(confirmation.amount)}
                     {confirmation.payer ? ` from ${confirmation.payer}` : ""}. Move it to savings now,{" "}
                     {result.nextDeadline
                       ? `then pay it to the IRS by ${longDate(result.nextDeadline.due)}.`

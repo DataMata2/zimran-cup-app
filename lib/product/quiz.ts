@@ -33,6 +33,8 @@ export interface QuizDraft {
    * (one source of truth). See `paidSoFarNote`.
    */
   loggedIrs: number;
+  /** Editing only: the saved profile's lump (profile.estimatedPaid), to spot an entry that includes the log. */
+  lumpAtOpen: number;
   filingStatus: QuizFilingStatus | null;
   state: StateCode | null;
   ytdIncome: number | null;
@@ -55,6 +57,7 @@ export function emptyDraft(): QuizDraft {
     loggedIncome: 0,
     loggedCount: 0,
     loggedIrs: 0,
+    lumpAtOpen: 0,
     filingStatus: null,
     state: null,
     ytdIncome: null,
@@ -89,6 +92,26 @@ export function loggedIrsOf(log: readonly LogEntry[]): number {
   return total;
 }
 
+export const PAID_SO_FAR_LABEL = "Paid so far for 2026";
+/** The label while editing with IRS payments in the log: the field is only what was paid before the log. */
+export const PAID_BEFORE_LOG_LABEL = "IRS payments made before you started logging here";
+
+/** The step-6 field label (SHARED-01). */
+export function paidSoFarLabel(draft: QuizDraft): string {
+  return draft.editing && draft.loggedIrs > 0 ? PAID_BEFORE_LOG_LABEL : PAID_SO_FAR_LABEL;
+}
+
+/**
+ * Editing with IRS payments in the log, and the entered amount is at least the saved lump plus the logged
+ * IRS total: it evidently includes the logged payments, so it is counted once (see draftToProfile).
+ */
+export function includesLoggedIrs(draft: QuizDraft): boolean {
+  const v = draft.estimatedPaid;
+  return (
+    draft.editing && draft.loggedIrs > 0 && v !== null && Number.isFinite(v) && v >= draft.lumpAtOpen + draft.loggedIrs
+  );
+}
+
 /**
  * The read-only note under "Paid so far" while editing with IRS payments in the log, else undefined.
  * The field is only the quiz lump; the note says the logged payments are counted separately and gives the
@@ -96,6 +119,7 @@ export function loggedIrsOf(log: readonly LogEntry[]): number {
  */
 export function paidSoFarNote(draft: QuizDraft): string | undefined {
   if (!draft.editing || !(draft.loggedIrs > 0)) return undefined;
+  if (includesLoggedIrs(draft)) return `Looks like this includes the ${money(draft.loggedIrs)} you logged; we’ll count it once.`;
   const lump = draft.estimatedPaid !== null && Number.isFinite(draft.estimatedPaid) && draft.estimatedPaid > 0 ? draft.estimatedPaid : 0;
   return `Not counting the ${money(draft.loggedIrs)} you logged as IRS payments. Those stay in your log. Total paid: ${money(lump + draft.loggedIrs)}.`;
 }
@@ -117,6 +141,7 @@ export function draftFromProfile(p: Profile, log: readonly LogEntry[] = []): Qui
     loggedIncome: logged.total,
     loggedCount: logged.count,
     loggedIrs: loggedIrsOf(log),
+    lumpAtOpen: p.estimatedPaid,
     filingStatus: status,
     state: p.state,
     ytdIncome: p.ytdIncome + logged.total,
@@ -238,7 +263,10 @@ export function draftToProfile(
     w2Withholding: draft.hasW2 ? (draft.w2Withholding as number) : 0,
     priorYearTax: known ? (draft.priorYearTax as number) : null,
     priorYearAgi: known ? (draft.priorYearAgi as number) : null,
-    estimatedPaid: draft.estimatedPaid as number,
+    // An entry that includes the logged IRS payments is stored without them (counted once, SHARED-01).
+    estimatedPaid: includesLoggedIrs(draft)
+      ? Math.max(0, (draft.estimatedPaid as number) - draft.loggedIrs)
+      : (draft.estimatedPaid as number),
     createdAt: now.toISOString(),
     isExample: false,
   };
@@ -352,6 +380,7 @@ export function parseDraft(raw: string | null): QuizDraft | null {
     loggedIncome: o.editing === true ? (numOrNull(o.loggedIncome) ?? 0) : 0,
     loggedCount: o.editing === true && Number.isInteger(o.loggedCount) && (o.loggedCount as number) > 0 ? (o.loggedCount as number) : 0,
     loggedIrs: o.editing === true ? (numOrNull(o.loggedIrs) ?? 0) : 0,
+    lumpAtOpen: o.editing === true ? (numOrNull(o.lumpAtOpen) ?? 0) : 0,
     filingStatus: (QUIZ_FILING_STATUSES as readonly unknown[]).includes(o.filingStatus)
       ? (o.filingStatus as QuizFilingStatus)
       : null,

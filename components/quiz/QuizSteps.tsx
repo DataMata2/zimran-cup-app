@@ -5,7 +5,7 @@ import { Button } from "@/components/kit/Button";
 import { cx } from "@/components/kit/cx";
 import { Field, MoneyInput } from "@/components/kit/Field";
 import { money } from "@/lib/product/format";
-import { paidSoFarNote, suggestExpectedIncome, type QuizDraft, type QuizFilingStatus, type StepErrors } from "@/lib/product/quiz";
+import { paidSoFarLabel, paidSoFarNote, suggestExpectedIncome, type QuizDraft, type QuizFilingStatus, type StepErrors } from "@/lib/product/quiz";
 import type { StateCode } from "@/lib/tax";
 import { FILING_OPTIONS } from "./copy";
 import { StatePicker } from "./StatePicker";
@@ -397,7 +397,7 @@ export function PriorYearStep({ draft, update, errors, touch }: StepProps) {
 export function PaymentsStep({ draft, update, errors, touch, noneYet }: StepProps & { noneYet: () => void }) {
   return (
     <div className="flex flex-col gap-4 sm:max-w-lg">
-      <Field label="Paid so far for 2026" hint={paidSoFarNote(draft)} error={errors.estimatedPaid}>
+      <Field label={paidSoFarLabel(draft)} hint={paidSoFarNote(draft)} error={errors.estimatedPaid}>
         <MoneyInput
           value={draft.estimatedPaid}
           onValueChange={(estimatedPaid) => update({ estimatedPaid })}

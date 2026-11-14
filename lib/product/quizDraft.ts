@@ -50,7 +50,9 @@ export function chooseDraft(saved: QuizDraft | null, stored: Profile | null, log
   const ownPlan = stored !== null && !stored.isExample;
   // The "Paid so far" note's logged IRS total always comes from the live log, never the saved draft: an IRS
   // entry may have been deleted (or added) on /plan since the draft was saved.
-  if (saved && saved.editing) return { ...saved, loggedIrs: loggedIrsOf(log) };
+  if (saved && saved.editing) {
+    return { ...saved, loggedIrs: loggedIrsOf(log), lumpAtOpen: stored?.estimatedPaid ?? saved.lumpAtOpen };
+  }
   if (saved && !ownPlan) return saved;
   return ownPlan ? draftFromProfile(stored, log) : emptyDraft();
 }

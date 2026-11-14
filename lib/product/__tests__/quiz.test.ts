@@ -9,6 +9,7 @@ import {
   firstIncompleteStep,
   isStepValid,
   monthsElapsed,
+  paidSoFarLabel,
   paidSoFarNote,
   parseDraft,
   stepErrors,
@@ -290,9 +291,33 @@ describe("SHARED-01: Paid so far is the quiz lump only; logged IRS payments stay
     expect(money(payNowOf(saved))).toBe("$1,300");
   });
 
-  it("the note's total follows the field, so re-entering the logged payment shows the double count", () => {
+  it("the label says the field is only what was paid before the log", () => {
+    expect(paidSoFarLabel(draftFromProfile(profile, log))).toBe("IRS payments made before you started logging here");
+    expect(paidSoFarLabel(draftFromProfile(profile, []))).toBe("Paid so far for 2026");
+    expect(paidSoFarLabel(complete)).toBe("Paid so far for 2026");
+  });
+
+  it("qa's 4,700 (lump + logged): the hint shows, it is counted once → stored 3,700, Pay $1,300", () => {
     const d = { ...draftFromProfile(profile, log), estimatedPaid: 4700 };
-    expect(paidSoFarNote(d)).toContain("Total paid: $5,700.");
+    expect(paidSoFarNote(d)).toBe("Looks like this includes the $1,000 you logged; we’ll count it once.");
+    const saved = draftToProfile(d, NOW)!;
+    expect(saved.estimatedPaid).toBe(3700);
+    expect(money(payNowOf(saved))).toBe("$1,300");
+  });
+
+  it("3,700 unchanged: no hint, stored as is, Pay $1,300", () => {
+    const d = draftFromProfile(profile, log);
+    expect(paidSoFarNote(d)).not.toContain("Looks like");
+    const saved = draftToProfile(d, NOW)!;
+    expect(saved.estimatedPaid).toBe(3700);
+    expect(money(payNowOf(saved))).toBe("$1,300");
+  });
+
+  it("5,000 (≥ the total): stored 4,000; below the total (4,000) stored as entered", () => {
+    const at = (v: number) => draftToProfile({ ...draftFromProfile(profile, log), estimatedPaid: v }, NOW)!.estimatedPaid;
+    expect(at(5000)).toBe(4000);
+    expect(at(4000)).toBe(4000);
+    expect(paidSoFarNote({ ...draftFromProfile(profile, log), estimatedPaid: 4000 })).toContain("Total paid: $5,000.");
   });
 
   it("no note without logged IRS payments or outside edit mode", () => {

@@ -79,10 +79,14 @@ export async function restoreIfEmpty(deps: SyncDeps = browserDeps()): Promise<Re
   }
 }
 
-/** keepalive on every PUT, so leaving the page (navigation, tab close) doesn't abort a save in flight. */
-function put(deps: SyncDeps, body: string, onFail: () => void): void {
+/**
+ * keepalive only for sends made while the page is going (hide, unload, unmount, Start over), so they outlive
+ * it. Debounced saves don't use it (browsers cap keepalive bodies in flight); one aborted by a full reload is
+ * sent again by the next /plan mount, which always saves once.
+ */
+function put(deps: SyncDeps, body: string, keepalive: boolean, onFail: () => void): void {
   deps
-    .fetch(URL_, { method: "PUT", headers: { "content-type": "application/json" }, body, keepalive: true })
+    .fetch(URL_, { method: "PUT", headers: { "content-type": "application/json" }, body, keepalive })
     .then((res) => {
       if (!res.ok) {
         onFail();
@@ -103,23 +107,23 @@ export function startSync(deps: SyncDeps = browserDeps()): () => void {
   let timer: ReturnType<typeof setTimeout> | null = null;
   let lastSent: string | null = null;
 
-  const send = () => {
+  const send = (keepalive: boolean) => {
     timer = null;
     const body = syncBody(deps.snapshot());
     if (body === null || body === lastSent) return;
     lastSent = body;
-    put(deps, body, () => (lastSent = null));
+    put(deps, body, keepalive, () => (lastSent = null));
   };
 
   const flush = () => {
     if (!timer) return;
     clearTimeout(timer);
-    send();
+    send(true);
   };
 
   const schedule = () => {
     if (timer) clearTimeout(timer);
-    timer = setTimeout(send, SYNC_DEBOUNCE_MS);
+    timer = setTimeout(() => send(false), SYNC_DEBOUNCE_MS);
   };
 
   const unsubscribe = deps.onChange(schedule);
@@ -141,7 +145,7 @@ export function startSync(deps: SyncDeps = browserDeps()): () => void {
 export function clearSavedCopy(deps: SyncDeps = browserDeps()): void {
   restoreSuppressed = true;
   const body = clearedBody(deps.snapshot());
-  if (body !== null) put(deps, body, () => {});
+  if (body !== null) put(deps, body, true, () => {});
 }
 
 /** Test hook: forget the "Start over" flag. */

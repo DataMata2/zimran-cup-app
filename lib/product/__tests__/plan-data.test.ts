@@ -242,6 +242,8 @@ describe("client sync", () => {
     await vi.advanceTimersByTimeAsync(20);
     expect(calls).toHaveLength(1);
     expect(calls[0].init?.method).toBe("PUT");
+    // A debounced save is a normal request; only the page-going flush uses keepalive.
+    expect(calls[0].init?.keepalive).toBe(false);
     expect(JSON.parse(String(calls[0].init?.body))).toEqual({ profile, log: [entry], added: 1 });
     // Nothing changed: no second PUT.
     listeners.forEach((l) => l());

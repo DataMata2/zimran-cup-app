@@ -10,10 +10,8 @@ import { todayIso } from "@/lib/product/asof";
 import {
   checkWithEngine,
   clampStep,
-  draftFromProfile,
   draftToProfile,
   loggedIncomeOf,
-  emptyDraft,
   firstIncompleteStep,
   QUIZ_STEPS,
   stepErrors,
@@ -22,7 +20,7 @@ import {
   type QuizStep,
   type StepErrors,
 } from "@/lib/product/quiz";
-import { clearDraft, loadDraft, saveDraft } from "@/lib/product/quizDraft";
+import { chooseDraft, clearDraft, loadDraft, saveDraft } from "@/lib/product/quizDraft";
 import { getLog, getProfile, setProfile, useHydrated } from "@/lib/product/store";
 import { STEP_COPY } from "./copy";
 import { FilingStep, IncomeStep, PaymentsStep, PriorYearStep, StateStep, W2Step, type StepProps } from "./QuizSteps";
@@ -39,9 +37,7 @@ function stepFromUrl(): number | null {
 
 /** Start where the URL says (a refresh), else where the saved draft was, never past an unanswered step. */
 function initialDraft(): QuizDraft {
-  const saved = loadDraft();
-  const stored = getProfile();
-  const draft = saved ?? (stored && !stored.isExample ? draftFromProfile(stored, getLog()) : emptyDraft());
+  const draft = chooseDraft(loadDraft(), getProfile(), getLog());
   return { ...draft, step: clampStep(draft, stepFromUrl() ?? draft.step) };
 }
 

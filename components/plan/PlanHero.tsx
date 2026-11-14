@@ -242,7 +242,7 @@ function PayNowHeadline({ payNow, assumption }: { payNow: PayNow; assumption: st
       </div>
       <p className="border-t-3 border-ink bg-surface px-5 py-3 text-sm text-ink-2 sm:px-8">
         Penalty so far: {aboutMoney(penaltySoFar)} (estimate)
-        <span className="mt-0.5 block">{assumption ?? "Assumes the amount you\u2019d already paid was paid on time."}</span>
+        {assumption && <span className="mt-0.5 block">{assumption}</span>}
       </p>
     </div>
   );

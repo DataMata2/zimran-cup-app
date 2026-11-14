@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Public_Sans } from "next/font/google";
 import type { ReactNode } from "react";
-import { Footer } from "@/components/site/Footer";
-import { Header } from "@/components/site/Header";
 import "./globals.css";
 
 // Public Sans: a plain, sturdy grotesque with true tabular figures, so every amount lines up.
@@ -26,11 +24,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${publicSans.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col">
-        <Header />
-        {children}
-        <Footer />
-      </body>
+      <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
 }

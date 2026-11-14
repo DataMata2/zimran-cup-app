@@ -43,13 +43,13 @@ export default function LandingPage() {
     <main className="flex-1">
       {/* Hero. Phone: eyebrow, headline, sub, CTA and the example link fill the first screen; the poster follows. */}
       <section
-        className={`${GUTTER} grid gap-16 pt-6 pb-4 sm:pt-10 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] lg:items-center lg:gap-14 lg:pt-12 lg:pb-8`}
+        className={`${GUTTER} grid gap-16 pt-6 pb-4 sm:pt-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)] lg:items-center lg:gap-12 lg:pt-10 lg:pb-8`}
       >
         <div className="flex min-w-0 flex-col">
           <p className="mt-2 mb-3 font-mono text-[13px] leading-none font-bold tracking-[0.1em] text-ink uppercase min-[481px]:hidden">
             Freelancer?
           </p>
-          <h1 className="text-[2.875rem] leading-none font-extrabold tracking-[-0.045em] text-ink [font-variation-settings:'opsz'_96] min-[481px]:text-[clamp(2.75rem,8vw,6rem)] min-[481px]:leading-[0.94] max-[359px]:text-[2.5rem]">
+          <h1 className="text-[2.875rem] leading-none font-extrabold tracking-[-0.045em] text-ink [font-variation-settings:'opsz'_96] min-[481px]:text-[clamp(2.75rem,8vw,4.5rem)] min-[481px]:leading-[0.94] lg:text-[clamp(3.25rem,calc((100vw_-_488px)/9.6),4.5rem)] max-[359px]:text-[2.5rem]">
             <span className="max-[480px]:hidden">Freelancer? The IRS charged </span>
             <span className="my-[0.04em] inline-block -rotate-[1.5deg] rounded-md border-3 border-ink bg-sun px-[0.12em] shadow-[3px_3px_0_0_var(--color-ink)] sm:shadow-chip lg:shadow-[4px_4px_0_0_var(--color-ink)]">
               15.7&nbsp;million

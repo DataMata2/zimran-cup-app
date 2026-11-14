@@ -75,7 +75,7 @@ export function WantedPoster({ className }: { className?: string }) {
         id="wanted-title"
         className="mt-3 text-[1.25rem] leading-[1.05] font-extrabold tracking-[-0.03em] sm:mt-4 sm:text-[1.625rem]"
       >
-        The estimated-tax penalty
+        The <span className="whitespace-nowrap">estimated-tax</span> penalty
       </h2>
       <p className="mt-1 hidden font-mono text-[13px] leading-[1.4] font-medium tracking-[0.05em] text-ink-3 uppercase sm:block">
         Known aliases: Form 2210, &ldquo;underpayment&rdquo;

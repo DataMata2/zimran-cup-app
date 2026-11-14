@@ -8,20 +8,29 @@
 // only against percents (a derived percent passes only if the facts have it), and plain numbers (dates,
 // years, quarters, counts) against any number in the facts. Numbers the person typed themselves (Ask) are
 // allowed in any form. IRS form names (Form 1040-ES, 2210, 1099, W-2) are not amounts and are skipped.
+// Magnitudes are never allowed in the model's text: a suffixed number ("15k", "1,300k", "$2.5 million") and a
+// number word ("twelve hundred", "a million", "grand") are always unknown, because the facts write every
+// amount in full digits. (In what the person typed, a suffixed number vouches for its multiplied value.)
 
 import type { PlanFacts } from "./ai-prompts";
 
-export type NumberKind = "dollar" | "percent" | "plain";
+export type NumberKind = "dollar" | "percent" | "plain" | "magnitude";
 
 export interface FoundNumber {
   /** The text as written, e.g. "$1,850.00" or "20%". */
   raw: string;
   kind: NumberKind;
+  /** The number; for "magnitude" the multiplied value ("15k" → 15000), NaN for a number word with no digits. */
   value: number;
 }
 
 const FORM_NAMES = /\b(?:Form\s+)?(?:1040(?:-ES|-SR)?|1099(?:-[A-Z]+)?|2210|W-2|W-4)\b/g;
-const NUMBER = /(\$\s?)?(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?(\s?%|\s?percent\b)?/gi;
+const NUMBER =
+  /(\$\s?)?(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?(\s?(?:k|m|bn|hundred|thousand|million|billion|grand)\b)?(\s?%|\s?per\s?cent\b)?/gi;
+const MAGNITUDE_WORD = /\b(?:hundred|thousand|million|billion|grand)\b/gi;
+const MULTIPLIER: Record<string, number> = {
+  k: 1e3, thousand: 1e3, grand: 1e3, hundred: 100, m: 1e6, million: 1e6, bn: 1e9, billion: 1e9,
+};
 
 /** Every number in `text`: dollar amounts, percentages and plain numbers, in order. */
 export function extractNumbers(text: string): FoundNumber[] {
@@ -30,9 +39,16 @@ export function extractNumbers(text: string): FoundNumber[] {
   for (const m of cleaned.matchAll(NUMBER)) {
     const value = Number(m[2]!.replace(/,/g, "") + (m[3] ?? ""));
     if (!Number.isFinite(value)) continue;
-    const kind: NumberKind = m[1] ? "dollar" : m[4] ? "percent" : "plain";
+    if (m[4]) {
+      out.push({ raw: m[0].trim(), kind: "magnitude", value: value * MULTIPLIER[m[4].trim().toLowerCase()]! });
+      continue;
+    }
+    const kind: NumberKind = m[1] ? "dollar" : m[5] ? "percent" : "plain";
     out.push({ raw: m[0].trim(), kind, value });
   }
+  // Number words without digits ("twelve hundred dollars"): already caught above when they follow digits.
+  const withoutDigits = cleaned.replace(NUMBER, " ");
+  for (const m of withoutDigits.matchAll(MAGNITUDE_WORD)) out.push({ raw: m[0], kind: "magnitude", value: Number.NaN });
   return out;
 }
 
@@ -63,6 +79,7 @@ export function allowedNumbers(facts: readonly string[], loose: readonly string[
   const figures = new Set<string>();
   for (const s of facts) {
     for (const n of extractNumbers(s)) {
+      if (n.kind === "magnitude") continue;
       addValue(any, n.value);
       if (n.kind === "dollar") {
         addValue(dollars, n.value);
@@ -75,6 +92,7 @@ export function allowedNumbers(facts: readonly string[], loose: readonly string[
   }
   for (const s of loose) {
     for (const n of extractNumbers(s)) {
+      if (!Number.isFinite(n.value)) continue;
       addValue(any, n.value);
       addValue(dollars, n.value);
       percents.push(n.value);
@@ -93,6 +111,8 @@ function isAllowed(n: FoundNumber, allowed: AllowedNumbers): boolean {
       );
     case "plain":
       return allowed.any.has(key(n.value));
+    case "magnitude":
+      return false;
   }
 }
 

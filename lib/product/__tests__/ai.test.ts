@@ -356,6 +356,24 @@ describe("PP-QA-09: the number guard blocks unknown numbers before they reach th
     expect(unknownNumbers("If you earned $5,000 more", f, ["what if I earn 5000 more?"])).toEqual([]);
   });
 
+  it("magnitude suffixes and number words are always unknown (review fix round 1)", () => {
+    // Facts where 15 (Jan 15), 1,300 ($1,300) and 987,654,321 could otherwise vouch for the digits.
+    const f = ['{"a":"$1,300","d":"Jan 15, 2027","x":"987,654,321"}'];
+    const raws = (t: string) => unknownNumbers(t, f).map((n) => n.raw);
+    expect(raws("twelve hundred dollars")).toEqual(["hundred"]);
+    expect(raws("about 15k")).toEqual(["15k"]);
+    expect(raws("1,300k")).toEqual(["1,300k"]);
+    expect(raws("$987,654,321")).toEqual(["$987,654,321"]);
+    expect(raws("nine hundred eighty-seven million dollars")).toEqual(["hundred", "million"]);
+    expect(raws("$2.5 million, 3 grand, 1.2bn")).toEqual(["$2.5 million", "3 grand", "1.2bn"]);
+    expect(extractNumbers("about 15k")[0]).toMatchObject({ kind: "magnitude", value: 15000 });
+    expect(extractNumbers("15 per cent")[0]).toMatchObject({ kind: "percent", value: 15 });
+    // Ordinary words are not magnitudes.
+    expect(raws("Pay $1,300 by Jan 15, 2027 at 15 am, 15 more.")).toEqual([]);
+    // What the person typed as "10k" vouches for $10,000.
+    expect(unknownNumbers("If you earned $10,000 more", f, ["what if I earn 10k more?"])).toEqual([]);
+  });
+
   it("explain: \"$987,654,321\" never reaches the response, even when the model writes it twice", async () => {
     const { res, text, calls } = await run(explainHandler, [invented, invented]);
     expect(res.status).toBe(200);

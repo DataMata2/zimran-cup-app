@@ -12,6 +12,7 @@ import {
   clampStep,
   draftFromProfile,
   draftToProfile,
+  loggedIncomeOf,
   emptyDraft,
   firstIncompleteStep,
   QUIZ_STEPS,
@@ -40,7 +41,7 @@ function stepFromUrl(): number | null {
 function initialDraft(): QuizDraft {
   const saved = loadDraft();
   const stored = getProfile();
-  const draft = saved ?? (stored && !stored.isExample ? draftFromProfile(stored) : emptyDraft());
+  const draft = saved ?? (stored && !stored.isExample ? draftFromProfile(stored, getLog()) : emptyDraft());
   return { ...draft, step: clampStep(draft, stepFromUrl() ?? draft.step) };
 }
 
@@ -144,15 +145,16 @@ function Quiz() {
   }, []);
 
   function finish(d: QuizDraft) {
-    const profile = draftToProfile(d);
-    if (!profile) {
-      showStep(firstIncompleteStep(d) ?? 1);
-      return;
-    }
     // Editing your own plan keeps the payments you logged; a new plan (or one replacing the example) starts clean.
     const stored = getProfile();
     const keepLog = d.editing && stored !== null && !stored.isExample;
     const log = keepLog ? getLog() : [];
+    // "Received so far" included the logged income; take it back out as the log stands now.
+    const profile = draftToProfile(d, new Date(), loggedIncomeOf(log).total);
+    if (!profile) {
+      showStep(firstIncompleteStep(d) ?? 1);
+      return;
+    }
     const found = checkWithEngine(profile, log, asOf);
     if (found) {
       setProblem(found);
@@ -288,7 +290,19 @@ function Quiz() {
           )}
           <div className="flex items-center gap-3">
             {step === 1 ? (
-              <Button href={draft.editing ? "/plan" : "/"} variant="secondary" size="lg" className="px-5">
+              <Button
+                href={draft.editing ? "/plan" : "/"}
+                variant="secondary"
+                size="lg"
+                className="px-5"
+                onClick={() => {
+                  // Leaving an edit drops it: next time "Edit my answers" starts from the saved plan.
+                  if (draft.editing) {
+                    setLeaving(true);
+                    clearDraft();
+                  }
+                }}
+              >
                 <BackIcon />
                 Back
               </Button>

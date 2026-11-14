@@ -193,3 +193,67 @@ describe("parseDraft", () => {
     expect(parseDraft(partial)?.step).toBe(5);
   });
 });
+
+describe("editing with logged income", () => {
+  const profile: Profile = { ...EXAMPLE_ANSWERS, isExample: false, createdAt: NOW.toISOString() };
+  const entry = (kind: "income" | "irs", amount: number) => ({
+    id: `${kind}${amount}`, kind, amount, payer: "", date: "2026-11-03", setAside: 0, createdAt: NOW.toISOString(),
+  });
+  const log = [entry("income", 4200), entry("irs", 1000), entry("income", 800)];
+
+  it("prefills Received so far with the true total (profile + logged income)", () => {
+    const d = draftFromProfile(profile, log);
+    expect(d).toMatchObject({ ytdIncome: 52000 + 5000, loggedIncome: 5000, loggedCount: 2 });
+  });
+
+  it("stores entered − logged on save, so the engine's total is the entered amount", () => {
+    const d = { ...draftFromProfile(profile, log), ytdIncome: 60000, expectedIncome: 70000 };
+    expect(draftToProfile(d, NOW)?.ytdIncome).toBe(55000);
+    // Unchanged answers round-trip to the same profile.
+    expect(draftToProfile(draftFromProfile(profile, log), NOW)).toEqual(profile);
+  });
+
+  it("uses the log as it stands at save time and never stores below 0", () => {
+    const d = { ...draftFromProfile(profile, log), ytdIncome: 5000 };
+    expect(draftToProfile(d, NOW, 5000)?.ytdIncome).toBe(0);
+    expect(draftToProfile(d, NOW, 6000)?.ytdIncome).toBe(0);
+    expect(draftToProfile(d, NOW, 0)?.ytdIncome).toBe(5000);
+  });
+
+  it("rejects an entered total below what's logged; expected is checked against the entered total", () => {
+    const d = draftFromProfile(profile, log);
+    expect(stepErrors({ ...d, ytdIncome: 4000 }, 3).ytdIncome).toBe(
+      "That's less than the $5,000 you've already logged. Remove payments from your log, or enter at least $5,000.",
+    );
+    expect(isStepValid({ ...d, ytdIncome: 5000, expectedIncome: 5000 }, 3)).toBe(true);
+    expect(stepErrors({ ...d, ytdIncome: 57000, expectedIncome: 56000 }, 3).expectedIncome).toBeDefined();
+  });
+
+  it("a fresh (non-editing) draft stores the entered amount as is", () => {
+    expect(draftToProfile(complete, NOW, 5000)?.ytdIncome).toBe(52000);
+  });
+
+  it("parseDraft keeps logged income only for edits", () => {
+    const d = draftFromProfile(profile, log);
+    expect(parseDraft(JSON.stringify(d))).toMatchObject({ loggedIncome: 5000, loggedCount: 2 });
+    expect(parseDraft(JSON.stringify({ ...complete, loggedIncome: 5000, loggedCount: 2 }))).toMatchObject({
+      loggedIncome: 0, loggedCount: 0,
+    });
+  });
+});
+
+describe("engine messages", () => {
+  it("are plain, with no internal field names", () => {
+    const p = { ...draftToProfile(complete, NOW)!, w2Wages: -1 };
+    const orig = console.error;
+    console.error = () => {};
+    try {
+      const problem = checkWithEngine(p, [], "2026-11-14");
+      expect(problem?.step).toBe(4);
+      expect(problem?.message).not.toMatch(/w2Wages|finite/);
+      expect(problem?.message).toMatch(/^Please check/);
+    } finally {
+      console.error = orig;
+    }
+  });
+});

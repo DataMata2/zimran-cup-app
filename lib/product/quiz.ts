@@ -3,6 +3,7 @@
 // No tax figures are computed here; the engine validates the finished answers (see `checkWithEngine`).
 
 import { estimate, TaxInputError, type FilingStatus, type StateCode } from "@/lib/tax";
+import { money } from "./format";
 import { buildTaxInput } from "./input";
 import { isStateCode } from "./states";
 import type { LogEntry, Profile } from "./types";
@@ -20,6 +21,12 @@ export interface QuizDraft {
   step: QuizStep;
   /** Prefilled from a saved profile ("Edit my answers"): finishing keeps the payment log. */
   editing: boolean;
+  /**
+   * Editing only: income already logged on /plan (sum and count). In edit mode "Received so far" shows the
+   * true total (profile + logged), so on save the logged part is taken back out (see `draftToProfile`).
+   */
+  loggedIncome: number;
+  loggedCount: number;
   filingStatus: QuizFilingStatus | null;
   state: StateCode | null;
   ytdIncome: number | null;
@@ -39,6 +46,8 @@ export function emptyDraft(): QuizDraft {
     v: 1,
     step: 1,
     editing: false,
+    loggedIncome: 0,
+    loggedCount: 0,
     filingStatus: null,
     state: null,
     ytdIncome: null,
@@ -53,8 +62,25 @@ export function emptyDraft(): QuizDraft {
   };
 }
 
-/** A draft prefilled from a saved profile, for editing. */
-export function draftFromProfile(p: Profile): QuizDraft {
+/** Sum and count of the "I got paid" entries in a log. */
+export function loggedIncomeOf(log: readonly LogEntry[]): { total: number; count: number } {
+  let total = 0;
+  let count = 0;
+  for (const e of log) {
+    if (e.kind === "income") {
+      total += e.amount;
+      count += 1;
+    }
+  }
+  return { total, count };
+}
+
+/**
+ * A draft prefilled from a saved profile (and its log), for editing. "Received so far" is prefilled with
+ * the true total the engine sees: profile.ytdIncome + every logged income payment.
+ */
+export function draftFromProfile(p: Profile, log: readonly LogEntry[] = []): QuizDraft {
+  const logged = loggedIncomeOf(log);
   const status = (QUIZ_FILING_STATUSES as readonly string[]).includes(p.filingStatus)
     ? (p.filingStatus as QuizFilingStatus)
     : null;
@@ -63,9 +89,11 @@ export function draftFromProfile(p: Profile): QuizDraft {
   return {
     ...emptyDraft(),
     editing: true,
+    loggedIncome: logged.total,
+    loggedCount: logged.count,
     filingStatus: status,
     state: p.state,
-    ytdIncome: p.ytdIncome,
+    ytdIncome: p.ytdIncome + logged.total,
     expectedIncome: p.expectedIncome,
     hasW2,
     w2Wages: hasW2 ? p.w2Wages : null,
@@ -100,6 +128,8 @@ export function stepErrors(draft: QuizDraft, step: QuizStep): StepErrors {
       break;
     case 3:
       if (!isAmount(draft.ytdIncome) || !isAmount(draft.expectedIncome)) e._missing = "Enter both amounts.";
+      else if (draft.editing && draft.ytdIncome < draft.loggedIncome)
+        e.ytdIncome = `That's less than the ${money(draft.loggedIncome)} you've already logged. Remove payments from your log, or enter at least ${money(draft.loggedIncome)}.`;
       else if (draft.expectedIncome < draft.ytdIncome)
         e.expectedIncome = "The full year can't be less than what clients have paid you so far.";
       else if (draft.expectedIncome === 0) e.expectedIncome = "Enter what you expect clients to pay you in 2026.";
@@ -141,14 +171,23 @@ export function clampStep(draft: QuizDraft, wanted: number): QuizStep {
 // ---------------------------------------------------------------------------------------------------
 // Draft → Profile
 
-/** The finished answers as a Profile, or null if any step is incomplete. */
-export function draftToProfile(draft: QuizDraft, now: Date = new Date()): Profile | null {
+/**
+ * The finished answers as a Profile, or null if any step is incomplete. When editing, "Received so far" is
+ * the total including logged payments, so the stored profile.ytdIncome is that total minus `loggedIncome`
+ * (default: the draft's; pass the log's current sum at save time), never below 0.
+ */
+export function draftToProfile(
+  draft: QuizDraft,
+  now: Date = new Date(),
+  loggedIncome: number = draft.loggedIncome,
+): Profile | null {
   if (firstIncompleteStep(draft) !== null) return null;
+  const entered = draft.ytdIncome as number;
   const known = draft.priorKnown;
   return {
     filingStatus: draft.filingStatus as QuizFilingStatus,
     state: draft.state as StateCode,
-    ytdIncome: draft.ytdIncome as number,
+    ytdIncome: draft.editing ? Math.max(0, entered - loggedIncome) : entered,
     expectedIncome: draft.expectedIncome as number,
     w2Wages: draft.hasW2 ? (draft.w2Wages as number) : 0,
     w2Withholding: draft.hasW2 ? (draft.w2Withholding as number) : 0,
@@ -185,6 +224,16 @@ export function stepForEngineField(field: string): QuizStep {
   return FIELD_STEP[root] ?? QUIZ_STEPS;
 }
 
+/** What to tell the person when the engine rejects an answer on a step. */
+const ENGINE_MESSAGES: Record<QuizStep, string> = {
+  1: "Please choose your filing status again.",
+  2: "Please choose your state again.",
+  3: "Please check these amounts. Enter whole dollars, 0 or more.",
+  4: "Please check your W-2 amounts. Enter whole dollars, 0 or more.",
+  5: "Please check last year’s amounts, or choose I don’t know.",
+  6: "Please check this amount. Enter whole dollars, 0 or more, or choose None yet.",
+};
+
 export interface EngineProblem {
   step: QuizStep;
   message: string;
@@ -200,7 +249,10 @@ export function checkWithEngine(profile: Profile, log: readonly LogEntry[], asOf
     return null;
   } catch (err) {
     if (err instanceof TaxInputError) {
-      return { step: stepForEngineField(err.field), message: `We couldn't use this answer (${err.message}). Check it and try again.` };
+      // The engine's text names internal fields; it goes to the console, the person gets a plain message.
+      console.error("Penaltyproof quiz: engine rejected the answers", err.message);
+      const step = stepForEngineField(err.field);
+      return { step, message: ENGINE_MESSAGES[step] };
     }
     throw err;
   }
@@ -252,6 +304,8 @@ export function parseDraft(raw: string | null): QuizDraft | null {
     v: 1,
     step: 1,
     editing: o.editing === true,
+    loggedIncome: o.editing === true ? (numOrNull(o.loggedIncome) ?? 0) : 0,
+    loggedCount: o.editing === true && Number.isInteger(o.loggedCount) && (o.loggedCount as number) > 0 ? (o.loggedCount as number) : 0,
     filingStatus: (QUIZ_FILING_STATUSES as readonly unknown[]).includes(o.filingStatus)
       ? (o.filingStatus as QuizFilingStatus)
       : null,

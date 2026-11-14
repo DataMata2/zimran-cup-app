@@ -119,7 +119,15 @@ export function IncomeStep({ draft, update, errors, touch, asOf }: StepProps & {
 
   return (
     <div className="flex flex-col gap-5">
-      <Field label="Received so far in 2026" error={errors.ytdIncome}>
+      <Field
+        label="Received so far in 2026"
+        hint={
+          draft.editing && draft.loggedCount > 0
+            ? `Includes ${money(draft.loggedIncome)} from ${draft.loggedCount} ${draft.loggedCount === 1 ? "payment" : "payments"} you logged.`
+            : undefined
+        }
+        error={errors.ytdIncome}
+      >
         <MoneyInput
           value={draft.ytdIncome}
           onValueChange={(ytdIncome) => update({ ytdIncome })}

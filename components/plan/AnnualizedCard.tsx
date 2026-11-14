@@ -110,7 +110,7 @@ function Headline({ headline }: { headline: AnnualizedHeadline }) {
       return (
         <>
           <p className="text-lg font-bold tracking-[-0.01em] text-ink">
-            Your payments came in evenly, so the regular schedule fits.
+            On these figures, the regular schedule already costs no more.
           </p>
           <p className="mt-1 text-sm text-ink-2">The annualized method helps when most income lands late in the year.</p>
         </>

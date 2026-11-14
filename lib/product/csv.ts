@@ -82,7 +82,7 @@ export function buildCsv({ log, result, annualized, asOf }: CsvData): string {
     rows.push(
       [],
       ["Annualized instalments (Form 2210 Schedule AI)"],
-      ["Quarter", "Due", "Annualized income", "Required (line 25)"],
+      ["Quarter", "Due", "Annualized AGI", "Required (line 25)"],
       ...annualized.installments.map((i): Cell[] => [`Q${i.quarter}`, i.due, i.annualizedIncome, i.required]),
     );
   }

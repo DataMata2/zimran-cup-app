@@ -140,6 +140,7 @@ export function templateExplanation(facts: PlanFacts): string {
   if (then) parts.push(`${then.label}: ${then.amount} by ${then.by}.`);
   const accrued = h.accruedPenalty as { says: string } | undefined;
   if (accrued) parts.push(accrued.says);
+  if (typeof h.assumption === "string") parts.push(h.assumption);
   parts.push(facts.safeHarbor.says);
   parts.push(facts.setAside.says);
   parts.push("Money you set aside is only saved; only payments to the IRS protect you from the underpayment penalty.");

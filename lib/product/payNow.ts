@@ -200,8 +200,34 @@ export function payTargetPurpose(latePenalty: number | null): string {
   return latePenalty === null ? "to stay penalty-proof." : "to keep the penalty from growing.";
 }
 
-/** The headline and the line under it once nothing more is due for the year. */
-export function allPaidCopy(latePenalty: number | null): { headline: string; body: string } {
+/**
+ * PP-QA-03: the quiz's "paid so far" lump has no dates, so the plan assumes it went in on time. While a lump
+ * is in the plan, no copy says "penalty-proof": the headlines turn neutral and `lumpAssumptionText` says
+ * what is assumed.
+ */
+export const hasDatelessLump = (lumpPaid: number | undefined): boolean => (lumpPaid ?? 0) > 0;
+
+/** The line next to the result while a quiz lump is in the plan. */
+export function lumpAssumptionText(lumpPaid: number): string {
+  return `Assumes the ${money(lumpPaid)} you’d already paid went in by each deadline. If some was late, log it under “I paid the IRS” instead.`;
+}
+
+/**
+ * What follows "Pay $X by <date>" in the pay-target headline, with its leading space: the purpose, or just
+ * "." while a quiz lump is in the plan (neutral wording, PP-QA-03).
+ */
+export function payTargetEnding(latePenalty: number | null, lumpPaid = 0): string {
+  if (latePenalty === null && hasDatelessLump(lumpPaid)) return ".";
+  return ` ${payTargetPurpose(latePenalty)}`;
+}
+
+/** The headline and the line under it once nothing more is due for the year (neutral while a quiz lump is in the plan). */
+export function allPaidCopy(latePenalty: number | null, lumpPaid = 0): { headline: string; body: string } {
+  if (latePenalty === null && hasDatelessLump(lumpPaid))
+    return {
+      headline: "You’re paid up for 2026.",
+      body: "What you’ve paid meets the safe-harbor amount. Keep setting money aside for the balance with your return.",
+    };
   return latePenalty === null
     ? {
         headline: "You’re penalty-proof for 2026.",

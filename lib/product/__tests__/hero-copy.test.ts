@@ -6,7 +6,7 @@ import { planFacts, unknownDollarAmounts } from "@/lib/product/ai-prompts";
 import { buildExample } from "@/lib/product/example";
 import { buildTaxInput } from "@/lib/product/input";
 import { money } from "@/lib/product/format";
-import { catchUpLine, latePaidPenalty, latePaidText } from "@/lib/product/payNow";
+import { catchUpLine, latePaidPenalty, latePaidText, lumpAssumptionText } from "@/lib/product/payNow";
 import type { LogEntry, Profile } from "@/lib/product/types";
 import { estimate, estimateAccruedPenalty, type TaxResult } from "@/lib/tax";
 
@@ -24,7 +24,7 @@ const irs = (id: string, amount: number): LogEntry => ({
 });
 
 const plan = (profile: Profile, log: LogEntry[]) => estimate(buildTaxInput(profile, log, AS_OF));
-const hero = (result: TaxResult) => renderToStaticMarkup(createElement(PlanHero, { result }));
+const hero = (result: TaxResult, lumpPaid = 0) => renderToStaticMarkup(createElement(PlanHero, { result, lumpPaid }));
 /** Facts plus the hero's own text: every dollar figure the screen or the model may cite. */
 const factsJson = (result: TaxResult, log: LogEntry[], profile: Profile) => JSON.stringify(planFacts(result, log, profile));
 
@@ -95,26 +95,72 @@ describe("hero once everything is paid after a late quarter (Maya pays $1,850, t
   });
 });
 
-describe("hero for a clean, on-time profile", () => {
+describe("hero for a clean, on-time profile (no quiz lump, IRS payments logged on time)", () => {
+  const onTimeLogged: Profile = { ...onTime, estimatedPaid: 0 };
+  const paid = (id: string, date: string, amount: number): LogEntry => ({ ...irs(id, amount), date });
+  const q1q3 = [paid("a", "2026-04-15", 2000), paid("b", "2026-06-15", 2000), paid("c", "2026-09-15", 2000)];
+
   it("still says penalty-proof with a pay target", () => {
-    const result = plan(onTime, []);
+    const result = plan(onTimeLogged, q1q3);
     expect(latePaidPenalty(result, estimateAccruedPenalty(result))).toBeNull();
-    const html = hero(result);
-    expect(html).toContain("to stay");
-    expect(html).toContain("penalty-proof.");
+    const html = hero(result, 0);
+    expect(html).toContain("to stay penalty-proof.");
     expect(html).not.toContain("in penalty has built up");
-    const facts = planFacts(result, [], onTime);
+    expect(html).not.toContain("went in by each deadline");
+    const facts = planFacts(result, q1q3, onTimeLogged);
     expect(facts.headline.says).toMatch(/^Pay \$[\d,]+ by Jan 15, 2027 to stay penalty-proof\.$/);
     expect(facts.headline).not.toHaveProperty("accruedPenalty");
+    expect(facts.headline).not.toHaveProperty("assumption");
   });
 
   it("still says penalty-proof once all is paid", () => {
-    const paidUp = { ...onTime, estimatedPaid: 9000 };
-    const result = plan(paidUp, []);
-    const html = hero(result);
+    const all = [...q1q3, paid("d", "2026-11-14", 3000)];
+    const result = plan(onTimeLogged, all);
+    const html = hero(result, 0);
     expect(html).toContain("You’re penalty-proof for 2026.");
     expect(html).toContain("no underpayment penalty applies");
-    expect(planFacts(result, [], paidUp).headline.says).toBe("You’re penalty-proof for 2026. No more estimated payments are needed.");
+    expect(planFacts(result, all, onTimeLogged).headline.says).toBe("You’re penalty-proof for 2026. No more estimated payments are needed.");
+  });
+});
+
+describe("PP-QA-03: a quiz lump with unknown dates never reads as penalty-proof", () => {
+  const assumption = "Assumes the $8,000 you’d already paid went in by each deadline. If some was late, log it under “I paid the IRS” instead.";
+
+  it("states the assumption with the amount", () => {
+    expect(lumpAssumptionText(8000)).toBe(assumption);
+  });
+
+  it("all paid by the lump ($8,000): neutral headline, the assumption, no penalty-proof in the hero or the facts", () => {
+    const lump = { ...onTime, estimatedPaid: 8000 };
+    const result = plan(lump, []);
+    const html = hero(result, 8000);
+    expect(html).toContain("You’re paid up for 2026.");
+    expect(html).toContain("went in by each deadline");
+    expect(html).not.toMatch(/penalty-proof/i);
+    expect(html).not.toContain("no underpayment penalty applies");
+    const facts = planFacts(result, [], lump);
+    expect(facts.headline.says).toBe("You’re paid up for 2026. No more estimated payments are needed.");
+    expect(facts.headline).toMatchObject({ assumption });
+    expect(JSON.stringify(facts)).not.toMatch(/penalty-proof/i);
+  });
+
+  it("pay target with a lump: \"Pay $X by <date>.\" and the assumption, in the hero and the facts", () => {
+    const result = plan(onTime, []); // $6,000 lump, Q4 still due
+    const html = hero(result, 6000);
+    expect(html).not.toMatch(/penalty-proof/i);
+    expect(html).toContain(lumpAssumptionText(6000));
+    const facts = planFacts(result, [], onTime);
+    expect(facts.headline.says).toMatch(/^Pay \$[\d,]+ by Jan 15, 2027\.$/);
+    expect(facts.headline).toMatchObject({ assumption: lumpAssumptionText(6000) });
+    expect(JSON.stringify(facts)).not.toMatch(/penalty-proof/i);
+  });
+
+  it("past due with a lump (Maya): the assumption replaces the generic on-time line", () => {
+    const result = plan(maya, mayaLog);
+    const html = hero(result, maya.estimatedPaid);
+    expect(html).toContain("Assumes the $3,700 you’d already paid went in by each deadline.");
+    expect(html).not.toMatch(/penalty-proof/i);
+    expect(planFacts(result, mayaLog, maya).headline).toMatchObject({ assumption: lumpAssumptionText(3700) });
   });
 });
 

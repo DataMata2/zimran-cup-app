@@ -9,11 +9,12 @@ import {
   catchUpLine,
   latePaidPenalty,
   latePaidText,
+  lumpAssumptionText,
   missedLabel,
   nextLabel,
   payNowPlan,
   payTarget,
-  payTargetPurpose,
+  payTargetEnding,
   type PayNow,
 } from "@/lib/product/payNow";
 import { safeHarborCopy } from "@/lib/product/safeHarborCopy";
@@ -22,20 +23,22 @@ import { estimateAccruedPenalty, type TaxResult } from "@/lib/tax";
 const DIRECT_PAY_URL = "https://www.irs.gov/payments/direct-pay";
 
 /** The two numbers: what to pay by the next deadline, and the share of every payment to set aside. */
-export function PlanHero({ result, className }: { result: TaxResult; className?: string }) {
+/** `lumpPaid` = profile.estimatedPaid, the quiz's undated "paid so far" (PP-QA-03: no "penalty-proof" while > 0). */
+export function PlanHero({ result, lumpPaid = 0, className }: { result: TaxResult; lumpPaid?: number; className?: string }) {
   const target = payTarget(result);
   const penalty = estimateAccruedPenalty(result);
   const payNow = payNowPlan(result, penalty);
   // Penalty from quarters paid late; the headlines below must not claim "penalty-proof" while it is set.
   const latePenalty = latePaidPenalty(result, penalty);
-  const allPaid = allPaidCopy(latePenalty);
+  const allPaid = allPaidCopy(latePenalty, lumpPaid);
+  const assumption = lumpPaid > 0 ? lumpAssumptionText(lumpPaid) : null;
   const { rate } = result.setAside;
   const catchUp = catchUpLine(result);
 
   return (
     <section aria-labelledby="pay-title" className={cx("flex min-w-0 flex-col gap-6 sm:gap-8", className)}>
       {payNow ? (
-        <PayNowHeadline payNow={payNow} />
+        <PayNowHeadline payNow={payNow} assumption={assumption} />
       ) : target ? (
         <div className="flow-root rounded-lg border-3 border-ink bg-surface px-5 py-6 shadow-hard sm:px-8 sm:py-8">
           <DateTile iso={target.due} className="float-right mb-2 ml-4" />
@@ -45,10 +48,11 @@ export function PlanHero({ result, className }: { result: TaxResult; className?:
           >
             <AmountLabel>{nextLabel(target.quarter)}</AmountLabel>
             Pay <span className="font-extrabold text-ink tabular-nums">{money(target.amount)}</span> by{" "}
-            <span className="font-extrabold whitespace-nowrap text-ink">{longDate(target.due)}</span>{" "}
-            {payTargetPurpose(latePenalty)}
+            <span className="font-extrabold whitespace-nowrap text-ink">{longDate(target.due)}</span>
+            {payTargetEnding(latePenalty, lumpPaid)}
           </h1>
           {latePenalty !== null && <LatePaidNote amount={latePenalty} />}
+          {assumption && <p className="mt-4 max-w-[52ch] text-sm text-ink-2">{assumption}</p>}
           {!target.isNext && result.nextDeadline && (
             <p className="mt-4 text-base text-ink-2">
               You&rsquo;ve already covered the {longDate(result.nextDeadline.due)} deadline.
@@ -71,6 +75,7 @@ export function PlanHero({ result, className }: { result: TaxResult; className?:
           </h1>
           <p className="mt-4 max-w-[52ch] text-base font-medium text-ink">{allPaid.body}</p>
           {latePenalty !== null && <LatePaidNote amount={latePenalty} onMint />}
+          {assumption && <p className="mt-4 max-w-[52ch] text-sm text-ink">{assumption}</p>}
         </div>
       )}
 
@@ -209,7 +214,7 @@ function NextPayment({ then }: { then: NonNullable<PayNow["then"]> }) {
 }
 
 /** Past-due headline: the missed payment to make now, what each week of waiting costs, then the next one. */
-function PayNowHeadline({ payNow }: { payNow: PayNow }) {
+function PayNowHeadline({ payNow, assumption }: { payNow: PayNow; assumption: string | null }) {
   const { amount, quarters, weeklyPenalty, penaltySoFar } = payNow;
   return (
     <div className="overflow-hidden rounded-lg border-3 border-ink bg-hot shadow-hard">
@@ -237,7 +242,7 @@ function PayNowHeadline({ payNow }: { payNow: PayNow }) {
       </div>
       <p className="border-t-3 border-ink bg-surface px-5 py-3 text-sm text-ink-2 sm:px-8">
         Penalty so far: {aboutMoney(penaltySoFar)} (estimate)
-        <span className="mt-0.5 block">Assumes the amount you&rsquo;d already paid was paid on time.</span>
+        <span className="mt-0.5 block">{assumption ?? "Assumes the amount you\u2019d already paid was paid on time."}</span>
       </p>
     </div>
   );

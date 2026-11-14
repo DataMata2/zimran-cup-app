@@ -24,7 +24,7 @@ const json = (body: unknown, status = 200) => Response.json(body, { status, head
 /** PUTs per guest per hour. */
 export const PLAN_DATA_GUEST_LIMIT = 120;
 /** PUTs per IP per hour, across guests. */
-export const PLAN_DATA_IP_LIMIT = 60;
+export const PLAN_DATA_IP_LIMIT = 600;
 const defaultLimiter = new RateLimiter(PLAN_DATA_GUEST_LIMIT);
 const defaultIpLimiter = new RateLimiter(PLAN_DATA_IP_LIMIT);
 const TOO_MANY = "Too many saves. Try again later.";

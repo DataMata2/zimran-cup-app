@@ -41,10 +41,20 @@ const sizes: Record<ButtonSize, string> = {
   lg: "h-13 px-6 text-base",
 };
 
+/** The button look for elements Button can't render, e.g. a plain <a download> to a route handler. */
+export function buttonClasses({
+  variant = "primary",
+  size = "md",
+  fullWidth = false,
+  className,
+}: Pick<CommonProps, "variant" | "size" | "fullWidth" | "className"> = {}): string {
+  return cx(base, variants[variant], sizes[size], fullWidth && "w-full", className);
+}
+
 /** Primary / secondary / ghost button in three sizes; a link when `href` is given. */
 export function Button(props: ButtonProps) {
   const { variant = "primary", size = "md", fullWidth = false, className, children } = props;
-  const classes = cx(base, variants[variant], sizes[size], fullWidth && "w-full", className);
+  const classes = buttonClasses({ variant, size, fullWidth, className });
 
   if (props.href !== undefined) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -63,6 +63,8 @@ export async function createCheckoutSession({
   const p = PLANS[plan];
   return getStripe().checkout.sessions.create({
     mode: "subscription",
+    // US product: always charge in USD, never convert to the visitor's local currency.
+    adaptive_pricing: { enabled: false },
     line_items: [
       {
         quantity: 1,

@@ -21,11 +21,18 @@ export function getStripe(): Stripe {
   return client;
 }
 
-/** Placeholder plans; prices are created inline via price_data (no Stripe price objects needed). */
+/** Penaltyproof plans (yearly first); prices are created inline via price_data (no Stripe price objects needed). */
 export const PLANS = {
-  pro: {
-    name: "Pro",
-    description: "Placeholder Pro plan",
+  yearly: {
+    name: "Penaltyproof Pro — tax year",
+    description: "Full tax year of Penaltyproof Pro",
+    amountCents: 5900,
+    currency: "usd",
+    interval: "year",
+  },
+  monthly: {
+    name: "Penaltyproof Pro",
+    description: "Penaltyproof Pro, billed monthly",
     amountCents: 999,
     currency: "usd",
     interval: "month",
@@ -34,6 +41,9 @@ export const PLANS = {
 
 /** Key of a plan in PLANS. */
 export type PlanId = keyof typeof PLANS;
+
+/** Plan used when none is given. */
+export const DEFAULT_PLAN: PlanId = "yearly";
 
 /** Type guard for plan ids coming from forms/JSON. */
 export function isPlanId(value: unknown): value is PlanId {
@@ -80,11 +90,11 @@ export async function createCheckoutSession({
     metadata: { guestId, plan },
     subscription_data: { metadata: { guestId, plan } },
     success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/pricing`,
+    cancel_url: `${origin}/plan?checkout=cancelled`,
   });
 }
 
-/** Formats a plan price, e.g. "$9.99 / month". */
+/** Formats a plan price, e.g. "$59.00 / year" or "$9.99 / month". */
 export function formatPlanPrice(plan: PlanId): string {
   const p = PLANS[plan];
   const amount = new Intl.NumberFormat("en-US", { style: "currency", currency: p.currency }).format(p.amountCents / 100);

@@ -17,7 +17,7 @@ export default function CheckoutSuccessPage({ searchParams }: PageProps<"/checko
   );
 }
 
-type Result = { title: string; message: string };
+type Result = { title: string; message: string; ok?: boolean };
 
 /** Verifies the session belongs to this guest and is paid, then records Pro (idempotent). */
 async function confirm(sessionId: string | undefined): Promise<Result> {
@@ -40,12 +40,13 @@ async function confirm(sessionId: string | undefined): Promise<Result> {
     console.error("success setPro failed:", err instanceof Error ? err.message : err);
     return fail("Payment received but could not be recorded. Please contact support.");
   }
-  return { title: "You're Pro", message: "Thanks! Your plan is now Pro." };
+  return { title: "You're Pro", message: "Thanks! Your plan is now Pro.", ok: true };
 }
 
 async function Confirm({ searchParams }: { searchParams: PageProps<"/checkout/success">["searchParams"] }) {
   const raw = (await searchParams).session_id;
   const result = await confirm(typeof raw === "string" ? raw : undefined);
+  const success = result.ok === true;
   return (
     <>
       <CardHeader>
@@ -53,8 +54,8 @@ async function Confirm({ searchParams }: { searchParams: PageProps<"/checkout/su
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <p className="text-sm text-muted-foreground">{result.message}</p>
-        <Link href="/app" className="text-sm font-medium underline underline-offset-4">
-          Go to the app
+        <Link href={success ? "/plan?pro=1" : "/plan"} className="text-sm font-medium underline underline-offset-4">
+          Back to my plan
         </Link>
       </CardContent>
     </>

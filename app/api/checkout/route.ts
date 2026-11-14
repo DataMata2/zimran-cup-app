@@ -1,18 +1,18 @@
 import { getOrCreateGuestId } from "@/lib/guest";
 import { isPro } from "@/lib/supabase";
-import { createCheckoutSession, getOrigin, isPlanId, type PlanId } from "@/lib/stripe";
+import { createCheckoutSession, DEFAULT_PLAN, getOrigin, isPlanId, type PlanId } from "@/lib/stripe";
 
 /** POST /api/checkout: form ({plan}) → 303 to Stripe; JSON ({plan}) → { url }. */
 export async function POST(req: Request) {
   const isJson = (req.headers.get("content-type") ?? "").includes("application/json");
-  let plan: unknown = "pro";
+  let plan: unknown = DEFAULT_PLAN;
   try {
     if (isJson) {
       const body = (await req.json().catch(() => ({}))) as { plan?: unknown };
-      plan = body.plan ?? "pro";
+      plan = body.plan ?? DEFAULT_PLAN;
     } else {
       const form = await req.formData().catch(() => null);
-      plan = form?.get("plan") ?? "pro";
+      plan = form?.get("plan") ?? DEFAULT_PLAN;
     }
   } catch {
     // fall through with default plan
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   try {
     const guestId = await getOrCreateGuestId();
     if (await isPro(guestId)) {
-      return isJson ? Response.json({ url: `${origin}/pricing` }) : Response.redirect(`${origin}/pricing`, 303);
+      return isJson ? Response.json({ url: `${origin}/plan` }) : Response.redirect(`${origin}/plan`, 303);
     }
     const session = await createCheckoutSession({ plan: plan as PlanId, guestId, origin });
     if (!session.url) throw new Error("Stripe returned no checkout URL");

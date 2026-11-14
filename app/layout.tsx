@@ -31,7 +31,7 @@ const DESCRIPTION =
 // The OG image (app/opengraph-image.png) and icons (app/icon.svg, apple-icon.png, favicon.ico) are file
 // conventions; metadataBase makes their URLs absolute for link previews.
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.APP_URL || "http://localhost:3000"),
+  metadataBase: new URL(process.env.APP_URL || "https://zimran.incode.kz"),
   title: TITLE,
   description: DESCRIPTION,
   applicationName: "Penaltyproof",

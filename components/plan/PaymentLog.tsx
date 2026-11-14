@@ -221,7 +221,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
               <Field
                 label={kind === "income" ? "Date you were paid" : "Date you paid the IRS"}
                 hideLabel
-                hint={kind === "irs" && showIrsBackdateHint(irsDate, savedProfile) ? IRS_BACKDATE_HINT : undefined}
+                hint={kind === "irs" && showIrsBackdateHint(irsDate, savedProfile) && logDateError("irs", irsDate, asOf) === null ? IRS_BACKDATE_HINT : undefined}
               >
                 <TextInput
                   type="date"

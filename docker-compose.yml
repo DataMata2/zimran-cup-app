@@ -1,5 +1,6 @@
+# The service name becomes a DNS alias on the shared proxy network: never use generic names (app, db, web, api).
 services:
-  app:
+  zimran:
     container_name: zimran-app
     build:
       context: .

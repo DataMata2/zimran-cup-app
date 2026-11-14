@@ -26,7 +26,7 @@ The model sees only display strings of the engine's results, plus filing status,
 
 ### Tests
 
-`pnpm test`: 268 tests in 18 files. 71 are the engine's (`lib/tax/__tests__`, including four personas checked by hand against the IRS worksheet, see below); 197 cover the product layer: input building, the meter, pay-now split, quiz validation, storage, server copy, the guest cookie, Pro helpers, CSV, AI facts, guards and post-checks.
+`pnpm test`: 288 tests in 21 files. 71 are the engine's (`lib/tax/__tests__`, including four personas checked by hand against the IRS worksheet, see below); 217 cover the product layer: input building, the meter, pay-now split, quiz validation, storage, server copy, the guest cookie, Pro helpers, CSV, AI facts, guards and post-checks.
 
 ### Guest mode
 

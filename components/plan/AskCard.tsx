@@ -7,7 +7,6 @@ import { AiCallError, streamText, type PlanBody } from "@/lib/product/aiClient";
 import { LockIcon } from "./LockIcon";
 import type { PaywallReason } from "./Paywall";
 
-const SUGGESTIONS = ["Why is my Q4 payment higher?", "What if I earn $10,000 more?", "What happens if I skip a payment?"];
 /** History kept in the browser and sent with each question. */
 const MAX_MESSAGES = 10;
 const MAX_CHARS = 1_000;
@@ -21,11 +20,14 @@ type Msg = { role: "user" | "assistant"; content: string };
  */
 export function AskCard({
   plan,
+  suggestions,
   pro,
   onNeedPro,
   className,
 }: {
   plan: PlanBody;
+  /** Example questions that fit this plan (see lib/product/askSuggestions). */
+  suggestions: readonly string[];
   pro: boolean;
   onNeedPro: (reason: PaywallReason) => void;
   className?: string;
@@ -39,17 +41,17 @@ export function AskCard({
         {!pro && <LockIcon />}
       </div>
       <p className="mt-1 text-sm text-ink-2">Questions about this plan, answered from its numbers.</p>
-      {pro ? <Chat plan={plan} onNeedPro={onNeedPro} /> : <Locked onNeedPro={onNeedPro} />}
+      {pro ? <Chat plan={plan} suggestions={suggestions} onNeedPro={onNeedPro} /> : <Locked suggestions={suggestions} onNeedPro={onNeedPro} />}
     </section>
   );
 }
 
-function Locked({ onNeedPro }: { onNeedPro: (reason: PaywallReason) => void }) {
+function Locked({ suggestions, onNeedPro }: { suggestions: readonly string[]; onNeedPro: (reason: PaywallReason) => void }) {
   return (
     <div className="mt-4 rounded-lg border border-line bg-surface px-5 py-5 sm:px-6">
       <p className="text-sm font-semibold text-ink">For example</p>
       <ul className="mt-2 flex flex-col gap-1.5">
-        {SUGGESTIONS.map((q) => (
+        {suggestions.map((q) => (
           <li key={q} className="text-sm text-ink-2">
             &ldquo;{q}&rdquo;
           </li>
@@ -62,7 +64,7 @@ function Locked({ onNeedPro }: { onNeedPro: (reason: PaywallReason) => void }) {
   );
 }
 
-function Chat({ plan, onNeedPro }: { plan: PlanBody; onNeedPro: (reason: PaywallReason) => void }) {
+function Chat({ plan, suggestions, onNeedPro }: { plan: PlanBody; suggestions: readonly string[]; onNeedPro: (reason: PaywallReason) => void }) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState<string | null>(null);
@@ -115,7 +117,7 @@ function Chat({ plan, onNeedPro }: { plan: PlanBody; onNeedPro: (reason: Paywall
     <div className="mt-4 rounded-lg border border-line bg-surface">
       {messages.length === 0 && pending === null && !failed ? (
         <div className="flex flex-wrap gap-2 px-4 pt-4 sm:px-5">
-          {SUGGESTIONS.map((q) => (
+          {suggestions.map((q) => (
             <button
               key={q}
               type="button"

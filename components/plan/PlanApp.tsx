@@ -22,6 +22,7 @@ import { PlanHero } from "./PlanHero";
 import { PlanSkeleton } from "./PlanSkeleton";
 import { AnnualizedCard } from "./AnnualizedCard";
 import { AskCard } from "./AskCard";
+import { askSuggestions } from "@/lib/product/askSuggestions";
 import { ExportCard } from "./ExportCard";
 import { WhyCard } from "./WhyCard";
 
@@ -102,7 +103,7 @@ export function PlanApp() {
 
           <Deadlines result={result} className="lg:col-start-1" />
           <AnnualizedCard profile={profile} log={log} asOf={input.asOf} pro={pro} onNeedPro={openPaywall} className="lg:col-start-1" />
-          <AskCard plan={aiPlan} pro={pro} onNeedPro={openPaywall} className="lg:col-start-1" />
+          <AskCard plan={aiPlan} suggestions={askSuggestions(result)} pro={pro} onNeedPro={openPaywall} className="lg:col-start-1" />
           <Breakdown result={result} state={profile.state} className="lg:col-start-1" />
           <ExportCard profile={profile} log={log} result={result} asOf={input.asOf} pro={pro} onNeedPro={openPaywall} className="lg:col-start-1" />
           <PlanActions isExample={profile.isExample} className="lg:col-start-1" />

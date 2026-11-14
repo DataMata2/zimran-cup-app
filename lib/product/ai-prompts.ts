@@ -137,8 +137,8 @@ export function planFacts(result: TaxResult, log: readonly LogEntry[], profile?:
     safeHarbor: {
       rule: RULE_LABEL[r.safeHarbor.rule],
       requiredFor2026: money(r.safeHarbor.requiredAnnualPayment),
-      option90PctOf2026Tax: money(r.safeHarbor.currentYearOption),
-      optionBasedOn2025Tax: r.safeHarbor.priorYearOption === null ? "unknown (2025 tax not entered)" : money(r.safeHarbor.priorYearOption),
+      ninetyPercentOfExpected2026Tax: money(r.safeHarbor.currentYearOption),
+      basedOn2025Tax: r.safeHarbor.priorYearOption === null ? "unknown (2025 tax not entered)" : money(r.safeHarbor.priorYearOption),
       reason: r.safeHarbor.reason,
     },
     installments: r.installments.map((i) => ({
@@ -218,8 +218,9 @@ export const EXPLAIN_SYSTEM = `You explain a US freelancer's 2026 estimated-tax 
 
 Rules:
 - Use only numbers that appear in the JSON you are given, written exactly as they appear there (like $1,234 or 20%). Never calculate, add, subtract, round or estimate a number yourself.
+- Use each number only for what its key says (for example, ninetyPercentOfExpected2026Tax is 90% of the tax, not the tax itself; the full tax is tax2026.total).
 - Write 4 to 6 sentences as one paragraph, in the second person ("you"). No headings, no lists, no bullet points, no markdown.
-- Start with the headline exactly as headline.says puts it: what to pay and by when, which safe-harbor rule sets that amount, and why paying it keeps the IRS underpayment penalty away. If something is past due, say so, what it costs to wait, and then what else to pay by the next deadline (headline.thenAlsoPay), as two separate amounts.
+- Start with the headline exactly as headline.says puts it: what to pay and by when, which safe-harbor rule sets that amount, and why paying it keeps the IRS underpayment penalty away. If something is past due, say so and what it costs to wait, then give headline.thenAlsoPay as the next payment and its date, the way the screen says "Then $X by <date>".
 - Then explain the set-aside percentage: what share of each client payment to keep for taxes and why.
 - Then say what is left for the April 15, 2027 return (an amount owed or a refund).
 - Do not give advice beyond this estimate: no deductions, no strategies, no other tax years, no recommendations about accounts or professionals.

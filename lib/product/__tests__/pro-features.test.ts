@@ -2,9 +2,12 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { annualized, estimate } from "@/lib/tax";
 import { buildTaxInput } from "@/lib/product/input";
 import {
-  buildAnnualizedInput, computeAnnualizedPlan, payments1099, summarizeAnnualized,
+  ANNUALIZED_METHOD_LABEL, buildAnnualizedInput, computeAnnualizedPlan, payments1099, summarizeAnnualized,
 } from "@/lib/product/annualizedPlan";
 import { buildCsv, csvField, csvRows } from "@/lib/product/csv";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { AnnualizedCard } from "@/components/plan/AnnualizedCard";
 import { buildExample } from "@/lib/product/example";
 import { installmentRow, pastDue, payTarget } from "@/lib/product/payNow";
 import { countedEntries, entriesUsed, nextAdded } from "@/lib/product/freeLimit";
@@ -123,6 +126,34 @@ describe("annualized plan summary", () => {
     expect(even.headline.kind).toBe("regularBest");
     const none = computeAnnualizedPlan({ ...profile, ytdIncome: 1000, expectedIncome: 1000, priorYearTax: 0 }, [], "2026-07-01");
     expect(none.headline.kind).toBe("noneRequired");
+  });
+
+  it("PP-QA-02: with a past-due hero, passed $0 annualized quarters give way to one reconciliation line", () => {
+    const late: Profile = { ...profile, ytdIncome: 0, expectedIncome: 40000, priorYearTax: null, priorYearAgi: null, estimatedPaid: 0 };
+    const log = [entry({ amount: 40000, date: "2026-10-20" })];
+    const plan = computeAnnualizedPlan(late, log, "2026-11-14");
+    expect(pastDue(estimate(plan.input))?.quarters).toEqual([1, 2, 3]);
+    expect(plan.rows.slice(0, 3).map((r) => r.annualized)).toEqual([0, 0, 0]);
+    expect(plan.rows.map((r) => r.showAnnualized)).toEqual([false, false, false, true]);
+    expect(plan.reconciliation).toBe("Under this method your Q1–Q3 requirement is lower; you’d file Form 2210 Schedule AI.");
+
+    const html = renderToStaticMarkup(
+      createElement(AnnualizedCard, { profile: late, log, asOf: "2026-11-14", pro: true, onNeedPro: () => {} }),
+    );
+    expect(html).toContain(ANNUALIZED_METHOD_LABEL);
+    expect(html).toContain("you’d file Form 2210 Schedule AI.");
+    expect(html).not.toMatch(/Annualized <\/span>\$0</);
+  });
+
+  it("PP-QA-02: no reconciliation when nothing is past due; the method label is the overseer's text", () => {
+    expect(ANNUALIZED_METHOD_LABEL).toBe(
+      "Annualized method: if most of your income came late in the year, the IRS lets you pay less early. Based on the payment dates you logged.",
+    );
+    const lumpy: Profile = { ...profile, ytdIncome: 0, expectedIncome: 60000, priorYearTax: null, priorYearAgi: null };
+    const plan = computeAnnualizedPlan(lumpy, [entry({ amount: 2000, date: "2026-02-10" })], "2026-04-01");
+    expect(pastDue(estimate(plan.input))).toBeNull();
+    expect(plan.reconciliation).toBeNull();
+    expect(plan.rows.every((r) => r.showAnnualized)).toBe(true);
   });
 
   it("summarize takes every number from the results passed in", () => {

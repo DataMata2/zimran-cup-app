@@ -4,7 +4,12 @@
 
 import { annualized, estimate, type AnnualizedResult, type DatedAmount, type TaxInput, type TaxResult } from "@/lib/tax";
 import { buildTaxInput } from "./input";
+import { MIN_SHOWN, pastDue, quarterList } from "./payNow";
 import type { LogEntry, Profile } from "./types";
+
+/** PP-QA-02: the card's label for the method and its assumption. */
+export const ANNUALIZED_METHOD_LABEL =
+  "Annualized method: if most of your income came late in the year, the IRS lets you pay less early. Based on the payment dates you logged.";
 
 /** Smallest saving worth a headline: a whole dollar (smaller differences are rounding). */
 const MIN_SAVING = 1;
@@ -59,6 +64,12 @@ export interface AnnualizedRow {
   past: boolean;
   /** This is the next deadline. */
   next: boolean;
+  /**
+   * Show the annualized amount. False for a passed quarter whose annualized requirement is $0 while the regular
+   * plan (the hero) has a past-due amount: a bare "$0" there would contradict "pay now", so the card shows
+   * `reconciliation` instead (PP-QA-02).
+   */
+  showAnnualized: boolean;
 }
 
 export type AnnualizedHeadline =
@@ -79,6 +90,8 @@ export interface AnnualizedPlan {
   result: AnnualizedResult;
   rows: AnnualizedRow[];
   headline: AnnualizedHeadline;
+  /** The one line shown instead of the hidden $0 rows, or null when every row is shown. */
+  reconciliation: string | null;
 }
 
 /**
@@ -93,14 +106,24 @@ function lessBy(i: AnnualizedResult["installments"][number]): number {
 /** Pick the rows and the headline from the two engine results for the same input. */
 export function summarizeAnnualized(result: AnnualizedResult, regular: TaxResult): Omit<AnnualizedPlan, "input"> {
   const nextQuarter = regular.nextDeadline?.quarter ?? null;
-  const rows: AnnualizedRow[] = result.installments.map((a, idx) => ({
-    quarter: a.quarter,
-    due: a.due,
-    regular: regular.installments[idx]?.required ?? 0,
-    annualized: a.required,
-    past: nextQuarter === null || a.quarter < nextQuarter,
-    next: a.quarter === nextQuarter,
-  }));
+  const heroPastDue = pastDue(regular) !== null;
+  const rows: AnnualizedRow[] = result.installments.map((a, idx) => {
+    const past = nextQuarter === null || a.quarter < nextQuarter;
+    return {
+      quarter: a.quarter,
+      due: a.due,
+      regular: regular.installments[idx]?.required ?? 0,
+      annualized: a.required,
+      past,
+      next: a.quarter === nextQuarter,
+      showAnnualized: !(heroPastDue && past && a.required < MIN_SHOWN),
+    };
+  });
+  const hidden = rows.filter((r) => !r.showAnnualized).map((r) => r.quarter);
+  const reconciliation =
+    hidden.length > 0
+      ? `Under this method your ${quarterList(hidden)} requirement is lower; you’d file Form 2210 Schedule AI.`
+      : null;
 
   let headline: AnnualizedHeadline;
   if (result.requiredAnnualPayment <= 0) {
@@ -123,7 +146,7 @@ export function summarizeAnnualized(result: AnnualizedResult, regular: TaxResult
         : { kind: "regularBest" };
     }
   }
-  return { result, rows, headline };
+  return { result, rows, headline, reconciliation };
 }
 
 /** The annualized plan for this profile and log as of `asOf`. Throws TaxInputError like `estimate`. */

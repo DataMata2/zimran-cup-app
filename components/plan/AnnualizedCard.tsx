@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { Button } from "@/components/kit/Button";
 import { cx } from "@/components/kit/cx";
 import { Disclaimer } from "@/components/kit/Disclaimer";
-import { computeAnnualizedPlan, type AnnualizedHeadline, type AnnualizedRow } from "@/lib/product/annualizedPlan";
+import { ANNUALIZED_METHOD_LABEL, computeAnnualizedPlan, type AnnualizedHeadline, type AnnualizedRow } from "@/lib/product/annualizedPlan";
 import { longDate, money } from "@/lib/product/format";
 import type { LogEntry, Profile } from "@/lib/product/types";
 import { TaxInputError } from "@/lib/tax";
@@ -55,8 +55,7 @@ export function AnnualizedCard({
         {!pro && <ProSticker />}
       </div>
       <p className="mt-2 max-w-[62ch] text-base text-ink-2">
-        The IRS lets each quarter&rsquo;s payment follow the income you had actually received by then, instead of
-        four equal parts.
+        {pro ? ANNUALIZED_METHOD_LABEL : "The IRS lets each quarter\u2019s payment follow the income you had actually received by then, instead of four equal parts."}
       </p>
 
       {plan ? (
@@ -65,6 +64,9 @@ export function AnnualizedCard({
             <Headline headline={plan.headline} />
           </div>
           {plan.headline.kind !== "noneRequired" && <Comparison rows={plan.rows} />}
+          {plan.headline.kind !== "noneRequired" && plan.reconciliation && (
+            <p className="px-4 pb-4 text-sm text-ink-2 sm:px-5">{plan.reconciliation}</p>
+          )}
           <div className="flex flex-col gap-1.5 border-t-2 border-ink px-4 py-3.5 sm:px-5">
             <p className="text-sm text-ink-2">{NOTE}</p>
             <Disclaimer />
@@ -178,7 +180,7 @@ function Comparison({ rows }: { rows: AnnualizedRow[] }) {
                   </span>
                   <span className="text-right text-sm font-semibold text-ink">
                     <span className="sr-only">Annualized </span>
-                    {money(r.annualized)}
+                    {r.showAnnualized ? money(r.annualized) : <><span aria-hidden>&ndash;</span><span className="sr-only">lower, see the note below</span></>}
                   </span>
                 </div>
               </td>

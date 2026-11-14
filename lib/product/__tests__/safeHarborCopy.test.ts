@@ -70,4 +70,24 @@ describe("safe-harbor sentence (A3)", () => {
     expect(f.safeHarbor.ninetyPercentOfExpected2026Tax).toBe(money(r.safeHarbor.currentYearOption));
     expect(f.safeHarbor.basedOn2025Tax).toBe("$8,000 (100% of your 2025 tax)");
   });
+
+  it("small balance after withholding: the facts leave out the two options the page doesn't show", () => {
+    // A W-2 earner with withholding and a small side income.
+    const r = run({ ytdIncome: 2000, expectedIncome: 3000, w2Wages: 80000, w2Withholding: 12000 });
+    expect(r.safeHarbor.rule).toBe("noneRequired");
+    const f = planFacts(r, []);
+    expect(f.safeHarbor.says).toBe(r.safeHarbor.reason);
+    expect(f.safeHarbor.ninetyPercentOfExpected2026Tax).toBeNull();
+    expect(f.safeHarbor.basedOn2025Tax).toBeNull();
+  });
+
+  it("prior year $0 keeps both figures in the facts", () => {
+    const f = planFacts(run({ priorYearTax: 0 }), []);
+    expect(f.safeHarbor.ninetyPercentOfExpected2026Tax).not.toBeNull();
+    expect(f.safeHarbor.basedOn2025Tax).toBe("$0 (your 2025 tax was $0)");
+  });
+
+  it("the April balance fact says it is federal only", () => {
+    expect(planFacts(run({}), []).aprilReturn.covers).toMatch(/Federal .* state tax is separate/);
+  });
 });

@@ -121,6 +121,8 @@ export function planFacts(result: TaxResult, log: readonly LogEntry[], profile?:
   const meter = penaltyMeter(result, log);
   const r = result;
   const sh = safeHarborCopy(r);
+  const priorZero = r.input.priorYearTax === 0 && r.input.priorYearFullYear;
+  const smallBalance = r.safeHarbor.rule === "noneRequired" && !priorZero;
 
   const headline = payNow
     ? {
@@ -163,8 +165,12 @@ export function planFacts(result: TaxResult, log: readonly LogEntry[], profile?:
       /** The screen's sentence, with both options in dollars. */
       says: sh.says,
       requiredFor2026: sh.minimumFor2026,
-      ninetyPercentOfExpected2026Tax: sh.ninetyPercentOfExpected2026Tax,
-      basedOn2025Tax: r.input.priorYearTax === 0 && r.input.priorYearFullYear
+      // Tax after withholding under the engine's minimum: the screen shows only that sentence, so the two
+      // options are left out (null) and the model can't cite figures the page doesn't show.
+      ninetyPercentOfExpected2026Tax: smallBalance ? null : sh.ninetyPercentOfExpected2026Tax,
+      basedOn2025Tax: smallBalance
+        ? null
+        : priorZero
         ? "$0 (your 2025 tax was $0)"
         : sh.priorYearOption
         ? `${sh.priorYearOption.amount} (${sh.priorYearOption.share} of your 2025 tax)`
@@ -188,6 +194,7 @@ export function planFacts(result: TaxResult, log: readonly LogEntry[], profile?:
       : null,
     aprilReturn: {
       due: "Apr 15, 2027",
+      covers: "Federal balance with the return only; state tax is separate and not included here.",
       ...(r.aprilTrueUp >= 0.5
         ? { owedWithReturn: money(r.aprilTrueUp) }
         : r.aprilTrueUp <= -0.5
@@ -255,7 +262,7 @@ Rules:
 - If headline.accruedPenalty is present, a quarter was paid late: say what headline.accruedPenalty.says says, and never say the plan is penalty-proof or that no penalty applies.
 - Then explain the set-aside percentage: what share of each client payment to keep for taxes and why. If setAside.catchUpSays is set, you may add it as written.
 - Money set aside is only saved, not paid. Only payments to the IRS (and W-2 withholding) protect against the penalty, so never say set-aside money makes anyone safe or penalty-proof.
-- Then say what is left for the April 15, 2027 return (an amount owed or a refund).
+- Then say what is left for the April 15, 2027 return (an amount owed or a refund). It is the federal balance only: say that state tax is separate.
 - Do not give advice beyond this estimate: no deductions, no strategies, no other tax years, no recommendations about accounts or professionals.
 - Do not add a disclaimer; the page already shows one.`;
 

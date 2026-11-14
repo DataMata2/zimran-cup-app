@@ -1,5 +1,5 @@
 // The AI features' pure parts: request-body parsing, the facts the model sees, the prompts, and the
-// post-check on the numbers it writes. Rule: our code calculates, the model explains. Every number in the
+// older dollar-only number helpers (the blocking guard is ai-numbers.ts). Rule: our code calculates, the model explains. Every number in the
 // facts is computed here by the engine and product helpers, rounded and formatted the way the screen shows
 // it, so the model only ever copies numbers, never derives them.
 

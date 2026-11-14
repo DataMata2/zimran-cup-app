@@ -12,7 +12,9 @@ import {
   RateLimiter,
   readJsonBody,
 } from "@/lib/product/ai-guard";
+import { ASK_SAFE_ANSWER, extractNumbers, safeAskAnswer, templateExplanation, unknownNumbers } from "@/lib/product/ai-numbers";
 import {
+  ASK_DISCLAIMER,
   askSystem,
   dollarAmounts,
   explainUserMessage,
@@ -303,34 +305,143 @@ describe("handlers: gating before the model", () => {
   });
 });
 
-describe("streaming: the client going away", () => {
-  it("does not log an error when the reader cancels mid-stream", async () => {
-    let abort: () => void = () => {};
-    const aborted = new Promise<never>((_, reject) => {
-      abort = () => reject(new Error("Request was aborted."));
-    });
-    const fakeStream = {
-      async *[Symbol.asyncIterator]() {
-        yield { type: "content_block_delta", delta: { type: "text_delta", text: "You pay " } };
-        await aborted;
+/** A stub model: each call to stream() writes the next output (an Error = an API failure on that call). */
+function stubModel(outputs: (string | Error)[]) {
+  const calls: { system: string }[] = [];
+  const client = {
+    beta: {
+      messages: {
+        stream: (params: { system: string }) => {
+          const out = outputs[Math.min(calls.length, outputs.length - 1)]!;
+          calls.push({ system: params.system });
+          return {
+            async *[Symbol.asyncIterator]() {
+              if (out instanceof Error) throw out;
+              // Two chunks, the way the API streams.
+              const mid = Math.floor(out.length / 2);
+              yield { type: "content_block_delta", delta: { type: "text_delta", text: out.slice(0, mid) } };
+              yield { type: "content_block_delta", delta: { type: "text_delta", text: out.slice(mid) } };
+            },
+            abort: () => {},
+            finalMessage: async () => ({ stop_reason: "end_turn", usage: { output_tokens: 1 } }),
+          };
+        },
       },
-      abort: () => abort(),
-      finalMessage: async () => ({ stop_reason: "end_turn", usage: { output_tokens: 1 } }),
-    };
-    const d: AiDeps = {
-      ...deps(false),
-      getClient: () => ({ beta: { messages: { stream: () => fakeStream } } }) as unknown as Anthropic,
-    };
+    },
+  };
+  return { calls, client: client as unknown as Anthropic };
+}
+
+describe("PP-QA-09: the number guard blocks unknown numbers before they reach the client", () => {
+  const facts = planFacts(parsePlanRequest(planBody).result, log, profile);
+  const pay = facts.headline.says;
+  const clean = `${pay} That keeps the penalty away. Set aside ${facts.setAside.rate} of each payment.`;
+  const invented = "You should pay $987,654,321 now.";
+  const ask = { ...planBody, messages: [{ role: "user", content: "How much should I set aside?" }] };
+  const run = async (handler: typeof explainHandler, outputs: (string | Error)[], body: unknown = planBody) => {
+    const m = stubModel(outputs);
+    const warn = vi.fn();
+    const res = await handler({ ...deps(true), getClient: () => m.client, warn })(jsonRequest(body));
+    return { res, text: await res.text(), calls: m.calls, warn };
+  };
+
+  it("extracts dollars, percents and plain numbers; formatting variants and rounded percents match", () => {
+    expect(extractNumbers("Pay $1,850.00 (20%) by Jan 15, 2027 on Form 1040-ES").map((n) => [n.kind, n.value])).toEqual([
+      ["dollar", 1850], ["percent", 20], ["plain", 15], ["plain", 2027],
+    ]);
+    const f = ['{"a":"$1,850","b":"$2,340.50","r":"20.4%","d":"Jan 15, 2027"}'];
+    expect(unknownNumbers("$1,850, $1850, 1,850.00, $2,340.50, $2,341, 20%, 20.4%, Jan 15, 2027", f)).toEqual([]);
+    expect(unknownNumbers("$15 and 25% and $1,851", f).map((n) => n.raw)).toEqual(["$15", "25%", "$1,851"]);
+    // What the person typed is allowed in any form.
+    expect(unknownNumbers("If you earned $5,000 more", f, ["what if I earn 5000 more?"])).toEqual([]);
+  });
+
+  it("explain: \"$987,654,321\" never reaches the response, even when the model writes it twice", async () => {
+    const { res, text, calls } = await run(explainHandler, [invented, invented]);
+    expect(res.status).toBe(200);
+    expect(text).not.toContain("987");
+    expect(calls).toHaveLength(2);
+    expect(calls[1]!.system).toContain("Use only these exact figures:");
+  });
+
+  it("explain: first output fails, the retry is clean → the clean text", async () => {
+    const { text, calls } = await run(explainHandler, [invented, clean]);
+    expect(text).toBe(clean);
+    expect(calls).toHaveLength(2);
+  });
+
+  it("explain: fails twice → the template built from the engine's strings, which passes the check itself", async () => {
+    const { text } = await run(explainHandler, [invented, "Pay $1 now."]);
+    expect(text).toBe(templateExplanation(facts));
+    expect(text.startsWith(pay)).toBe(true);
+    expect(text).toContain(facts.safeHarbor.says);
+    expect(unknownNumbers(text, [explainUserMessage(facts)])).toEqual([]);
+  });
+
+  it("explain: a retry that errors falls back to the template", async () => {
+    const { res, text } = await run(explainHandler, [invented, new Error("overloaded")]);
+    expect(res.status).toBe(200);
+    expect(text).toBe(templateExplanation(facts));
+  });
+
+  it("explain: clean text passes unchanged with one model call", async () => {
+    const { text, calls, warn } = await run(explainHandler, [clean]);
+    expect(text).toBe(clean);
+    expect(calls).toHaveLength(1);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("explain: an API error on the first call is still a 502", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
-      const res = await explainHandler(d)(jsonRequest(planBody));
-      expect(res.status).toBe(200);
-      const reader = res.body!.getReader();
-      expect(new TextDecoder().decode((await reader.read()).value)).toBe("You pay ");
-      const pending = reader.read().catch(() => null);
-      await reader.cancel();
-      await pending;
-      await new Promise((r) => setTimeout(r, 10));
+      const { res } = await run(explainHandler, [new Error("down")]);
+      expect(res.status).toBe(502);
+    } finally {
+      error.mockRestore();
+    }
+  });
+
+  it("ask: invented twice → the safe answer with the relevant plan line, plus the disclaimer", async () => {
+    const { text } = await run(askHandler, [invented, invented], ask);
+    expect(text).not.toContain("987");
+    expect(text).toBe(`${ASK_SAFE_ANSWER} ${facts.setAside.says}\n\n${ASK_DISCLAIMER}`);
+    expect(safeAskAnswer(facts, "Why this amount?")).toBe(`${ASK_SAFE_ANSWER} ${facts.safeHarbor.says}`);
+  });
+
+  it("ask: clean passes unchanged; a clean retry replaces a failed first answer", async () => {
+    expect((await run(askHandler, [clean], ask)).text).toBe(`${clean}\n\n${ASK_DISCLAIMER}`);
+    const retried = await run(askHandler, [invented, clean], ask);
+    expect(retried.text).toBe(`${clean}\n\n${ASK_DISCLAIMER}`);
+    expect(retried.calls).toHaveLength(2);
+  });
+
+  it("the client going away while the answer is written: no error logged, no text sent", async () => {
+    const ctrl = new AbortController();
+    const client = {
+      beta: {
+        messages: {
+          stream: () => ({
+            async *[Symbol.asyncIterator]() {
+              yield { type: "content_block_delta", delta: { type: "text_delta", text: "You pay " } };
+              ctrl.abort();
+              throw new Error("Request was aborted.");
+            },
+            abort: () => {},
+            finalMessage: async () => ({ stop_reason: "end_turn", usage: { output_tokens: 1 } }),
+          }),
+        },
+      },
+    } as unknown as Anthropic;
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const req = new Request("http://localhost/api/explain", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(planBody),
+        signal: ctrl.signal,
+      });
+      const res = await explainHandler({ ...deps(false), getClient: () => client })(req);
+      expect(res.status).toBe(499);
       expect(error).not.toHaveBeenCalled();
     } finally {
       error.mockRestore();

@@ -17,8 +17,9 @@ import {
   planFacts,
   READ_PAYMENT_SCHEMA,
   READ_PAYMENT_SYSTEM,
-  unknownDollarAmounts,
+  type ChatMessage,
 } from "./ai-prompts";
+import { safeAskAnswer, stricterInstruction, templateExplanation, unknownNumbers } from "./ai-numbers";
 
 export interface AiDeps {
   getClient: () => Anthropic;
@@ -28,7 +29,7 @@ export interface AiDeps {
   /** The caller's guest id from the cookie, or null (rate limiting then keys on the IP). */
   getGuestId?: () => Promise<string | null>;
   limits?: AiLimits;
-  /** Where post-check warnings go (default console.warn). */
+  /** Where number-guard warnings go (default console.warn). */
   warn?: (message: string, detail?: unknown) => void;
 }
 
@@ -49,63 +50,21 @@ async function admit(request: Request, deps: AiDeps): Promise<Record<string, unk
   return readJsonBody(request);
 }
 
-async function withGuard(fn: () => Promise<Response>, route: string): Promise<Response> {
+async function withGuard(fn: () => Promise<Response>, route: string, request?: Request): Promise<Response> {
   try {
     return await fn();
   } catch (err) {
     if (err instanceof GuardError) return guardResponse(err);
+    // The client went away (closed the card, navigated) while the answer was being written: nothing to log.
+    if (request?.signal.aborted) return new Response(null, { status: 499, headers: NO_STORE });
     console.error(`${route} failed:`, err instanceof Error ? err.message : err);
     return errorJson(502, "The AI service is unavailable. Try again.");
   }
 }
 
-/**
- * Stream a beta message as plain text. Waits for the first text so an API failure before any output becomes a
- * 502 instead of a broken 200; after the stream ends, `onDone` gets the full text (post-check) and may
- * return a suffix to append.
- */
-async function textResponse(
-  stream: ReturnType<Anthropic["beta"]["messages"]["stream"]>,
-  onDone: (text: string) => string | void,
-): Promise<Response> {
-  const encoder = new TextEncoder();
-  const iterator = textDeltas(stream)[Symbol.asyncIterator]();
-  const first = await iterator.next(); // throws on an immediate API error → 502 via withGuard
-  let full = first.done ? "" : first.value;
-  if (first.done) throw new Error("Model returned no text");
+type BetaStream = ReturnType<Anthropic["beta"]["messages"]["stream"]>;
 
-  /** The client went away (closed the card, navigated): the stream error that follows is expected. */
-  let cancelled = false;
-  const body = new ReadableStream<Uint8Array>({
-    start(controller) {
-      controller.enqueue(encoder.encode(first.value));
-    },
-    async pull(controller) {
-      try {
-        const next = await iterator.next();
-        if (next.done) {
-          const suffix = onDone(full);
-          if (suffix) controller.enqueue(encoder.encode(suffix));
-          controller.close();
-          return;
-        }
-        full += next.value;
-        controller.enqueue(encoder.encode(next.value));
-      } catch (err) {
-        if (cancelled) return;
-        console.error("AI stream failed:", err instanceof Error ? err.message : err);
-        controller.error(err);
-      }
-    },
-    cancel() {
-      cancelled = true;
-      stream.abort();
-    },
-  });
-  return new Response(body, { headers: TEXT_HEADERS });
-}
-
-async function* textDeltas(stream: ReturnType<Anthropic["beta"]["messages"]["stream"]>): AsyncGenerator<string> {
+async function* textDeltas(stream: BetaStream): AsyncGenerator<string> {
   for await (const event of stream) {
     if (event.type === "content_block_delta" && event.delta.type === "text_delta" && event.delta.text) {
       yield event.delta.text;
@@ -116,14 +75,87 @@ async function* textDeltas(stream: ReturnType<Anthropic["beta"]["messages"]["str
   if (final.stop_reason === "max_tokens") console.warn(`AI stream hit max_tokens (${final.usage.output_tokens} output tokens); the text was cut off.`);
 }
 
-function postCheck(deps: AiDeps, route: string, text: string, facts: string[], loose: string[] = []) {
-  const unknown = unknownDollarAmounts(text, facts, loose);
-  if (unknown.length > 0) {
-    (deps.warn ?? console.warn)(`${route}: amounts not in the plan: ${unknown.map((n) => `$${n}`).join(", ")}`, { text });
+/** Run one model call and buffer its whole text (it is short). Throws on an API error, a refusal or no text. */
+async function generate(deps: AiDeps, request: Request, system: string, messages: ChatMessage[]): Promise<string> {
+  const stream = deps.getClient().beta.messages.stream({
+    model: deps.model,
+    max_tokens: 2048,
+    output_config: { effort: "low" },
+    system,
+    messages,
+    ...FALLBACK,
+  }, { signal: request.signal });
+  let text = "";
+  try {
+    for await (const chunk of textDeltas(stream)) text += chunk;
+  } catch (err) {
+    stream.abort();
+    throw err;
   }
+  if (!text.trim()) throw new Error("Model returned no text");
+  return text;
 }
 
-/** POST /api/explain `{ profile, log, asOf }` → 4–6 sentences explaining the plan, streamed as plain text. */
+/**
+ * The number guard (see ./ai-numbers): buffer the answer, check every number against the facts, regenerate
+ * once with the exact figures when one is unknown, and fall back to `fallback()` (built from the engine's
+ * own strings) when the retry fails too. Only text that passed, or the fallback, is returned.
+ */
+async function guardedText(opts: {
+  deps: AiDeps;
+  request: Request;
+  route: string;
+  system: string;
+  messages: ChatMessage[];
+  /** What the model was given: its numbers are the allowed set. */
+  facts: string[];
+  /** What the person typed (Ask): any number in it is allowed. */
+  loose?: string[];
+  fallback: () => string;
+}): Promise<{ text: string; outcome: "clean" | "retried" | "fallback" }> {
+  const { deps, request, route, system, messages, facts, loose = [], fallback } = opts;
+  const warn = deps.warn ?? console.warn;
+  const first = await generate(deps, request, system, messages);
+  const unknown = unknownNumbers(first, facts, loose);
+  if (unknown.length === 0) return { text: first, outcome: "clean" };
+  warn(`${route}: numbers not in the plan, regenerating: ${unknown.map((n) => n.raw).join(", ")}`);
+
+  let second: string | null = null;
+  try {
+    second = await generate(deps, request, system + stricterInstruction(facts, unknown), messages);
+  } catch (err) {
+    if (request.signal.aborted) throw err;
+    warn(`${route}: retry failed, using the template`, err instanceof Error ? err.message : err);
+  }
+  if (second !== null) {
+    const again = unknownNumbers(second, facts, loose);
+    if (again.length === 0) return { text: second, outcome: "retried" };
+    warn(`${route}: numbers not in the plan after the retry, using the template: ${again.map((n) => n.raw).join(", ")}`);
+  }
+  return { text: fallback(), outcome: "fallback" };
+}
+
+/** Characters per chunk when the checked text is streamed out (keeps the client's typing effect). */
+const CHUNK_CHARS = 24;
+
+/** Send already-checked text as a plain-text stream in small chunks. */
+function checkedTextResponse(text: string): Response {
+  const encoder = new TextEncoder();
+  let i = 0;
+  const body = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      if (i >= text.length) {
+        controller.close();
+        return;
+      }
+      controller.enqueue(encoder.encode(text.slice(i, i + CHUNK_CHARS)));
+      i += CHUNK_CHARS;
+    },
+  });
+  return new Response(body, { headers: TEXT_HEADERS });
+}
+
+/** POST /api/explain `{ profile, log, asOf }` → 4–6 sentences explaining the plan, checked, then sent as plain text. */
 export function explainHandler(deps: AiDeps) {
   return (request: Request) =>
     withGuard(async () => {
@@ -131,21 +163,22 @@ export function explainHandler(deps: AiDeps) {
       const { profile, log, result } = parsePlanRequest(body);
       const facts = planFacts(result, log, profile);
       const user = explainUserMessage(facts);
-      const stream = deps.getClient().beta.messages.stream({
-        model: deps.model,
-        max_tokens: 2048,
-        output_config: { effort: "low" },
+      const { text } = await guardedText({
+        deps,
+        request,
+        route: "explain",
         system: EXPLAIN_SYSTEM,
         messages: [{ role: "user", content: user }],
-        ...FALLBACK,
-      }, { signal: request.signal });
-      return textResponse(stream, (text) => postCheck(deps, "explain", text, [user]));
-    }, "POST /api/explain");
+        facts: [user],
+        fallback: () => templateExplanation(facts),
+      });
+      return checkedTextResponse(text);
+    }, "POST /api/explain", request);
 }
 
 /**
- * POST /api/ask (Pro) `{ profile, log, asOf, messages }` → a short grounded answer, streamed, ending with
- * "Estimate, not tax advice." Not Pro → 402 `{ error: "pro_required" }`.
+ * POST /api/ask (Pro) `{ profile, log, asOf, messages }` → a short grounded answer, checked, then sent,
+ * ending with "Estimate, not tax advice." Not Pro → 402 `{ error: "pro_required" }`.
  */
 export function askHandler(deps: AiDeps) {
   return (request: Request) =>
@@ -157,19 +190,20 @@ export function askHandler(deps: AiDeps) {
 
       const facts = planFacts(result, log, profile);
       const system = askSystem(facts, logFacts(log), profile.isExample ? "Start with my own numbers" : "Edit my answers");
-      const stream = deps.getClient().beta.messages.stream({
-        model: deps.model,
-        max_tokens: 2048,
-        output_config: { effort: "low" },
+      const question = messages[messages.length - 1]!.content;
+      const { text } = await guardedText({
+        deps,
+        request,
+        route: "ask",
         system,
         messages,
-        ...FALLBACK,
-      }, { signal: request.signal });
-      return textResponse(stream, (text) => {
-        postCheck(deps, "ask", text, [system], messages.map((m) => m.content));
-        return `\n\n${ASK_DISCLAIMER}`;
+        facts: [system],
+        // Only what the person typed vouches loosely; earlier assistant turns do not.
+        loose: messages.filter((m) => m.role === "user").map((m) => m.content),
+        fallback: () => safeAskAnswer(facts, question),
       });
-    }, "POST /api/ask");
+      return checkedTextResponse(`${text.trim()}\n\n${ASK_DISCLAIMER}`);
+    }, "POST /api/ask", request);
 }
 
 /**
@@ -214,5 +248,5 @@ export function readPaymentHandler(deps: AiDeps) {
         parsed = null;
       }
       return Response.json(normalizeReadPayment(parsed), { headers: NO_STORE });
-    }, "POST /api/read-payment");
+    }, "POST /api/read-payment", request);
 }

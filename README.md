@@ -18,15 +18,15 @@ The tax engine in `lib/tax/` (a verbatim copy of `engine/src`) computes everythi
 
 ### AI features (Claude, server-side)
 
-- **Why this number?** (`POST /api/explain`): a short plain-English explanation of your plan, streamed.
+- **Why this number?** (`POST /api/explain`): a short plain-English explanation of your plan, sent once it has passed the number check below.
 - **Ask about your numbers** (`POST /api/ask`, Pro): questions answered from your own plan and log.
 - **Paste a payout email or screenshot** (`POST /api/read-payment`; screenshots need Pro): fills in amount, client and date for you to check before logging.
 
-The model sees only display strings of the engine's results, plus filing status, state and the log (payer names cleaned). The prompts forbid arithmetic, and every dollar amount in an answer is checked against the `$`-amounts it was given; anything else is logged. Requests are rate-limited per guest and IP.
+The model sees only display strings of the engine's results, plus filing status, state and the log (payer names cleaned). The prompts forbid arithmetic. For Why this number? and Ask, the server holds back the whole answer and checks every number in it (dollar amounts, percentages, plain numbers) against the facts the model was given; formatting variants and rounded percentages match, and Ask also allows numbers the person typed. If any number is unknown, the server asks the model once more with the exact figures it may use. If that answer fails too, it sends a fixed explanation built from the engine's own sentences (Ask: "I can only answer with the numbers in your plan." plus the relevant plan line). Only checked text reaches the browser (`lib/product/ai-numbers.ts`). Payout reading returns checked fields, not text. Requests are rate-limited per guest and IP.
 
 ### Tests
 
-`pnpm test`: 291 tests in 21 files. 71 are the engine's (`lib/tax/__tests__`, including four personas checked by hand against the IRS worksheet, see below); 220 cover the product layer: input building, the meter, pay-now split, quiz validation, storage, server copy, the guest cookie, Pro helpers, CSV, AI facts, guards and post-checks.
+`pnpm test`: 305 tests in 21 files. 71 are the engine's (`lib/tax/__tests__`, including four personas checked by hand against the IRS worksheet, see below); 234 cover the product layer: input building, the meter, pay-now split, quiz validation, storage, server copy, the guest cookie, Pro helpers, CSV, AI facts, rate limits and the AI number guard (unknown numbers held back, one retry, then a fixed template).
 
 ### Guest mode
 

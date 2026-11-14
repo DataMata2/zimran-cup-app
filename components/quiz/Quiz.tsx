@@ -40,12 +40,12 @@ function stepFromUrl(): number | null {
  * A saved draft only counts as an edit while there is still a plan of your own to edit (it may have been
  * reset or replaced since).
  */
-function initialDraft(): QuizDraft {
+function initialDraft(urlStep: number | null): QuizDraft {
   const stored = getProfile();
   const ownPlan = stored !== null && !stored.isExample;
   const chosen = chooseDraft(loadDraft(), stored, getLog());
   const draft = { ...chosen, editing: chosen.editing && ownPlan };
-  return { ...draft, step: clampStep(draft, stepFromUrl() ?? draft.step) };
+  return { ...draft, step: clampStep(draft, urlStep ?? draft.step) };
 }
 
 /**
@@ -64,13 +64,35 @@ function keepAboveBar(el: HTMLElement, bar: HTMLElement | null) {
 /** /start: renders the frame on the server, the questions once the browser has the saved answers. */
 export function QuizApp() {
   const hydrated = useHydrated();
+  const visit = useVisit();
   if (!hydrated) return <QuizFrame step={1} editing={false} />;
-  return <Quiz />;
+  // A first load may be a refresh, so it honours ?step=; a page shown again resumes from the draft.
+  return <Quiz key={visit} useUrlStep={visit === 0} />;
 }
 
-function Quiz() {
+/**
+ * Counts the times this page has been shown. With cacheComponents, Next keeps a visited page alive in a
+ * hidden <Activity> and shows the same instance again, state and all, on the next visit to /start. Its
+ * effects run again when it is shown, so a layout effect (before paint) bumps the count, and the quiz,
+ * keyed by it, starts fresh from the saved draft or the stored answers instead of where it was left.
+ */
+function useVisit(): number {
+  const [visit, setVisit] = useState(0);
+  const shown = useRef(false);
+  useLayoutEffect(() => {
+    if (shown.current) setVisit((v) => v + 1);
+    shown.current = true;
+  }, []);
+  return visit;
+}
+
+/**
+ * `useUrlStep`: start at the URL's ?step= (a refresh). Off when the page is shown again: the URL may then
+ * hold the hidden instance's old step, which its own effects write back on the way out.
+ */
+function Quiz({ useUrlStep }: { useUrlStep: boolean }) {
   const router = useRouter();
-  const [draft, setDraft] = useState<QuizDraft>(initialDraft);
+  const [draft, setDraft] = useState<QuizDraft>(() => initialDraft(useUrlStep ? stepFromUrl() : null));
   const [attempted, setAttempted] = useState(false);
   const [touched, setTouched] = useState<ReadonlySet<string>>(() => new Set());
   const [problem, setProblem] = useState<EngineProblem | null>(null);

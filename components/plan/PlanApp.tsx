@@ -86,7 +86,7 @@ export function PlanApp() {
         {notice && (
           <Notice tone={notice === "pro" ? "accent" : "quiet"} onDismiss={() => setNotice(null)} className="mb-6">
             {notice === "pro"
-              ? "You're Pro. Unlimited logging, screenshot reading, the annualized plan, Ask and CSV export are on."
+              ? "You're Pro. Unlimited logging, screenshot reading, the annualized comparison, Ask and CSV export are on."
               : "Checkout cancelled — you're still on the free plan."}
           </Notice>
         )}

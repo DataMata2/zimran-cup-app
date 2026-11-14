@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { annualized, estimate } from "@/lib/tax";
 import { buildTaxInput } from "@/lib/product/input";
 import {
-  ANNUALIZED_METHOD_LABEL, buildAnnualizedInput, computeAnnualizedPlan, payments1099, summarizeAnnualized,
+  ANNUALIZED_COMPARISON_NOTE, ANNUALIZED_METHOD_LABEL, buildAnnualizedInput, computeAnnualizedPlan, payments1099, summarizeAnnualized,
 } from "@/lib/product/annualizedPlan";
 import { buildCsv, csvField, csvRows } from "@/lib/product/csv";
 import { createElement } from "react";
@@ -142,6 +142,13 @@ describe("annualized plan summary", () => {
     );
     expect(html).toContain(ANNUALIZED_METHOD_LABEL);
     expect(html).toContain("you’d file Form 2210 Schedule AI.");
+    // PP15-02: a comparison, never presented as the plan the app uses.
+    expect(html).toContain(ANNUALIZED_COMPARISON_NOTE);
+    expect(ANNUALIZED_COMPARISON_NOTE).toBe(
+      "For comparison only. Your plan, calendar and CSV use the regular method. To use the annualized method, file Form 2210 Schedule AI with your return.",
+    );
+    expect(html).toContain("Paid unevenly? Compare the annualized method");
+    expect(html).not.toMatch(/your annualized plan/i);
     expect(html).not.toMatch(/Annualized <\/span>\$0</);
   });
 
@@ -214,6 +221,7 @@ describe("csv", () => {
     expect(lines).toContain(`Total tax,${result.tax.total.toFixed(2)}`);
     expect(lines).toContain(`Self-employment tax,${result.tax.seTax.toFixed(2)}`);
     expect(lines.some((l) => l.startsWith("Annualized instalments"))).toBe(true);
+    expect(lines.some((l) => l.startsWith("Annualized instalments") && l.includes("for comparison only; the instalments above use the regular method"))).toBe(true);
     // Every line is a whole number of fields: no stray line breaks.
     expect(lines.every((l) => (l.match(/"/g)?.length ?? 0) % 2 === 0)).toBe(true);
   });

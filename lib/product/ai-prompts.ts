@@ -20,6 +20,7 @@ import {
   lumpAssumptionText,
   payTargetEnding,
 } from "./payNow";
+import { REGULAR_METHOD_LINE } from "./annualizedPlan";
 import { computePlan } from "./plan";
 import { safeHarborCopy } from "./safeHarborCopy";
 import { stateName } from "./states";
@@ -165,6 +166,8 @@ export function planFacts(
       ? { filingStatus: FILING_LABEL[profile.filingStatus], state: stateName(profile.state) }
       : undefined,
     headline,
+    /** PP15-02: every amount here uses the regular method; the annualized card on screen is a comparison only. */
+    method: REGULAR_METHOD_LINE,
     setAside: {
       says: `Set aside ${pct(r.setAside.rate, 0)} of every payment.`,
       rate: pct(r.setAside.rate, 0),

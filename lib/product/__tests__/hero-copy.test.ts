@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { PlanHero } from "@/components/plan/PlanHero";
 import { planFacts, unknownDollarAmounts } from "@/lib/product/ai-prompts";
+import { REGULAR_METHOD_LINE } from "@/lib/product/annualizedPlan";
 import { buildExample } from "@/lib/product/example";
 import { buildTaxInput } from "@/lib/product/input";
 import { money, moneyPay } from "@/lib/product/format";
@@ -258,5 +259,22 @@ describe("catch-up line", () => {
   it("hides the line when it equals the rate", () => {
     const real = plan(maya, mayaLog);
     expect(catchUpLine({ ...real, setAside: { ...real.setAside, rate: 0.25, catchUpRate: 0.25 } })).toBeNull();
+  });
+});
+
+describe("PP15-02: the hero and the AI facts say the plan uses the regular method", () => {
+  it("the pay-now hero and the pay-by hero both carry the method line", () => {
+    const pastDueResult = plan(maya, mayaLog);
+    expect(pastDue(pastDueResult)).not.toBeNull();
+    expect(hero(pastDueResult, maya.estimatedPaid)).toContain(REGULAR_METHOD_LINE);
+    const onTimeResult = plan(onTime, []);
+    expect(pastDue(onTimeResult)).toBeNull();
+    expect(payTarget(onTimeResult)).not.toBeNull();
+    expect(hero(onTimeResult, onTime.estimatedPaid)).toContain(REGULAR_METHOD_LINE);
+    expect(REGULAR_METHOD_LINE).toBe("Regular method: equal quarterly payments.");
+  });
+
+  it("planFacts states the method", () => {
+    expect(planFacts(plan(maya, mayaLog), mayaLog, maya).method).toBe(REGULAR_METHOD_LINE);
   });
 });

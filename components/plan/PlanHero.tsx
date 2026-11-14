@@ -3,6 +3,7 @@ import { buttonClasses } from "@/components/kit/Button";
 import { cx } from "@/components/kit/cx";
 import { Disclaimer } from "@/components/kit/Disclaimer";
 import { longDate, moneyPay, pct } from "@/lib/product/format";
+import { REGULAR_METHOD_LINE } from "@/lib/product/annualizedPlan";
 import {
   aboutMoney,
   allPaidCopy,
@@ -59,6 +60,7 @@ export function PlanHero({ result, lumpPaid = 0, className }: { result: TaxResul
             </p>
           )}
           <DirectPay />
+          <p className="mt-3 text-sm text-ink-2">{REGULAR_METHOD_LINE}</p>
         </div>
       ) : (
         <div className="rounded-lg border-3 border-ink bg-mint px-5 py-6 shadow-hard sm:px-8 sm:py-8">
@@ -242,6 +244,7 @@ function PayNowHeadline({ payNow, assumption }: { payNow: PayNow; assumption: st
       <p className="border-t-3 border-ink bg-surface px-5 py-3 text-sm text-ink-2 sm:px-8">
         Penalty so far: {aboutMoney(penaltySoFar)} (estimate)
         {assumption && <span className="mt-0.5 block">{assumption}</span>}
+        <span className="mt-0.5 block">{REGULAR_METHOD_LINE}</span>
       </p>
     </div>
   );

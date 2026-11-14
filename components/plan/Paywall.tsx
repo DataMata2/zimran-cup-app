@@ -24,7 +24,7 @@ const HEADINGS: Record<PaywallReason, { title: string; body: string }> = {
     body: "With Pro, ask why a payment is what it is and get an answer from your own plan.",
   },
   annualized: {
-    title: "Paid unevenly? See your annualized plan",
+    title: "Paid unevenly? Compare the annualized method",
     body: "With Pro, see your instalments under the IRS annualized method (Form 2210 Schedule AI), next to the regular schedule.",
   },
   export: {
@@ -48,7 +48,7 @@ const FEATURES: { label: string; free: string | boolean; pro: string | boolean }
   { label: "Log client payments", free: `${FREE_LOG_LIMIT} payments`, pro: "Unlimited" },
   { label: "Log IRS payments", free: true, pro: true },
   { label: "Read payouts from a screenshot", free: false, pro: true },
-  { label: "Annualized plan for uneven income", free: false, pro: true },
+  { label: "Annualized comparison for uneven income", free: false, pro: true },
   { label: "“Ask why” chat", free: false, pro: true },
   { label: "CSV export for your accountant", free: false, pro: true },
 ];

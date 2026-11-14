@@ -1,4 +1,5 @@
-// The "Paid unevenly?" card (Pro): Form 2210 Schedule AI next to the regular schedule.
+// The "Paid unevenly?" card (Pro): Form 2210 Schedule AI next to the regular schedule, as a comparison only.
+// The plan itself (hero, meter, deadlines, penalty, CSV, .ics, AI facts) always uses the regular method (PP15-02).
 // This module only builds the engine input and picks numbers out of the engine's results; the tax maths is
 // all in lib/tax (`annualized`, `estimate`).
 
@@ -6,6 +7,13 @@ import { annualized, estimate, type AnnualizedResult, type DatedAmount, type Tax
 import { buildTaxInput } from "./input";
 import { MIN_SHOWN, pastDue, quarterList } from "./payNow";
 import type { LogEntry, Profile } from "./types";
+
+/** PP15-02: the line by the hero's main action saying which method its amounts use. */
+export const REGULAR_METHOD_LINE = "Regular method: equal quarterly payments.";
+
+/** PP15-02: the annualized card is a comparison; the app does not switch methods. */
+export const ANNUALIZED_COMPARISON_NOTE =
+  "For comparison only. Your plan, calendar and CSV use the regular method. To use the annualized method, file Form 2210 Schedule AI with your return.";
 
 /** PP-QA-02: the card's label for the method and its assumption. */
 export const ANNUALIZED_METHOD_LABEL =

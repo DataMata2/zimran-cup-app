@@ -68,7 +68,7 @@ export function buildCsv({ log, result, annualized, asOf }: CsvData): string {
         e.kind === "income" ? e.setAside : null,
       ]),
     [],
-    ["Federal estimated tax instalments (Form 1040-ES, regular method)"],
+    ["Federal estimated tax instalments (Form 1040-ES, regular method: equal quarterly payments)"],
     // "To pay" matches the /plan deadlines (PP-QA-11): a missed row shows what is still unpaid on it, the next
     // deadline only its own instalment (the past-due part is paid now, below), a covered row 0.
     ["Quarter", "Due", "Required", "Credited", "To pay", "Note", "Status"],
@@ -91,7 +91,7 @@ export function buildCsv({ log, result, annualized, asOf }: CsvData): string {
   if (annualized && annualized.requiredAnnualPayment > 0) {
     rows.push(
       [],
-      ["Annualized instalments (Form 2210 Schedule AI)"],
+      ["Annualized instalments (Form 2210 Schedule AI): for comparison only; the instalments above use the regular method"],
       ["Quarter", "Due", "Annualized AGI", "Required (line 25)"],
       ...annualized.installments.map((i): Cell[] => [`Q${i.quarter}`, i.due, i.annualizedIncome, i.required]),
     );

@@ -4,17 +4,15 @@ import { useMemo } from "react";
 import { Button } from "@/components/kit/Button";
 import { cx } from "@/components/kit/cx";
 import { Disclaimer } from "@/components/kit/Disclaimer";
-import { ANNUALIZED_METHOD_LABEL, computeAnnualizedPlan, type AnnualizedHeadline, type AnnualizedRow } from "@/lib/product/annualizedPlan";
+import { ANNUALIZED_COMPARISON_NOTE, ANNUALIZED_METHOD_LABEL, computeAnnualizedPlan, type AnnualizedHeadline, type AnnualizedRow } from "@/lib/product/annualizedPlan";
 import { longDate, money } from "@/lib/product/format";
 import type { LogEntry, Profile } from "@/lib/product/types";
 import { TaxInputError } from "@/lib/tax";
 import { ProCheck, proCardClasses, ProSticker } from "./LockIcon";
 import type { PaywallReason } from "./Paywall";
 
-const NOTE = "Uses IRS Form 2210 Schedule AI. You attach that form to your return to use it.";
-
 /**
- * "Paid unevenly? Your annualized plan" (Pro): each quarter's required instalment under the regular schedule
+ * "Paid unevenly? Compare the annualized method" (Pro), a comparison only (PP15-02): each quarter's required instalment under the regular schedule
  * and under Schedule AI, from the engine, with one sentence on what that means by the next deadline.
  * Free users see what the card does and a button to the paywall.
  */
@@ -50,7 +48,7 @@ export function AnnualizedCard({
     <section aria-labelledby="annualized-title" className={cx(proCardClasses(!pro), className)}>
       <div className="flex items-center gap-2">
         <h2 id="annualized-title" className="font-display text-2xl leading-tight font-extrabold tracking-[-0.03em] text-ink sm:text-[1.75rem]">
-          Paid unevenly? Your annualized plan
+          Paid unevenly? Compare the annualized method
         </h2>
         {!pro && <ProSticker />}
       </div>
@@ -68,7 +66,7 @@ export function AnnualizedCard({
             <p className="px-4 pb-4 text-sm text-ink-2 sm:px-5">{plan.reconciliation}</p>
           )}
           <div className="flex flex-col gap-1.5 border-t-2 border-ink px-4 py-3.5 sm:px-5">
-            <p className="text-sm text-ink-2">{NOTE}</p>
+            <p className="text-sm font-semibold text-ink">{ANNUALIZED_COMPARISON_NOTE}</p>
             <Disclaimer />
           </div>
         </div>

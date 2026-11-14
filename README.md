@@ -10,7 +10,7 @@ Penaltyproof tells US freelancers how much to set aside from every client paymen
 2. `/plan` shows two numbers: the minimum to pay the IRS by the next quarterly deadline (split into "pay now" for a missed quarter and the next instalment), and the share of every client payment to set aside.
 3. Each time a client pays, they log it and see the set-aside in dollars and cents. Each IRS payment they log fills the meter: paid to the IRS against the legal minimum due so far.
 4. Deadlines go to their calendar as an `.ics` file built in the browser.
-5. Pro ($59 a year or $9.99 a month, Stripe test-mode subscriptions) adds unlimited logging, reading payouts from a screenshot, the annualized plan for uneven income, "Ask why" chat and a CSV for an accountant.
+5. Pro ($59 a year or $9.99 a month, Stripe test-mode subscriptions) adds unlimited logging, reading payouts from a screenshot, an annualized-method comparison for uneven income (the plan itself always uses the regular method), "Ask why" chat and a CSV for an accountant.
 
 ### How the numbers are made
 

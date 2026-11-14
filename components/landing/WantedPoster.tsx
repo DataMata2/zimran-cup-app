@@ -52,7 +52,7 @@ export function WantedPoster({ className }: { className?: string }) {
       aria-labelledby="wanted-title"
       className={cx(
         "relative w-full max-w-[320px] justify-self-center rounded-lg border-3 border-ink bg-surface p-4 shadow-hard",
-        "sm:max-w-[460px] sm:p-[22px] lg:rotate-[1.5deg] lg:shadow-[10px_10px_0_0_var(--color-ink)]",
+        "sm:max-w-[460px] sm:p-[22px] lg:shadow-[10px_10px_0_0_var(--color-ink)]",
         className,
       )}
     >

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { estimate, setAsideForPayment } from "@/lib/tax";
 import { todayIso, localIsoDate } from "@/lib/product/asof";
 import { buildTaxInput } from "@/lib/product/input";
-import { meterLabel, meterPctLabel, meterSegments, penaltyMeter } from "@/lib/product/meter";
+import { meterFill, meterPctLabel, meterSummary, meterTicks, meterValueText, penaltyMeter } from "@/lib/product/meter";
 import { longDate, money, moneyCents, pct } from "@/lib/product/format";
 import { buildExample, EXAMPLE_ANSWERS } from "@/lib/product/example";
 import { STATE_OPTIONS, stateName, isStateCode } from "@/lib/product/states";
@@ -95,7 +95,7 @@ describe("buildTaxInput", () => {
 });
 
 describe("penaltyMeter", () => {
-  it("covers paid + set-aside against the safe-harbor target", () => {
+  it("fills with IRS payments only, against the minimum due through the next deadline", () => {
     const p = { ...profile, estimatedPaid: 4000 };
     const result = estimate(buildTaxInput(p, [], "2026-07-01"));
     const log = [
@@ -103,16 +103,18 @@ describe("penaltyMeter", () => {
       entry({ kind: "income", amount: 1000, setAside: 200.6 }),
     ];
     const m = penaltyMeter(result, log);
-    expect(m.paid).toBe(result.progress.annualPaid);
+    expect(m.paid).toBe(result.progress.paidToDate);
     expect(m.paid).toBe(4000);
+    expect(m.required).toBe(result.progress.requiredToDate);
+    expect(m.required).toBe(6000); // Q1–Q3 of the $8,000 prior-year target; next deadline Sep 15
+    expect(m.through).toEqual({ quarter: 3, due: "2026-09-15" });
+    expect(m.pct).toBeCloseTo((4000 / 6000) * 100, 10);
+    // Set-aside money is held separately and never fills the bar.
     expect(m.setAside).toBe(702.1);
-    expect(m.target).toBe(8000); // prior-year 100% rule, see engine README example
-    expect(m.pct).toBeCloseTo(((4000 + 702.1) / 8000) * 100, 10);
-    expect(m.quarter).toBe(result.nextDeadline?.quarter);
-    expect(meterLabel(m)).toBe(`Q${m.quarter}: 58% penalty-proof`);
-    const seg = meterSegments(m);
-    expect(seg.paidPct).toBe(50);
-    expect(seg.setAsidePct).toBeCloseTo(8.77625, 10);
+    expect(meterFill(m)).toBeCloseTo(66.667, 3);
+    expect(m.target).toBe(8000);
+    expect(meterSummary(m)).toBe("$4,000 of the $6,000 minimum due by Sep 15, 2026");
+    expect(meterValueText(m)).toBe("Paid to the IRS: $4,000 of the $6,000 minimum due by Sep 15, 2026 (66%)");
   });
 
   it("counts a logged IRS payment once: it leaves the set-aside pot and shows up as paid", () => {
@@ -125,28 +127,54 @@ describe("penaltyMeter", () => {
     const m = penaltyMeter(result, log);
     expect(m.paid).toBe(5000);
     expect(m.setAside).toBe(500);
-    expect(m.pct).toBeCloseTo((5500 / m.target) * 100, 10);
+    expect(m.pct).toBeCloseTo((5000 / 6000) * 100, 10);
 
     // Paying the IRS more than was set aside never makes the pot negative.
     const more = [...log, entry({ kind: "irs", amount: 2000, date: "2026-06-20" })];
     expect(penaltyMeter(estimate(buildTaxInput(p, more, "2026-07-01")), more).setAside).toBe(0);
   });
 
-  it("caps at 100% and shows 100 when nothing is required", () => {
-    const result = estimate(buildTaxInput({ ...profile, estimatedPaid: 4000 }, [], "2026-07-01"));
+  it("a huge set-aside does not fill the bar", () => {
+    const result = estimate(buildTaxInput({ ...profile, estimatedPaid: 0 }, [], "2026-07-01"));
     const m = penaltyMeter(result, [entry({ kind: "income", amount: 1, setAside: 99999 })]);
-    expect(m.pct).toBe(100);
-    expect(meterSegments(m).paidPct + meterSegments(m).setAsidePct).toBe(100);
+    expect(m.pct).toBe(0);
+    expect(meterFill(m)).toBe(0);
+    expect(m.setAside).toBe(99999);
+  });
+
+  it("caps at 100%, and says nothing was due when nothing is required", () => {
+    const over = estimate(buildTaxInput({ ...profile, estimatedPaid: 7000 }, [], "2026-07-01"));
+    expect(penaltyMeter(over, []).pct).toBe(100);
 
     const none = estimate(buildTaxInput({ ...profile, priorYearTax: 0 }, [], "2026-07-01"));
     expect(none.safeHarbor.requiredAnnualPayment).toBe(0);
-    expect(penaltyMeter(none, []).pct).toBe(100);
+    const m = penaltyMeter(none, []);
+    expect(m.pct).toBeNull();
+    expect(meterPctLabel(m)).toBeNull();
+    expect(meterSummary(m)).toBe("Nothing was due yet");
+    expect(meterValueText(m)).toBe("Paid to the IRS: Nothing was due yet");
+  });
+
+  it("runs through Q4 once no deadline is left", () => {
+    const result = estimate(buildTaxInput(profile, [], "2027-02-01"));
+    expect(result.nextDeadline).toBeNull();
+    const m = penaltyMeter(result, []);
+    expect(m.through.quarter).toBe(4);
+    expect(m.required).toBe(result.safeHarbor.requiredAnnualPayment);
   });
 
   it("rounds the label down so it never claims 100% early", () => {
-    const m = { paid: 7999, setAside: 0, target: 8000, pct: 99.9875, quarter: 4 as const };
+    const m = { paid: 7999, required: 8000, pct: 99.9875, setAside: 0, target: 8000, through: { quarter: 4 as const, due: "2027-01-15" } };
     expect(meterPctLabel(m)).toBe(99);
-    expect(meterLabel({ ...m, quarter: null })).toBe("99% penalty-proof");
+  });
+
+  it("puts one tick per quarter the minimum covers", () => {
+    const base = { paid: 0, required: 1, pct: 0, setAside: 0, target: 1 };
+    expect(meterTicks({ ...base, through: { quarter: 4, due: "2027-01-15" } })).toEqual({
+      ticks: [25, 50, 75, 100],
+      labels: ["Q1", "Q2", "Q3", "Q4"],
+    });
+    expect(meterTicks({ ...base, through: { quarter: 2, due: "2026-06-15" } })).toEqual({ ticks: [50, 100], labels: ["Q1", "Q2"] });
   });
 });
 

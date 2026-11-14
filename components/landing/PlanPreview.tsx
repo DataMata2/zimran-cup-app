@@ -2,14 +2,11 @@
 
 import { Card } from "@/components/kit/Card";
 import { Disclaimer } from "@/components/kit/Disclaimer";
-import { ProgressBar } from "@/components/kit/ProgressBar";
 import { EXAMPLE_DESCRIPTION, EXAMPLE_NAME } from "@/lib/product/example";
 import { longDate, money, pct } from "@/lib/product/format";
 import { pastDue, pastDueSentence, payTarget } from "@/lib/product/payNow";
-import { meterLabel, meterSegments } from "@/lib/product/meter";
+import { PaidMeter } from "@/components/plan/PaidMeter";
 import { useExamplePlan } from "./useExamplePlan";
-
-const QUARTERS = ["Q1", "Q2", "Q3", "Q4"] as const;
 
 /** Placeholder block with the same footprint as the number it stands in for. */
 function Blank({ className }: { className: string }) {
@@ -21,7 +18,6 @@ export function PlanPreview() {
   const plan = useExamplePlan();
   const due = plan ? pastDue(plan.result) : null;
   const target = plan ? payTarget(plan.result) : null;
-  const segments = plan ? meterSegments(plan.meter) : null;
 
   return (
     <Card as="section" raised padding="none" aria-labelledby="preview-title" aria-busy={!plan} className="overflow-hidden">
@@ -77,35 +73,12 @@ export function PlanPreview() {
           </p>
         </div>
 
-        <div className="mt-5 border-t border-line pt-5">
-          <p className="text-sm font-semibold text-accent-ink">
-            {plan ? meterLabel(plan.meter) : <Blank className="h-4 w-40" />}
-          </p>
-          <ProgressBar
-            className="mt-3"
-            size="lg"
-            animateIn
-            value={segments?.paidPct ?? 0}
-            secondary={segments?.setAsidePct ?? 0}
-            tickLabels={QUARTERS}
-            label={`${EXAMPLE_NAME}'s penalty-proof progress`}
-            valueText={plan ? meterLabel(plan.meter) : "Loading"}
-          />
-          <ul className="mt-4 flex flex-col gap-1.5 text-sm text-ink-2 sm:flex-row sm:flex-wrap sm:gap-x-4">
-            <li className="flex items-center gap-2">
-              <span aria-hidden className="size-2.5 rounded-[3px] bg-accent" />
-              Paid to IRS <span className="font-semibold text-ink">{plan ? money(plan.meter.paid) : "…"}</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <span aria-hidden className="hatch-accent size-2.5 rounded-[3px] ring-1 ring-accent-mid" />
-              Set aside <span className="font-semibold text-ink">{plan ? money(plan.meter.setAside) : "…"}</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <span aria-hidden className="size-2.5 rounded-[3px] ring-1 ring-line-strong" />
-              Safe-harbor target <span className="font-semibold text-ink">{plan ? money(plan.meter.target) : "…"}</span>
-            </li>
-          </ul>
-        </div>
+        <PaidMeter
+          meter={plan?.meter ?? null}
+          titleAs="p"
+          label={`${EXAMPLE_NAME}'s payments to the IRS`}
+          className="mt-5 border-t border-line pt-5"
+        />
       </div>
 
       <div className="border-t border-line bg-paper/60 px-5 py-3 sm:px-6">

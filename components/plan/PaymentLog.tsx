@@ -5,19 +5,18 @@ import { Button } from "@/components/kit/Button";
 import { Card } from "@/components/kit/Card";
 import { cx } from "@/components/kit/cx";
 import { Field, MoneyInput, TextInput } from "@/components/kit/Field";
-import { ProgressBar } from "@/components/kit/ProgressBar";
 import { SegmentedControl } from "@/components/kit/SegmentedControl";
-import { longDate, money, moneyCents, pct, shortDate } from "@/lib/product/format";
-import { meterLabel, meterPctLabel, meterSegments, penaltyMeter } from "@/lib/product/meter";
+import { longDate, moneyCents, pct, shortDate } from "@/lib/product/format";
+import { penaltyMeter } from "@/lib/product/meter";
 import { nextStepText } from "@/lib/product/payNow";
 import { FREE_LOG_LIMIT, needsPro } from "@/lib/product/plan";
 import { addLogEntry, removeLogEntry, useAddedCount } from "@/lib/product/store";
 import type { LogEntry, LogKind } from "@/lib/product/types";
 import { setAsideForPayment, type TaxResult } from "@/lib/tax";
 import type { PaywallReason } from "./Paywall";
+import { PaidMeter } from "./PaidMeter";
 import { ReadPayout } from "./ReadPayout";
 
-const QUARTERS = ["Q1", "Q2", "Q3", "Q4"] as const;
 const KIND_OPTIONS = [
   { value: "income", label: "I got paid" },
   { value: "irs", label: "I paid the IRS" },
@@ -38,11 +37,9 @@ interface Props {
 
 type Confirmation = { kind: "income"; amount: number; setAside: number; rate: number; payer: string } | { kind: "irs"; amount: number };
 
-/** The return mechanic: the penalty-proof meter, the "I just got paid" row, and the log of entries. */
+/** The return mechanic: the paid-to-IRS meter, the "I just got paid" row, and the log of entries. */
 export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
   const meter = penaltyMeter(result, log);
-  const segments = meterSegments(meter);
-  const label = meterLabel(meter);
   /** Entries ever added to this log (deleting one doesn't free a slot). */
   const added = useAddedCount();
 
@@ -120,35 +117,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
   return (
     <Card as="section" raised padding="none" aria-labelledby="meter-title" className="overflow-hidden">
       {/* Meter */}
-      <div className="px-5 pt-5 pb-6 sm:px-6 sm:pt-6">
-        <h2 id="meter-title" className="text-lg font-bold tracking-[-0.01em] text-accent-ink">
-          {label}
-        </h2>
-        <ProgressBar
-          className="mt-3"
-          size="lg"
-          animateIn
-          value={segments.paidPct}
-          secondary={segments.setAsidePct}
-          tickLabels={QUARTERS}
-          label="Penalty-proof progress"
-          valueText={label}
-        />
-        <ul className="mt-4 flex flex-col gap-1.5 text-sm text-ink-2">
-          <li className="flex items-center gap-2">
-            <span aria-hidden className="size-2.5 shrink-0 rounded-[3px] bg-accent" />
-            Paid to IRS <span className="ml-auto font-semibold text-ink">{money(meter.paid)}</span>
-          </li>
-          <li className="flex items-center gap-2">
-            <span aria-hidden className="hatch-accent size-2.5 shrink-0 rounded-[3px] ring-1 ring-accent-mid" />
-            Set aside <span className="ml-auto font-semibold text-ink">{money(meter.setAside)}</span>
-          </li>
-          <li className="flex items-center gap-2">
-            <span aria-hidden className="size-2.5 shrink-0 rounded-[3px] ring-1 ring-line-strong" />
-            Safe-harbor target <span className="ml-auto font-semibold text-ink">{money(meter.target)}</span>
-          </li>
-        </ul>
-      </div>
+      <PaidMeter meter={meter} titleId="meter-title" className="px-5 pt-5 pb-6 sm:px-6 sm:pt-6" />
 
       {/* Log a payment */}
       <form onSubmit={submit} noValidate className="border-t border-line bg-paper/50 px-5 py-5 sm:px-6">
@@ -265,7 +234,10 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
                   </p>
                   <p className="mt-0.5 text-sm text-ink-2">
                     {pct(confirmation.rate, 0)} of {moneyCents(confirmation.amount)}
-                    {confirmation.payer ? ` from ${confirmation.payer}` : ""}. Move it to savings now. You&rsquo;re {meterPctLabel(meter)}% penalty-proof.
+                    {confirmation.payer ? ` from ${confirmation.payer}` : ""}. Move it to savings now,{" "}
+                    {result.nextDeadline
+                      ? `then pay it to the IRS by ${longDate(result.nextDeadline.due)}.`
+                      : "and keep it for your April 15, 2027 return."}
                   </p>
                 </>
               ) : (

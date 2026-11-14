@@ -9,9 +9,9 @@ export interface ProgressBarProps {
   ticks?: readonly number[];
   /** Optional labels under the ticks, same order (e.g. ["Q1", "Q2", "Q3", "Q4"]). */
   tickLabels?: readonly string[];
-  /** Accessible name, e.g. "Penalty-proof progress". */
+  /** Accessible name, e.g. "Paid to the IRS". */
   label: string;
-  /** Spoken value, e.g. "Q4: 63% penalty-proof". Defaults to the covered percent. */
+  /** Spoken value, e.g. "Paid to the IRS: $3,700 of the $7,400 minimum due by Jan 15, 2027 (50%)". Defaults to the percent. */
   valueText?: string;
   size?: "md" | "lg";
   /** Grow in from the left once, on first paint. */

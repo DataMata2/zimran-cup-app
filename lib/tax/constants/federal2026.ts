@@ -156,3 +156,27 @@ export const ANNUALIZATION: {
   seFactors: [4, 2.4, 1.5, 1], // Sched AI lines 32/34 are 12.4% / 2.9% x these
   ssWageBaseFraction: [3 / 12, 5 / 12, 8 / 12, 12 / 12], // Sched AI line 29 / $184,500 (46,125 / 76,875 / 123,000 / 184,500)
 };
+
+// IRS underpayment interest rate for individuals (IRC 6621(a)(2): federal short-term rate + 3 points), set per
+// calendar quarter. IRC 6654(a) charges the estimated-tax penalty at this rate, so each Revenue Ruling also says
+// "the N percent rate also applies to estimated tax underpayments" for that quarter. Used by
+// estimateAccruedPenalty (penalty.ts). Checked on 2026-11-14:
+// - 2026 Q1 7%: Rev. Rul. 2025-22, IRB 2025-48, https://www.irs.gov/irb/2025-48_IRB ; news release IR-2025-112
+//   (Nov. 13, 2025), https://www.irs.gov/newsroom/interest-rates-remain-the-same-for-the-first-quarter-of-2026
+// - 2026 Q2 6%: Rev. Rul. 2026-5, IRB 2026-8, https://www.irs.gov/irb/2026-08_IRB
+// - 2026 Q3 7%: Rev. Rul. 2026-10, IRB 2026-22, https://www.irs.gov/irb/2026-22_IRB
+// - 2026 Q4 7%: Rev. Rul. 2026-15, IRB 2026-36, https://www.irs.gov/irb/2026-36_irb ; news release IR-2026-98
+//   (Aug. 21, 2026), https://www.irs.gov/newsroom/interest-rates-remain-the-same-for-the-fourth-quarter-of-2026
+// - Summary table: https://www.irs.gov/payments/quarterly-interest-rates
+// - 2027 Q1 and Q2 7%: UNVERIFIED. Not yet published on 2026-11-14; the latest confirmed rate (2026 Q4) is used.
+//   The penalty for tax year 2026 stops on 2027-04-15 (RETURN_DUE), so only Apr 1-15 of 2027 Q2 can be used.
+// The Form 2210 penalty worksheet counts days on a 365-day year (2026 and 2027 both have 365 days).
+export const UNDERPAYMENT_RATES: { from: string; to: string; rate: number; verified: boolean }[] = [
+  { from: "2026-01-01", to: "2026-03-31", rate: 0.07, verified: true },
+  { from: "2026-04-01", to: "2026-06-30", rate: 0.06, verified: true },
+  { from: "2026-07-01", to: "2026-09-30", rate: 0.07, verified: true },
+  { from: "2026-10-01", to: "2026-12-31", rate: 0.07, verified: true },
+  { from: "2027-01-01", to: "2027-03-31", rate: 0.07, verified: false }, // UNVERIFIED (see above)
+  { from: "2027-04-01", to: "2027-06-30", rate: 0.07, verified: false }, // UNVERIFIED (see above)
+];
+export const PENALTY_DAYS_PER_YEAR = 365;

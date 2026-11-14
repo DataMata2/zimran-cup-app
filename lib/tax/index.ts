@@ -3,6 +3,7 @@
 export { estimate, setAsideForPayment } from "./estimate";
 export { annualized } from "./annualized";
 export { toICS, type IcsOptions } from "./ics";
+export { estimateAccruedPenalty, type PenaltyEstimate, type PenaltyInstallment, type PenaltyOptions } from "./penalty";
 export { TaxInputError } from "./errors";
 export type {
   AnnualizedInstallment,

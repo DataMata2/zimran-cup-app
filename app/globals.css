@@ -254,3 +254,10 @@ html:has([data-quiz]) {
   scroll-padding-top: 1rem;
   scroll-padding-bottom: 7rem;
 }
+
+/* The desktop deadline ticker: two identical runs, so -50% loops seamlessly. Off under reduced motion. */
+@keyframes pp-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}

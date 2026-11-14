@@ -4,10 +4,10 @@ import { Wordmark } from "./Wordmark";
 
 export function Footer() {
   return (
-    <footer className="mt-auto border-t border-line">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-8 text-sm text-ink-2 sm:flex-row sm:items-start sm:justify-between sm:px-6">
-        <div className="flex flex-col gap-2">
-          <Wordmark className="text-base" />
+    <footer className="mt-auto border-t-3 border-ink bg-surface">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-5 py-10 text-sm text-ink-2 sm:flex-row sm:items-start sm:justify-between sm:px-6 lg:px-10">
+        <div className="flex flex-col gap-3">
+          <Wordmark className="text-xl" />
           <p className="max-w-md">
             {DISCLAIMER_TEXT} Federal and state estimated tax for US freelancers.
           </p>
@@ -15,7 +15,7 @@ export function Footer() {
         <div className="flex max-w-xs flex-col gap-2 sm:items-end sm:text-right">
           <Link
             href="/how-we-check"
-            className="font-medium text-ink underline decoration-line-strong underline-offset-2 hover:text-accent"
+            className="-my-2.5 inline-flex min-h-11 items-center self-start rounded-sm font-bold text-ink underline decoration-2 underline-offset-4 hover:bg-sun-soft sm:self-end"
           >
             How we check our numbers
           </Link>

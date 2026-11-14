@@ -13,7 +13,7 @@ export function DeadlinePreview() {
   const plan = useExamplePlan();
 
   return (
-    <div className="rounded-lg border border-line bg-surface">
+    <div className="overflow-hidden rounded-lg border-3 border-ink bg-surface shadow-hard">
       <ol aria-label="Example: the four 2026 deadlines" aria-busy={!plan}>
         {QUARTERS.map((quarter, index) => {
           const i: Installment | null = plan?.result.installments[index] ?? null;
@@ -22,14 +22,14 @@ export function DeadlinePreview() {
           return (
             <li
               key={quarter}
-              className="grid grid-cols-[2.25rem_1fr_auto] items-center gap-x-3 border-b border-line px-4 py-3.5 last:border-b-0 sm:px-5"
+              className="grid grid-cols-[2.75rem_1fr_auto] items-center gap-x-3 border-b-2 border-ink px-4 py-3.5 last:border-b-0 sm:px-5"
             >
-              <span className="text-sm font-semibold text-ink-3">Q{quarter}</span>
+              <span className="font-display text-xl leading-none font-extrabold tracking-[-0.02em] text-ink">Q{quarter}</span>
               <span className="min-w-0">
-                <span className="block text-sm font-semibold text-ink">{i ? longDate(i.due) : " "}</span>
+                <span className="block text-sm font-bold text-ink">{i ? longDate(i.due) : " "}</span>
                 <span className="block text-sm text-ink-2">{amount !== null ? money(amount) : " "}</span>
               </span>
-              {i ? <Badge status={i.status} /> : <span className="h-6 w-16 rounded-full bg-sunken" aria-hidden />}
+              {i ? <Badge status={i.status} /> : <span className="h-[23px] w-20 rounded-full border-2 border-ink/20 bg-sunken" aria-hidden />}
             </li>
           );
         })}

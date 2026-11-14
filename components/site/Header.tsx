@@ -1,15 +1,19 @@
 import Link from "next/link";
 import { HeaderAction } from "./HeaderAction";
+import { HeaderNav } from "./HeaderNav";
 import { Wordmark } from "./Wordmark";
 
 export function Header() {
   return (
-    <header className="border-b border-line/70">
-      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-        <Link href="/" aria-label="Penaltyproof home" className="-mx-1 rounded-sm px-1 py-1">
+    <header>
+      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-5 py-4 sm:px-6 lg:px-10">
+        <Link href="/" aria-label="Penaltyproof home" className="-mx-1 inline-flex min-h-11 items-center rounded-sm px-1">
           <Wordmark />
         </Link>
-        <HeaderAction />
+        <div className="flex items-center gap-6">
+          <HeaderNav />
+          <HeaderAction />
+        </div>
       </div>
     </header>
   );

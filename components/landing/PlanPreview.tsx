@@ -21,27 +21,29 @@ export function PlanPreview() {
 
   return (
     <Card as="section" raised padding="none" aria-labelledby="preview-title" aria-busy={!plan} className="overflow-hidden">
-      <div className="flex flex-col gap-0.5 border-b border-line px-5 py-3.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3 sm:px-6">
-        <h2 id="preview-title" className="shrink-0 text-sm font-semibold text-ink">
+      <div className="flex flex-col gap-0.5 border-b-3 border-ink bg-sun px-5 py-3.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3 sm:px-6">
+        <h2 id="preview-title" className="shrink-0 font-mono text-xs font-bold tracking-[0.08em] text-ink uppercase">
           Example: {EXAMPLE_NAME}&rsquo;s plan
         </h2>
-        <p className="min-w-0 text-xs text-ink-3 sm:truncate">{EXAMPLE_DESCRIPTION}</p>
+        <p className="min-w-0 text-xs text-ink sm:truncate">{EXAMPLE_DESCRIPTION}</p>
       </div>
 
       <div className="px-5 pt-5 pb-6 sm:px-6 sm:pt-6">
         {plan ? (
           due ? (
             <>
-              <p className="text-sm font-semibold text-red">{missedLabel(due.quarters)}</p>
-              <p className="mt-1 flex flex-wrap items-baseline gap-x-3">
-                <span className="text-base font-semibold text-ink-2">Pay</span>
-                <span className="text-[2.75rem] leading-none font-bold tracking-[-0.03em] text-ink sm:text-[3.25rem]">
+              <p className="inline-flex items-center gap-1.5 rounded-full border-2 border-ink bg-hot px-2.5 py-1 font-mono text-[11px] leading-none font-bold tracking-[0.08em] text-ink uppercase">
+                {missedLabel(due.quarters)}
+              </p>
+              <p className="mt-3 flex flex-wrap items-baseline gap-x-3">
+                <span className="font-display text-2xl font-extrabold tracking-[-0.03em] text-ink">Pay</span>
+                <span className="font-display text-[2.75rem] leading-none font-extrabold tracking-[-0.035em] text-ink sm:text-[3.5rem]">
                   {money(due.amount)}
                 </span>
-                <span className="text-base font-semibold text-ink-2">now</span>
+                <span className="font-display text-2xl font-extrabold tracking-[-0.03em] text-ink">now</span>
               </p>
               {target && (
-                <div className="mt-4 border-l-2 border-line-strong pl-3">
+                <div className="mt-5 rounded-md border-2 border-ink bg-paper px-4 py-3">
                   <p className="text-sm font-semibold text-ink-2">{nextLabel(target.quarter)}</p>
                   <p className="mt-0.5 text-base text-ink-2">
                     <span className="font-semibold text-ink">{money(target.amount)}</span> by{" "}
@@ -54,14 +56,14 @@ export function PlanPreview() {
             <>
               <p className="text-sm font-semibold text-ink-2">{nextLabel(target.quarter)}</p>
               <p className="mt-1 flex flex-wrap items-baseline gap-x-3">
-                <span className="text-[2.75rem] leading-none font-bold tracking-[-0.03em] text-ink sm:text-[3.25rem]">
+                <span className="font-display text-[2.75rem] leading-none font-extrabold tracking-[-0.035em] text-ink sm:text-[3.5rem]">
                   {money(target.amount)}
                 </span>
                 <span className="text-base font-semibold text-ink-2">by {longDate(target.due)}</span>
               </p>
             </>
           ) : (
-            <p className="text-2xl font-bold text-accent">Nothing more to pay for 2026</p>
+            <p className="font-display text-2xl font-extrabold tracking-[-0.03em] text-ink">Nothing more to pay for 2026</p>
           )
         ) : (
           <>
@@ -72,9 +74,9 @@ export function PlanPreview() {
           </>
         )}
 
-        <div className="mt-6 flex items-baseline justify-between gap-4 border-t border-line pt-5">
-          <p className="text-sm text-ink-2">Set aside from every payment</p>
-          <p className="text-2xl font-bold tracking-[-0.02em] text-ink">
+        <div className="mt-6 flex items-center justify-between gap-4 rounded-md border-2 border-ink bg-sun-soft px-4 py-3">
+          <p className="text-sm font-medium text-ink">Set aside from every payment</p>
+          <p className="font-display text-[2rem] leading-none font-extrabold tracking-[-0.02em] text-ink">
             {plan ? pct(plan.result.setAside.rate, 0) : <Blank className="h-7 w-14" />}
           </p>
         </div>
@@ -83,11 +85,11 @@ export function PlanPreview() {
           meter={plan?.meter ?? null}
           titleAs="p"
           label={`${EXAMPLE_NAME}'s payments to the IRS`}
-          className="mt-5 border-t border-line pt-5"
+          className="mt-6"
         />
       </div>
 
-      <div className="border-t border-line bg-paper/60 px-5 py-3 sm:px-6">
+      <div className="border-t-2 border-ink bg-paper px-5 py-3 sm:px-6">
         <Disclaimer />
       </div>
     </Card>

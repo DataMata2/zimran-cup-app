@@ -27,11 +27,3 @@ export function useExamplePlan(): ExamplePlan | null {
     return { result, meter: penaltyMeter(result, log) };
   }, [asOf]);
 }
-
-/** The amount already overdue inside the next deadline, and the date it was due (null if none). */
-export function pastDuePart(result: TaxResult): { amount: number; due: string } | null {
-  if (!result.nextDeadline?.includesPastDue) return null;
-  const missed = result.installments.filter((i) => i.status === "pastDue");
-  const last = missed[missed.length - 1];
-  return last ? { amount: last.shortfall, due: last.due } : null;
-}

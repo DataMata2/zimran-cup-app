@@ -33,5 +33,20 @@ export function longDate(iso: string): string {
   return `${month} ${Number(m[3])}, ${m[1]}`;
 }
 
+/** ISO date "2026-09-15" → "Sep 15" (for dates inside the tax year, where the year is obvious). */
+export function shortDate(iso: string): string {
+  return longDate(iso).replace(/, \d{4}$/, "");
+}
+
+/** Several due dates in one phrase: "Sep 15, 2026", "Jun 15 and Sep 15, 2026", "Apr 15, Jun 15 and Sep 15, 2026". */
+export function dateList(isos: readonly string[]): string {
+  if (isos.length === 0) return "";
+  const year = /^(\d{4})/.exec(isos[isos.length - 1])?.[1];
+  const sameYear = year !== undefined && isos.every((d) => d.startsWith(year));
+  const parts = isos.map((d) => (sameYear ? shortDate(d) : longDate(d)));
+  const joined = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
+  return sameYear ? `${joined}, ${year}` : joined;
+}
+
 /** Avoid "-$0" from tiny negatives. */
 const normalize = (n: number) => (Object.is(n, -0) || Math.abs(n) < 1e-9 ? 0 : n);

@@ -4,9 +4,10 @@ import { Card } from "@/components/kit/Card";
 import { Disclaimer } from "@/components/kit/Disclaimer";
 import { ProgressBar } from "@/components/kit/ProgressBar";
 import { EXAMPLE_DESCRIPTION, EXAMPLE_NAME } from "@/lib/product/example";
-import { longDate, money, pct } from "@/lib/product/format";
+import { dateList, longDate, money, pct } from "@/lib/product/format";
+import { pastDuePart } from "@/lib/product/plan";
 import { meterLabel, meterSegments } from "@/lib/product/meter";
-import { pastDuePart, useExamplePlan } from "./useExamplePlan";
+import { useExamplePlan } from "./useExamplePlan";
 
 const QUARTERS = ["Q1", "Q2", "Q3", "Q4"] as const;
 
@@ -51,7 +52,7 @@ export function PlanPreview() {
         )}
         {missed && (
           <p className="mt-3 inline-flex rounded-sm bg-amber-soft px-2.5 py-1 text-sm font-medium text-amber">
-            Includes {money(missed.amount)} missed on {longDate(missed.due)}
+            Includes {money(missed.amount)} missed on {dateList(missed.dues)}
           </p>
         )}
 

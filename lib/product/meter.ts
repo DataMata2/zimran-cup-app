@@ -1,5 +1,5 @@
 // The penalty-proof meter: how much of the safe-harbor target is already covered, counting both money
-// paid to the IRS and money the user set aside from logged payments.
+// paid to the IRS and money the user set aside from logged payments (and has not yet paid to the IRS).
 
 import type { TaxResult } from "@/lib/tax";
 import type { LogEntry } from "./types";
@@ -7,7 +7,10 @@ import type { LogEntry } from "./types";
 export interface PenaltyMeter {
   /** Paid to the IRS so far (estimated payments + withholding to date), from the engine. */
   paid: number;
-  /** Sum of `setAside` over logged income entries. */
+  /**
+   * Money still held in the set-aside pot: Σ setAside of income entries minus Σ logged IRS payments
+   * (those are paid out of the pot, and already count in `paid`), never negative.
+   */
   setAside: number;
   /** The safe-harbor required annual payment. */
   target: number;
@@ -19,9 +22,13 @@ export interface PenaltyMeter {
 
 export function penaltyMeter(result: TaxResult, log: readonly LogEntry[]): PenaltyMeter {
   const paid = result.progress.annualPaid;
-  const setAside = round2(
-    log.reduce((sum, e) => (e.kind === "income" ? sum + e.setAside : sum), 0),
-  );
+  let saved = 0;
+  let paidFromPot = 0;
+  for (const e of log) {
+    if (e.kind === "income") saved += e.setAside;
+    else paidFromPot += e.amount;
+  }
+  const setAside = Math.max(0, round2(saved - paidFromPot));
   const target = result.safeHarbor.requiredAnnualPayment;
   const pct = target > 0 ? Math.min(100, ((paid + setAside) / target) * 100) : 100;
   return { paid, setAside, target, pct, quarter: result.nextDeadline?.quarter ?? null };

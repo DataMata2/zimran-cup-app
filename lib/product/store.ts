@@ -4,6 +4,8 @@
 // If localStorage is unavailable (private mode, blocked storage) the data lives in memory for the tab.
 
 import { useSyncExternalStore } from "react";
+import type { FilingStatus } from "@/lib/tax";
+import { isStateCode } from "./states";
 import type { LogEntry, NewLogEntry, Profile } from "./types";
 
 export const STORAGE_KEYS = {
@@ -18,10 +20,13 @@ type Key = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
 // Raw storage with an in-memory fallback, and a change signal shared by all keys.
 
 const memory = new Map<Key, string>();
+/** Keys whose last write to localStorage failed: localStorage holds a stale value, memory holds the truth. */
+const unsaved = new Set<Key>();
 const listeners = new Set<() => void>();
 
 function readRaw(key: Key): string | null {
   if (typeof window === "undefined") return null;
+  if (unsaved.has(key)) return memory.get(key) ?? null;
   try {
     return window.localStorage.getItem(key);
   } catch {
@@ -35,8 +40,10 @@ function writeRaw(key: Key, value: string | null): void {
   try {
     if (value === null) window.localStorage.removeItem(key);
     else window.localStorage.setItem(key, value);
+    unsaved.delete(key);
   } catch {
-    // Storage blocked or full: the in-memory copy above keeps the tab working.
+    // Storage blocked or full: reads of this key come from the in-memory copy above, so the tab keeps working.
+    unsaved.add(key);
   }
 }
 
@@ -81,12 +88,14 @@ function cachedReader<T>(key: Key, parse: (raw: string) => T, empty: T): () => T
 const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 const isNumOrNull = (v: unknown) => v === null || isNum(v);
 const isStr = (v: unknown): v is string => typeof v === "string";
+const FILING_STATUSES: readonly string[] = ["single", "mfj", "mfs", "hoh", "qss"] satisfies FilingStatus[];
+const isFilingStatus = (v: unknown): v is FilingStatus => typeof v === "string" && FILING_STATUSES.includes(v);
 
 function isProfile(v: unknown): v is Profile {
   if (typeof v !== "object" || v === null) return false;
   const p = v as Record<string, unknown>;
   return (
-    isStr(p.filingStatus) && isStr(p.state) && isNum(p.ytdIncome) && isNum(p.expectedIncome) &&
+    isFilingStatus(p.filingStatus) && isStateCode(p.state) && isNum(p.ytdIncome) && isNum(p.expectedIncome) &&
     isNum(p.w2Wages) && isNum(p.w2Withholding) && isNumOrNull(p.priorYearTax) && isNumOrNull(p.priorYearAgi) &&
     isNum(p.estimatedPaid) && isStr(p.createdAt) && typeof p.isExample === "boolean"
   );

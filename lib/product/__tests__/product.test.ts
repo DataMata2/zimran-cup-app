@@ -99,7 +99,6 @@ describe("penaltyMeter", () => {
     const result = estimate(buildTaxInput(p, [], "2026-07-01"));
     const log = [
       entry({ kind: "income", amount: 2500, setAside: 501.5 }),
-      entry({ kind: "irs", amount: 1000, setAside: 0 }),
       entry({ kind: "income", amount: 1000, setAside: 200.6 }),
     ];
     const m = penaltyMeter(result, log);
@@ -113,6 +112,23 @@ describe("penaltyMeter", () => {
     const seg = meterSegments(m);
     expect(seg.paidPct).toBe(50);
     expect(seg.setAsidePct).toBeCloseTo(8.77625, 10);
+  });
+
+  it("counts a logged IRS payment once: it leaves the set-aside pot and shows up as paid", () => {
+    const p = { ...profile, estimatedPaid: 4000 };
+    const log = [
+      entry({ kind: "income", amount: 7500, setAside: 1500 }),
+      entry({ kind: "irs", amount: 1000, date: "2026-06-15" }),
+    ];
+    const result = estimate(buildTaxInput(p, log, "2026-07-01"));
+    const m = penaltyMeter(result, log);
+    expect(m.paid).toBe(5000);
+    expect(m.setAside).toBe(500);
+    expect(m.pct).toBeCloseTo((5500 / m.target) * 100, 10);
+
+    // Paying the IRS more than was set aside never makes the pot negative.
+    const more = [...log, entry({ kind: "irs", amount: 2000, date: "2026-06-20" })];
+    expect(penaltyMeter(estimate(buildTaxInput(p, more, "2026-07-01")), more).setAside).toBe(0);
   });
 
   it("caps at 100% and shows 100 when nothing is required", () => {

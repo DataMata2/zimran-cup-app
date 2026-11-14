@@ -57,3 +57,23 @@ export async function setPro(
   const { error } = await db.from("guests").update(update).eq("id", guestId);
   if (error) throw new Error(`setPro failed: ${error.message}`);
 }
+
+/** Returns the guest's saved plan data, or null when none exists or Supabase is unconfigured. Throws on DB error. */
+export async function getGuestPlan(guestId: string): Promise<unknown | null> {
+  const db = getSupabaseAdmin();
+  if (!db) return null;
+  const { data, error } = await db.from("guest_plans").select("data").eq("guest_id", guestId).maybeSingle();
+  if (error) throw new Error(`getGuestPlan failed: ${error.message}`);
+  return data ? (data.data as unknown) : null;
+}
+
+/** Saves (upserts) the guest's plan data. Throws without Supabase or on DB error. */
+export async function saveGuestPlan(guestId: string, data: unknown): Promise<void> {
+  const db = getSupabaseAdmin();
+  if (!db) throw new Error("Supabase is not configured");
+  await ensureGuest(guestId);
+  const { error } = await db
+    .from("guest_plans")
+    .upsert({ guest_id: guestId, data, updated_at: new Date().toISOString() }, { onConflict: "guest_id" });
+  if (error) throw new Error(`saveGuestPlan failed: ${error.message}`);
+}

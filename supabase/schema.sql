@@ -20,3 +20,12 @@ create table if not exists public.health_checks (
 );
 
 alter table public.health_checks enable row level security;
+
+-- One saved plan per guest (product data as JSON; validated by the app before saving).
+create table if not exists public.guest_plans (
+  guest_id uuid primary key references public.guests(id) on delete cascade,
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.guest_plans enable row level security;

@@ -187,7 +187,8 @@ export function planFacts(result: TaxResult, log: readonly LogEntry[], profile?:
     },
     paidSoFar: {
       paidToIrsFor2026: money(r.progress.annualPaid),
-      requiredByToday: money(r.progress.requiredToDate),
+      // The engine's requiredToDate runs through the next deadline, not today.
+      requiredThroughNextDeadline: meter.pct === null ? "$0" : `${money(meter.required)} by ${longDate(meter.through.due)}`,
     },
     /** The meter on screen. Only money paid to the IRS protects against the penalty; set-aside money does not. */
     paidToIrsMeter: {

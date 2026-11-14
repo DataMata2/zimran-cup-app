@@ -1,9 +1,9 @@
 "use client";
 
 import { useRef } from "react";
-import { Button } from "@/components/ui/Button";
-import { cx } from "@/components/ui/cx";
-import { Field, MoneyInput } from "@/components/ui/Field";
+import { Button } from "@/components/kit/Button";
+import { cx } from "@/components/kit/cx";
+import { Field, MoneyInput } from "@/components/kit/Field";
 import { money } from "@/lib/product/format";
 import { suggestExpectedIncome, type QuizDraft, type QuizFilingStatus, type StepErrors } from "@/lib/product/quiz";
 import type { StateCode } from "@/lib/tax";

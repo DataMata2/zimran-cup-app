@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   caretAfterSignificant, formatMoneyText, moneyTextFromValue, parseMoneyText, significantBefore,
-} from "@/components/ui/moneyText";
+} from "@/components/kit/moneyText";
 
 describe("money input text", () => {
   it("groups thousands and keeps up to two decimals", () => {

@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { Wordmark } from "@/components/site/Wordmark";
-import { Button } from "@/components/ui/Button";
-import { cx } from "@/components/ui/cx";
+import { Button } from "@/components/kit/Button";
+import { cx } from "@/components/kit/cx";
 import { todayIso } from "@/lib/product/asof";
 import {
   checkWithEngine,

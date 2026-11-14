@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type Ref } from "react";
-import { cx } from "@/components/ui/cx";
+import { cx } from "@/components/kit/cx";
 import { STATE_OPTIONS, stateName, type StateOption } from "@/lib/product/states";
 import type { StateCode } from "@/lib/tax";
 

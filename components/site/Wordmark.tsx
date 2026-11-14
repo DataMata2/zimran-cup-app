@@ -1,4 +1,4 @@
-import { cx } from "@/components/ui/cx";
+import { cx } from "@/components/kit/cx";
 
 /** Four rising bars, one per quarterly deadline, the last one filled: the product's mark. */
 export function Mark({ className }: { className?: string }) {

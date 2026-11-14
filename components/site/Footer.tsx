@@ -1,4 +1,4 @@
-import { DISCLAIMER_TEXT } from "@/components/ui/Disclaimer";
+import { DISCLAIMER_TEXT } from "@/components/kit/Disclaimer";
 import { Wordmark } from "./Wordmark";
 
 export function Footer() {

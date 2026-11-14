@@ -1,7 +1,7 @@
 import { DeadlinePreview } from "@/components/landing/DeadlinePreview";
 import { HeroActions } from "@/components/landing/HeroActions";
 import { PlanPreview } from "@/components/landing/PlanPreview";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/kit/Button";
 
 const STEPS = [
   {

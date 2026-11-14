@@ -1,8 +1,8 @@
 "use client";
 
-import { Card } from "@/components/ui/Card";
-import { Disclaimer } from "@/components/ui/Disclaimer";
-import { ProgressBar } from "@/components/ui/ProgressBar";
+import { Card } from "@/components/kit/Card";
+import { Disclaimer } from "@/components/kit/Disclaimer";
+import { ProgressBar } from "@/components/kit/ProgressBar";
 import { EXAMPLE_DESCRIPTION, EXAMPLE_NAME } from "@/lib/product/example";
 import { longDate, money, pct } from "@/lib/product/format";
 import { meterLabel, meterSegments } from "@/lib/product/meter";

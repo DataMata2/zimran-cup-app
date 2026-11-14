@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/kit/Button";
 import { useHydrated, useProfile } from "@/lib/product/store";
 
 /** The one header action: back to your plan if you have one, otherwise start the quiz. */

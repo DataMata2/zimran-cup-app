@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/kit/Button";
 import { todayIso } from "@/lib/product/asof";
 import { buildExample } from "@/lib/product/example";
 import { setProfile, useHydrated, useProfile } from "@/lib/product/store";

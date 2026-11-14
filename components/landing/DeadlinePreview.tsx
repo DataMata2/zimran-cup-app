@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge } from "@/components/ui/Badge";
+import { Badge } from "@/components/kit/Badge";
 import { longDate, money } from "@/lib/product/format";
 import type { Installment } from "@/lib/tax";
 import { useExamplePlan } from "./useExamplePlan";

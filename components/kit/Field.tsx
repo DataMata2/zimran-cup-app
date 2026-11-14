@@ -81,7 +81,7 @@ function useFieldWiring(id?: string, describedBy?: string, invalid?: boolean) {
 
 const inputBox =
   "flex h-13 w-full items-center rounded-md border-3 bg-surface text-base text-ink transition-[border-color,box-shadow] duration-150 " +
-  "focus-within:border-ink focus-within:shadow-[0_0_0_4px_var(--color-sky)]";
+  "focus-within:border-ink focus-within:shadow-[0_0_0_4px_var(--color-sky),0_0_0_6px_var(--color-ink)]";
 
 const inputReset =
   "h-full w-full min-w-0 bg-transparent outline-none placeholder:text-ink-3 focus-visible:outline-none";

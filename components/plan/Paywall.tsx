@@ -7,8 +7,24 @@ import { SegmentedControl } from "@/components/kit/SegmentedControl";
 import { FREE_LOG_LIMIT } from "@/lib/product/plan";
 import { DEFAULT_PRO_PLAN, startCheckout, type ProPlan } from "@/lib/product/pro";
 
-/** Why the sheet opened: the free log is full, or the person asked for Pro. */
-export type PaywallReason = "limit" | "upgrade";
+/** Why the sheet opened: the free log is full, the person asked for Pro, or they tried a Pro feature. */
+export type PaywallReason = "limit" | "upgrade" | "screenshot" | "ask";
+
+const HEADINGS: Record<PaywallReason, { title: string; body: string }> = {
+  limit: {
+    title: `You've used your ${FREE_LOG_LIMIT} free entries`,
+    body: "Pro keeps logging every payment, so your set-aside and meter stay right through April.",
+  },
+  upgrade: { title: "Penaltyproof Pro", body: "Log every payment for the whole tax year, and more." },
+  screenshot: {
+    title: "Read payouts from a screenshot",
+    body: "With Pro, upload a payout screenshot and we fill in the amount, client and date for you to check.",
+  },
+  ask: {
+    title: "Ask about your numbers",
+    body: "With Pro, ask why a payment is what it is and get an answer from your own plan.",
+  },
+};
 
 const PRICES: Record<ProPlan, { price: string; per: string; cta: string }> = {
   yearly: { price: "$59", per: "per tax year, through the April 15, 2027 return", cta: "Continue to checkout, $59" },
@@ -93,12 +109,10 @@ export function Paywall({ reason, onClose }: { reason: PaywallReason | null; onC
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 id="paywall-title" className="text-xl font-bold tracking-[-0.015em] text-ink">
-              {reason === "limit" ? `You've used your ${FREE_LOG_LIMIT} free entries` : "Penaltyproof Pro"}
+              {HEADINGS[reason ?? "upgrade"].title}
             </h2>
             <p className="mt-1.5 text-sm text-ink-2">
-              {reason === "limit"
-                ? "Pro keeps logging every payment, so your set-aside and meter stay right through April."
-                : "Log every payment for the whole tax year, and more."}
+              {HEADINGS[reason ?? "upgrade"].body}
             </p>
           </div>
           <button

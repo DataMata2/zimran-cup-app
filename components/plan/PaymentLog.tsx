@@ -14,6 +14,7 @@ import { addLogEntry, removeLogEntry } from "@/lib/product/store";
 import type { LogEntry, LogKind } from "@/lib/product/types";
 import { setAsideForPayment, type TaxResult } from "@/lib/tax";
 import type { PaywallReason } from "./Paywall";
+import { ReadPayout } from "./ReadPayout";
 
 const QUARTERS = ["Q1", "Q2", "Q3", "Q4"] as const;
 const KIND_OPTIONS = [
@@ -21,6 +22,7 @@ const KIND_OPTIONS = [
   { value: "irs", label: "I paid the IRS" },
 ] as const;
 const PAYER_MAX = 60;
+const YEAR_START = "2026-01-01";
 
 interface Props {
   result: TaxResult;
@@ -44,11 +46,21 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
   const [payer, setPayer] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  /** Date the money moved; null = today (asOf). Set when a payout is read. */
+  const [date, setDate] = useState<string | null>(null);
+  const [readOpen, setReadOpen] = useState(false);
+  /** The form was filled from a read payout and hasn't been logged yet. */
+  const [filled, setFilled] = useState(false);
 
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (amount === null || !(amount > 0)) {
       setError(kind === "income" ? "Enter the amount you were paid." : "Enter the amount you paid the IRS.");
+      return;
+    }
+    const when = date ?? asOf;
+    if (when < YEAR_START || when > asOf) {
+      setError(`Use a date between ${longDate(YEAR_START)} and ${longDate(asOf)}.`);
       return;
     }
     if (needsPro(log.length, pro)) {
@@ -59,7 +71,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
     if (kind === "income") {
       // The rate the person sees right now, from the plan before this payment is added.
       const { setAside, rate } = setAsideForPayment(result, amount);
-      addLogEntry({ kind, amount, payer: name, date: asOf, setAside });
+      addLogEntry({ kind, amount, payer: name, date: when, setAside });
       setConfirmation({ kind, amount, setAside, rate, payer: name });
     } else {
       addLogEntry({ kind, amount, payer: "", date: asOf, setAside: 0 });
@@ -67,11 +79,26 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
     }
     setAmount(null);
     setPayer("");
+    setDate(null);
+    setFilled(false);
     setError(null);
+  }
+
+  function fillFromPayout(found: { amount: number | null; payer: string | null; date: string | null }) {
+    setKind("income");
+    setAmount(found.amount);
+    setPayer((found.payer ?? "").slice(0, PAYER_MAX));
+    setDate(found.date);
+    setFilled(true);
+    setReadOpen(false);
+    setError(null);
+    setConfirmation(null);
   }
 
   function switchKind(next: LogKind) {
     setKind(next);
+    setDate(null);
+    setFilled(false);
     setError(null);
   }
 
@@ -123,6 +150,25 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
           fullWidth
         />
 
+        {readOpen ? (
+          <ReadPayout pro={pro} onNeedPro={onNeedPro} onRead={fillFromPayout} onClose={() => setReadOpen(false)} />
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setReadOpen(true);
+              setConfirmation(null);
+            }}
+            className="mt-3 inline-flex items-center gap-1.5 rounded-sm text-sm font-semibold text-accent underline-offset-4 hover:underline"
+          >
+            <svg aria-hidden viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3.5" y="2.5" width="9" height="11" rx="1.5" />
+              <path d="M6 6h4M6 8.5h4M6 11h2" />
+            </svg>
+            Paste a payout email or screenshot
+          </button>
+        )}
+
         <div className="mt-4 flex flex-col gap-3">
           <div className="grid grid-cols-[8.25rem_minmax(0,1fr)] items-center gap-x-3">
             <span aria-hidden className="whitespace-nowrap text-base font-medium text-ink-2">
@@ -142,7 +188,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
               />
             </Field>
           </div>
-          {kind === "income" ? (
+          {kind === "income" && (
             <div className="grid grid-cols-[8.25rem_minmax(0,1fr)] items-center gap-x-3">
               <span aria-hidden className="text-right text-base font-medium text-ink-2">
                 from
@@ -158,7 +204,34 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
                 />
               </Field>
             </div>
-          ) : (
+          )}
+          {kind === "income" && date !== null && (
+            <div className="grid grid-cols-[8.25rem_minmax(0,1fr)] items-center gap-x-3">
+              <span aria-hidden className="text-right text-base font-medium text-ink-2">
+                on
+              </span>
+              <Field label="Date you were paid" hideLabel>
+                <TextInput
+                  type="date"
+                  className="[&_input]:pr-2 [&_input]:pl-3"
+                  value={date}
+                  min={YEAR_START}
+                  max={asOf}
+                  onChange={(e) => {
+                    setDate(e.target.value || null);
+                    setError(null);
+                  }}
+                />
+              </Field>
+            </div>
+          )}
+          {kind === "income" && filled && (
+            <p className="flex items-center gap-2 rounded-md bg-amber-soft px-3 py-2 text-sm font-medium text-amber">
+              <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-amber-mid" />
+              Check these before logging.
+            </p>
+          )}
+          {kind === "irs" && (
             <p className="text-sm text-ink-2">A 2026 estimated payment, dated {longDate(asOf)}. It comes out of what you set aside.</p>
           )}
           {error && (

@@ -18,6 +18,8 @@ import { PaymentLog } from "./PaymentLog";
 import { PlanActions } from "./PlanActions";
 import { PlanHero } from "./PlanHero";
 import { PlanSkeleton } from "./PlanSkeleton";
+import { AskCard } from "./AskCard";
+import { WhyCard } from "./WhyCard";
 
 /** The /plan screen: the two numbers, the payment log with its meter, the deadlines and the breakdown. */
 export function PlanApp() {
@@ -69,6 +71,7 @@ export function PlanApp() {
   }
 
   const { result, input } = plan;
+  const aiPlan = { profile, log, asOf: input.asOf };
 
   return (
     <main className="flex-1">
@@ -87,13 +90,17 @@ export function PlanApp() {
         )}
 
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-x-14 lg:gap-y-12">
-          <PlanHero result={result} className="lg:col-start-1" />
+          <div className="flex min-w-0 flex-col gap-8 lg:col-start-1">
+            <PlanHero result={result} />
+            <WhyCard plan={aiPlan} />
+          </div>
 
-          <div className="lg:sticky lg:top-6 lg:col-start-2 lg:row-span-4 lg:row-start-1 lg:self-start">
+          <div className="lg:sticky lg:top-6 lg:col-start-2 lg:row-span-5 lg:row-start-1 lg:self-start">
             <PaymentLog result={result} log={log} pro={pro} asOf={input.asOf} onNeedPro={openPaywall} />
           </div>
 
           <Deadlines result={result} input={input} className="lg:col-start-1" />
+          <AskCard plan={aiPlan} pro={pro} onNeedPro={openPaywall} className="lg:col-start-1" />
           <Breakdown result={result} state={profile.state} className="lg:col-start-1" />
           <PlanActions isExample={profile.isExample} className="lg:col-start-1" />
         </div>

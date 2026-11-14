@@ -27,6 +27,12 @@ export interface QuizDraft {
    */
   loggedIncome: number;
   loggedCount: number;
+  /**
+   * Editing only: IRS payments already logged on /plan (sum). "Paid so far" holds only the quiz lump
+   * (profile.estimatedPaid); the logged IRS payments stay in the log and are never re-entered here
+   * (one source of truth). See `paidSoFarNote`.
+   */
+  loggedIrs: number;
   filingStatus: QuizFilingStatus | null;
   state: StateCode | null;
   ytdIncome: number | null;
@@ -48,6 +54,7 @@ export function emptyDraft(): QuizDraft {
     editing: false,
     loggedIncome: 0,
     loggedCount: 0,
+    loggedIrs: 0,
     filingStatus: null,
     state: null,
     ytdIncome: null,
@@ -75,6 +82,24 @@ export function loggedIncomeOf(log: readonly LogEntry[]): { total: number; count
   return { total, count };
 }
 
+/** Sum of the "I paid the IRS" entries in a log. */
+export function loggedIrsOf(log: readonly LogEntry[]): number {
+  let total = 0;
+  for (const e of log) if (e.kind === "irs") total += e.amount;
+  return total;
+}
+
+/**
+ * The read-only note under "Paid so far" while editing with IRS payments in the log, else undefined.
+ * The field is only the quiz lump; the note says the logged payments are counted separately and gives the
+ * total the plan uses (lump + logged IRS payments, exactly as buildTaxInput sums them).
+ */
+export function paidSoFarNote(draft: QuizDraft): string | undefined {
+  if (!draft.editing || !(draft.loggedIrs > 0)) return undefined;
+  const lump = draft.estimatedPaid !== null && Number.isFinite(draft.estimatedPaid) && draft.estimatedPaid > 0 ? draft.estimatedPaid : 0;
+  return `Not counting the ${money(draft.loggedIrs)} you logged as IRS payments. Those stay in your log. Total paid: ${money(lump + draft.loggedIrs)}.`;
+}
+
 /**
  * A draft prefilled from a saved profile (and its log), for editing. "Received so far" is prefilled with
  * the true total the engine sees: profile.ytdIncome + every logged income payment.
@@ -91,6 +116,7 @@ export function draftFromProfile(p: Profile, log: readonly LogEntry[] = []): Qui
     editing: true,
     loggedIncome: logged.total,
     loggedCount: logged.count,
+    loggedIrs: loggedIrsOf(log),
     filingStatus: status,
     state: p.state,
     ytdIncome: p.ytdIncome + logged.total,
@@ -101,6 +127,7 @@ export function draftFromProfile(p: Profile, log: readonly LogEntry[] = []): Qui
     priorKnown,
     priorYearTax: priorKnown ? p.priorYearTax : null,
     priorYearAgi: priorKnown ? p.priorYearAgi : null,
+    // Only the quiz lump: logged IRS payments stay in the log (shown in the note, not in the field).
     estimatedPaid: p.estimatedPaid,
   };
 }
@@ -324,6 +351,7 @@ export function parseDraft(raw: string | null): QuizDraft | null {
     editing: o.editing === true,
     loggedIncome: o.editing === true ? (numOrNull(o.loggedIncome) ?? 0) : 0,
     loggedCount: o.editing === true && Number.isInteger(o.loggedCount) && (o.loggedCount as number) > 0 ? (o.loggedCount as number) : 0,
+    loggedIrs: o.editing === true ? (numOrNull(o.loggedIrs) ?? 0) : 0,
     filingStatus: (QUIZ_FILING_STATUSES as readonly unknown[]).includes(o.filingStatus)
       ? (o.filingStatus as QuizFilingStatus)
       : null,

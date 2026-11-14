@@ -9,13 +9,18 @@ import {
   firstIncompleteStep,
   isStepValid,
   monthsElapsed,
+  paidSoFarNote,
   parseDraft,
   stepErrors,
   stepForEngineField,
   suggestExpectedIncome,
   type QuizDraft,
 } from "@/lib/product/quiz";
-import type { Profile } from "@/lib/product/types";
+import { money } from "@/lib/product/format";
+import { buildTaxInput } from "@/lib/product/input";
+import { pastDue } from "@/lib/product/payNow";
+import type { LogEntry, Profile } from "@/lib/product/types";
+import { estimate } from "@/lib/tax";
 
 const complete: QuizDraft = {
   ...emptyDraft(),
@@ -254,6 +259,50 @@ describe("editing with logged income", () => {
     expect(parseDraft(JSON.stringify({ ...complete, loggedIncome: 5000, loggedCount: 2 }))).toMatchObject({
       loggedIncome: 0, loggedCount: 0,
     });
+  });
+});
+
+describe("SHARED-01: Paid so far is the quiz lump only; logged IRS payments stay in the log", () => {
+  // qa-A repro: TX single, $60k, 2025 tax $8k (AGI $50k), paid $3,700 in the quiz, then log an IRS payment of $1,000.
+  const ASOF = "2026-11-14";
+  const profile: Profile = {
+    filingStatus: "single", state: "TX", ytdIncome: 60000, expectedIncome: 60000, w2Wages: 0, w2Withholding: 0,
+    priorYearTax: 8000, priorYearAgi: 50000, estimatedPaid: 3700, createdAt: NOW.toISOString(), isExample: false,
+  };
+  const irs: LogEntry = { id: "i1", kind: "irs", amount: 1000, payer: "", date: ASOF, setAside: 0, createdAt: NOW.toISOString() };
+  const log = [irs];
+  const payNowOf = (p: Profile) => pastDue(estimate(buildTaxInput(p, log, ASOF)))?.amount ?? 0;
+
+  it("Edit shows 3,700 in the field and the $1,000 in the note, with the total", () => {
+    const d = draftFromProfile(profile, log);
+    expect(d.estimatedPaid).toBe(3700);
+    expect(d.loggedIrs).toBe(1000);
+    expect(paidSoFarNote(d)).toBe(
+      "Not counting the $1,000 you logged as IRS payments. Those stay in your log. Total paid: $4,700.",
+    );
+  });
+
+  it("saving unchanged keeps the total at $4,700 and the plan at Pay $1,300 now", () => {
+    const saved = draftToProfile(draftFromProfile(profile, log), NOW)!;
+    expect(saved.estimatedPaid).toBe(3700);
+    const input = buildTaxInput(saved, log, ASOF);
+    expect((input.estimatedPaymentsMade ?? []).reduce((s, p) => s + p.amount, 0)).toBe(4700);
+    expect(money(payNowOf(saved))).toBe("$1,300");
+  });
+
+  it("the note's total follows the field, so re-entering the logged payment shows the double count", () => {
+    const d = { ...draftFromProfile(profile, log), estimatedPaid: 4700 };
+    expect(paidSoFarNote(d)).toContain("Total paid: $5,700.");
+  });
+
+  it("no note without logged IRS payments or outside edit mode", () => {
+    expect(paidSoFarNote(draftFromProfile(profile, []))).toBeUndefined();
+    expect(paidSoFarNote({ ...complete, loggedIrs: 1000 })).toBeUndefined();
+  });
+
+  it("parseDraft keeps loggedIrs only for edits", () => {
+    expect(parseDraft(JSON.stringify(draftFromProfile(profile, log)))?.loggedIrs).toBe(1000);
+    expect(parseDraft(JSON.stringify({ ...complete, loggedIrs: 1000 }))?.loggedIrs).toBe(0);
   });
 });
 

@@ -1,7 +1,7 @@
 // Pure helpers behind the /plan screen: run the engine safely, and pick what the screen shows from its result.
 // Nothing here computes tax; every amount is read from the engine's TaxResult.
 
-import { estimate, TaxInputError, type Flag, type FlagCode, type TaxInput, type TaxResult } from "@/lib/tax";
+import { estimate, setAsideForPayment, TaxInputError, type Flag, type FlagCode, type TaxInput, type TaxResult } from "@/lib/tax";
 import { buildTaxInput } from "./input";
 import type { LogEntry, Profile } from "./types";
 
@@ -29,6 +29,33 @@ export function computePlan(profile: Profile, log: readonly LogEntry[], asOf: st
     if (err instanceof TaxInputError) return { ok: false, error: err };
     throw err;
   }
+}
+
+/**
+ * The set-aside for a client payment being logged (PP-QA-01): `setAsideForPayment` on the plan AFTER the
+ * payment is added, i.e. buildTaxInput with the new log, so the confirmation shows the same rate the plan
+ * shows right after. Stored on the entry, so existing entries keep their own setAside. If the engine rejects
+ * the new log (it shouldn't: income only raises the totals), `before` is used instead.
+ */
+export function setAsideAfterLogging(
+  profile: Profile,
+  log: readonly LogEntry[],
+  payment: { amount: number; date: string },
+  asOf: string,
+  before: TaxResult,
+): { setAside: number; rate: number } {
+  const pending: LogEntry = {
+    id: "pending",
+    kind: "income",
+    amount: payment.amount,
+    payer: "",
+    date: payment.date,
+    setAside: 0,
+    createdAt: "",
+  };
+  const after = computePlan(profile, [...log, pending], asOf);
+  const { setAside, rate } = setAsideForPayment(after.ok ? after.result : before, payment.amount);
+  return { setAside, rate };
 }
 
 /** Flags shown elsewhere on the screen (the hero already explains a past-due amount). */

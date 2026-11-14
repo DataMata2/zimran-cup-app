@@ -1,8 +1,9 @@
 // The "Try with an example" persona: Maya, a freelance product designer in California, single.
 // Covered Q1 + Q2 with $3,700 of estimates, missed Q3, and was just paid $4,200 by Northwind Studio.
 
-import { estimate, setAsideForPayment } from "@/lib/tax";
+import { estimate } from "@/lib/tax";
 import { buildTaxInput } from "./input";
+import { setAsideAfterLogging } from "./plan";
 import type { NewLogEntry, Profile } from "./types";
 
 export const EXAMPLE_NAME = "Maya";
@@ -27,11 +28,11 @@ export const EXAMPLE_PAYMENT = { kind: "income", amount: 4200, payer: "Northwind
 
 /**
  * The example profile and its pre-logged entry for `asOf`. The entry's `setAside` is computed by the
- * engine on the profile alone (the result before the entry), the same rule as a real logged payment.
+ * engine on the plan with the entry added, the same rule as a real logged payment (see setAsideAfterLogging).
  */
 export function buildExample(asOf: string, now: Date = new Date()): { profile: Profile; entry: NewLogEntry } {
   const profile: Profile = { ...EXAMPLE_ANSWERS, createdAt: now.toISOString() };
   const before = estimate(buildTaxInput(profile, [], asOf));
-  const { setAside } = setAsideForPayment(before, EXAMPLE_PAYMENT.amount);
+  const { setAside } = setAsideAfterLogging(profile, [], EXAMPLE_PAYMENT, asOf, before);
   return { profile, entry: { ...EXAMPLE_PAYMENT, setAside } };
 }

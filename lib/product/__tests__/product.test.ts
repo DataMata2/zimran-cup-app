@@ -7,6 +7,7 @@ import { longDate, money, moneyCents, pct } from "@/lib/product/format";
 import { buildExample, EXAMPLE_ANSWERS } from "@/lib/product/example";
 import { STATE_OPTIONS, stateName, isStateCode } from "@/lib/product/states";
 import type { LogEntry, Profile } from "@/lib/product/types";
+import { setAsideAfterLogging } from "@/lib/product/plan";
 
 const profile: Profile = {
   filingStatus: "single",
@@ -206,19 +207,39 @@ describe("format", () => {
 });
 
 describe("example and states", () => {
-  it("builds Maya with an engine-computed set-aside on the pre-entry result", () => {
+  it("builds Maya with an engine-computed set-aside on the plan after the entry (PP-QA-01)", () => {
     const { profile: p, entry: e } = buildExample("2026-11-14", new Date("2026-11-14T12:00:00Z"));
     expect(p).toMatchObject(EXAMPLE_ANSWERS);
     expect(p.createdAt).toBe("2026-11-14T12:00:00.000Z");
-    const before = estimate(buildTaxInput(p, [], "2026-11-14"));
+    const after = estimate(buildTaxInput(p, [{ ...e, id: "x", createdAt: "" }], "2026-11-14"));
     expect(e).toEqual({
       kind: "income",
       amount: 4200,
       payer: "Northwind Studio",
       date: "2026-11-03",
-      setAside: setAsideForPayment(before, 4200).setAside,
+      setAside: setAsideForPayment(after, 4200).setAside,
     });
     expect(e.setAside).toBeGreaterThan(0);
+  });
+  it("PP-QA-01: a logged payment's set-aside uses the rate the plan shows right after it", () => {
+    // Repro: profit so far and expected $1,000, 2025 unknown, then log $99,000.
+    const p: Profile = {
+      filingStatus: "single", state: "TX", ytdIncome: 1000, expectedIncome: 1000, w2Wages: 0, w2Withholding: 0,
+      priorYearTax: null, priorYearAgi: null, estimatedPaid: 0, createdAt: "2026-11-14T12:00:00.000Z", isExample: false,
+    };
+    const asOf = "2026-11-14";
+    const before = estimate(buildTaxInput(p, [], asOf));
+    const got = setAsideAfterLogging(p, [], { amount: 99000, date: asOf }, asOf, before);
+    const entry: LogEntry = { id: "a", kind: "income", amount: 99000, payer: "", date: asOf, setAside: got.setAside, createdAt: "" };
+    const after = estimate(buildTaxInput(p, [entry], asOf));
+    expect(got.rate).toBe(after.setAside.rate);
+    expect(pct(got.rate, 0)).toBe(pct(after.setAside.rate, 0));
+    expect(got.setAside).toBe(setAsideForPayment(after, 99000).setAside);
+    expect(got.rate).toBeGreaterThan(before.setAside.rate); // the old rule gave the lower pre-payment rate
+    // An existing entry keeps its stored setAside when the next one is logged.
+    const next = setAsideAfterLogging(p, [entry], { amount: 500, date: asOf }, asOf, after);
+    expect(next.setAside).toBeGreaterThan(0);
+    expect(entry.setAside).toBe(got.setAside);
   });
   it("lists every engine state sorted by name", () => {
     const names = STATE_OPTIONS.map((s) => s.name);

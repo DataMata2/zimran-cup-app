@@ -41,7 +41,7 @@ export interface LogEntry {
   date: string;
   /**
    * Dollars to set aside from this payment, frozen at log time with `setAsideForPayment` on the result
-   * computed BEFORE the entry was added, so history doesn't shift. Always 0 for kind "irs".
+   * computed AFTER the entry is added (the rate /plan then shows), so history doesn't shift. Always 0 for kind "irs".
    */
   setAside: number;
   /** ISO timestamp of when the entry was logged. */

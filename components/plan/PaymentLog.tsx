@@ -9,8 +9,8 @@ import { longDate, moneyCents, pct, shortDate } from "@/lib/product/format";
 import { penaltyMeter } from "@/lib/product/meter";
 import { nextStepText, setAsideNextStep } from "@/lib/product/payNow";
 import { countedEntries } from "@/lib/product/freeLimit";
-import { FREE_LOG_LIMIT, needsPro } from "@/lib/product/plan";
-import { addLogEntry, removeLogEntry, useAddedCount } from "@/lib/product/store";
+import { FREE_LOG_LIMIT, needsPro, setAsideAfterLogging } from "@/lib/product/plan";
+import { addLogEntry, getProfile, removeLogEntry, useAddedCount } from "@/lib/product/store";
 import type { LogEntry, LogKind } from "@/lib/product/types";
 import { setAsideForPayment, type TaxResult } from "@/lib/tax";
 import type { PaywallReason } from "./Paywall";
@@ -78,8 +78,11 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
     }
     const name = payer.trim().slice(0, PAYER_MAX);
     if (kind === "income") {
-      // The rate the person sees right now, from the plan before this payment is added.
-      const { setAside, rate } = setAsideForPayment(result, amount);
+      // The rate of the plan after this payment is added: the rate /plan shows right after (PP-QA-01).
+      const profile = getProfile();
+      const { setAside, rate } = profile
+        ? setAsideAfterLogging(profile, log, { amount, date: when }, asOf, result)
+        : setAsideForPayment(result, amount);
       addLogEntry({ kind, amount, payer: name, date: when, setAside });
       setConfirmation({ kind, amount, setAside, rate, payer: name });
     } else {

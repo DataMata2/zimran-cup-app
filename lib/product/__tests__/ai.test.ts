@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type Anthropic from "@anthropic-ai/sdk";
 import {
+  AiLimits,
   base64DecodedBytes,
   checkImage,
   clientIp,
   GuardError,
+  matchesMagic,
   MAX_IMAGE_BYTES,
+  RATE_LIMITED_MESSAGE,
   RateLimiter,
   readJsonBody,
 } from "@/lib/product/ai-guard";
@@ -41,11 +44,12 @@ const jsonRequest = (body: unknown, headers: Record<string, string> = {}) =>
   });
 
 /** Deps that fail loudly if a gated request ever reaches the model. */
-function deps(pro: boolean, limiter = new RateLimiter()): AiDeps & { calls: number } {
+function deps(pro: boolean, limits = new AiLimits(), guestId: string | null = null): AiDeps & { calls: number } {
   const d = {
     calls: 0,
     model: "test",
-    limiter,
+    limits,
+    getGuestId: async () => guestId,
     checkPro: async () => pro,
     getClient: (): Anthropic => {
       d.calls += 1;
@@ -63,6 +67,46 @@ describe("RateLimiter", () => {
     expect(rl.take("b")).toBe(true);
     t = 1000;
     expect(rl.take("a")).toBe(true);
+  });
+});
+
+describe("AiLimits", () => {
+  const small = (now: () => number) =>
+    new AiLimits(new RateLimiter(40, 1000, now), new RateLimiter(300, 1000, now), new RateLimiter(1500, 1000, now));
+
+  it("per guest: 40 an hour per guest cookie; other guests on the same IP are unaffected", () => {
+    const l = small(() => 0);
+    for (let i = 0; i < 40; i++) expect(l.take({ guestId: "g1", ip: "1.1.1.1" })).toBe(true);
+    expect(l.take({ guestId: "g1", ip: "1.1.1.1" })).toBe(false);
+    expect(l.take({ guestId: "g2", ip: "1.1.1.1" })).toBe(true);
+  });
+  it("without a cookie the guest budget is keyed by IP", () => {
+    const l = small(() => 0);
+    for (let i = 0; i < 40; i++) expect(l.take({ guestId: null, ip: "2.2.2.2" })).toBe(true);
+    expect(l.take({ guestId: null, ip: "2.2.2.2" })).toBe(false);
+    expect(l.take({ guestId: null, ip: "3.3.3.3" })).toBe(true);
+  });
+  it("per IP: 300 an hour across guests behind one address", () => {
+    const l = small(() => 0);
+    for (let i = 0; i < 300; i++) expect(l.take({ guestId: `g${i % 10}`, ip: "4.4.4.4" })).toBe(true);
+    expect(l.take({ guestId: "fresh", ip: "4.4.4.4" })).toBe(false);
+    expect(l.take({ guestId: "fresh", ip: "5.5.5.5" })).toBe(true);
+  });
+  it("global: 1,500 an hour across all IPs, then everyone waits for the window", () => {
+    let t = 0;
+    const l = small(() => t);
+    for (let i = 0; i < 1500; i++) expect(l.take({ guestId: `g${i}`, ip: `10.0.${i % 6}.1` })).toBe(true);
+    expect(l.take({ guestId: "new", ip: "9.9.9.9" })).toBe(false);
+    t = 1000;
+    expect(l.take({ guestId: "new", ip: "9.9.9.9" })).toBe(true);
+  });
+  it("a refused request counts against no budget", () => {
+    const l = small(() => 0);
+    for (let i = 0; i < 40; i++) l.take({ guestId: "g", ip: "6.6.6.6" });
+    for (let i = 0; i < 100; i++) l.take({ guestId: "g", ip: "6.6.6.6" });
+    expect(l.take({ guestId: "other", ip: "6.6.6.6" })).toBe(true);
+    for (let i = 0; i < 259; i++) expect(l.take({ guestId: `x${i % 7}`, ip: "6.6.6.6" })).toBe(true);
+    expect(l.take({ guestId: "y", ip: "6.6.6.6" })).toBe(false);
   });
 });
 
@@ -89,17 +133,32 @@ describe("readJsonBody", () => {
   });
 });
 
+const PNG_HEAD = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+const b64 = (bytes: number[] | string) => Buffer.from(typeof bytes === "string" ? bytes : Uint8Array.from(bytes)).toString("base64");
+
 describe("checkImage", () => {
-  const png = Buffer.from("fake png bytes").toString("base64");
+  const png = b64([...PNG_HEAD, 0, 0, 0, 13, 73, 72, 68, 82, 1, 2]); // 18 bytes: no base64 padding, so it can be extended
+  const heads: Record<string, string> = {
+    "image/png": png,
+    "image/jpeg": b64([0xff, 0xd8, 0xff, 0xe0, 0, 16, 74, 70, 73, 70]),
+    "image/gif": b64("GIF89a\x01\x00\x01\x00"),
+    "image/webp": b64("RIFF\x10\x00\x00\x00WEBPVP8 "),
+  };
   it("accepts the four image types and strips a data: prefix", () => {
     expect(checkImage({ mediaType: "image/png", dataBase64: `data:image/png;base64,${png}` })).toEqual({ mediaType: "image/png", dataBase64: png });
-    for (const t of ["image/jpeg", "image/webp", "image/gif"]) expect(checkImage({ mediaType: t, dataBase64: png }).mediaType).toBe(t);
+    for (const [t, data] of Object.entries(heads)) expect(checkImage({ mediaType: t, dataBase64: data }).mediaType).toBe(t);
   });
   it("rejects other types, bad base64 and images over 5 MB", () => {
     expect(() => checkImage({ mediaType: "image/svg+xml", dataBase64: png })).toThrow(GuardError);
     expect(() => checkImage({ mediaType: "image/png", dataBase64: "not base64!" })).toThrow(GuardError);
-    const big = "A".repeat(Math.ceil(((MAX_IMAGE_BYTES + 10) * 4) / 3));
+    const big = png + "A".repeat(Math.ceil(((MAX_IMAGE_BYTES + 10) * 4) / 3));
     expect(() => checkImage({ mediaType: "image/png", dataBase64: big })).toThrow(expect.objectContaining({ status: 413 }));
+  });
+  it("400s data that doesn't match the declared type", () => {
+    expect(() => checkImage({ mediaType: "image/png", dataBase64: b64("not an image at all") })).toThrow("That file doesn't look like an image.");
+    expect(() => checkImage({ mediaType: "image/jpeg", dataBase64: png })).toThrow(expect.objectContaining({ status: 400 }));
+    expect(matchesMagic("image/webp", heads["image/webp"]!)).toBe(true);
+    expect(matchesMagic("image/gif", heads["image/png"]!)).toBe(false);
   });
   it("computes decoded size from base64 length", () => {
     expect(base64DecodedBytes(Buffer.from("hello").toString("base64"))).toBe(5);
@@ -189,7 +248,7 @@ describe("normalizeReadPayment", () => {
 });
 
 describe("handlers: gating before the model", () => {
-  const png = { mediaType: "image/png", dataBase64: Buffer.from("x").toString("base64") };
+  const png = { mediaType: "image/png", dataBase64: b64([...PNG_HEAD, 1, 2, 3]) };
 
   it("ask: 402 pro_required for non-Pro, without calling the model", async () => {
     const d = deps(false);
@@ -223,11 +282,14 @@ describe("handlers: gating before the model", () => {
     expect(res.status).toBe(400);
     expect(await res.json()).toHaveProperty("error");
   });
-  it("429 after 60 requests from one IP across routes", async () => {
-    const limiter = new RateLimiter(60, 3_600_000);
-    const d = deps(false, limiter);
-    for (let i = 0; i < 60; i++) await explainHandler(d)(jsonRequest({}));
-    expect((await askHandler(d)(jsonRequest({}))).status).toBe(429);
-    expect((await askHandler(d)(jsonRequest({}, { "x-forwarded-for": "198.51.100.1" }))).status).toBe(400);
+  it("429 with the ruling's message after 40 requests from one guest across routes; keyed by the guest cookie", async () => {
+    const limits = new AiLimits();
+    const d = deps(false, limits, "guest-a");
+    for (let i = 0; i < 40; i++) await explainHandler(d)(jsonRequest({}));
+    const res = await askHandler(d)(jsonRequest({}));
+    expect(res.status).toBe(429);
+    expect(await res.json()).toEqual({ error: RATE_LIMITED_MESSAGE });
+    // Another guest on the same IP still gets through (400 here: empty body).
+    expect((await askHandler(deps(false, limits, "guest-b"))(jsonRequest({}))).status).toBe(400);
   });
 });

@@ -153,6 +153,8 @@ export function ReadPayout({
         )}
       </div>
 
+      <p className="mt-2 text-xs text-ink-3">Screenshots: PNG, JPEG, WebP or GIF, up to 4 MB.</p>
+
       {error && (
         <p role="alert" className="mt-3 text-sm font-medium text-red">
           {error}

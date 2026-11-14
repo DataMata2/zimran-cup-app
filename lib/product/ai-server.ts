@@ -16,4 +16,4 @@ async function checkPro(): Promise<boolean> {
   }
 }
 
-export const aiDeps: AiDeps = { getClient: getAnthropic, model: MODEL, checkPro };
+export const aiDeps: AiDeps = { getClient: getAnthropic, model: MODEL, checkPro, getGuestId };

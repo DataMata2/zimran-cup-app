@@ -3,7 +3,7 @@
 // Rule: our code calculates, the model explains. Every route recomputes the plan from { profile, log, asOf }.
 
 import type Anthropic from "@anthropic-ai/sdk";
-import { aiLimiter, checkImage, clientIp, GuardError, guardResponse, readJsonBody, type RateLimiter } from "./ai-guard";
+import { aiLimits, checkImage, clientIp, GuardError, guardResponse, RATE_LIMITED_MESSAGE, readJsonBody, type AiLimits } from "./ai-guard";
 import {
   ASK_DISCLAIMER,
   askSystem,
@@ -25,7 +25,9 @@ export interface AiDeps {
   model: string;
   /** Is the caller Pro? Server-side truth (guest cookie + database). */
   checkPro: () => Promise<boolean>;
-  limiter?: RateLimiter;
+  /** The caller's guest id from the cookie, or null (rate limiting then keys on the IP). */
+  getGuestId?: () => Promise<string | null>;
+  limits?: AiLimits;
   /** Where post-check warnings go (default console.warn). */
   warn?: (message: string, detail?: unknown) => void;
 }
@@ -40,8 +42,9 @@ const errorJson = (status: number, error: string) => Response.json({ error }, { 
 
 /** Rate limit and body, shared by every AI route. */
 async function admit(request: Request, deps: AiDeps): Promise<Record<string, unknown>> {
-  if (!(deps.limiter ?? aiLimiter).take(clientIp(request.headers))) {
-    throw new GuardError(429, "Too many requests. Try again later.");
+  const guestId = deps.getGuestId ? await deps.getGuestId().catch(() => null) : null;
+  if (!(deps.limits ?? aiLimits).take({ guestId, ip: clientIp(request.headers) })) {
+    throw new GuardError(429, RATE_LIMITED_MESSAGE);
   }
   return readJsonBody(request);
 }
@@ -106,6 +109,7 @@ async function* textDeltas(stream: ReturnType<Anthropic["beta"]["messages"]["str
   }
   const final = await stream.finalMessage();
   if (final.stop_reason === "refusal") throw new Error("Model declined the request");
+  if (final.stop_reason === "max_tokens") console.warn(`AI stream hit max_tokens (${final.usage.output_tokens} output tokens); the text was cut off.`);
 }
 
 function postCheck(deps: AiDeps, route: string, text: string, sources: string[]) {
@@ -130,7 +134,7 @@ export function explainHandler(deps: AiDeps) {
         system: EXPLAIN_SYSTEM,
         messages: [{ role: "user", content: user }],
         ...FALLBACK,
-      });
+      }, { signal: request.signal });
       return textResponse(stream, (text) => postCheck(deps, "explain", text, [user]));
     }, "POST /api/explain");
 }
@@ -156,7 +160,7 @@ export function askHandler(deps: AiDeps) {
         system,
         messages,
         ...FALLBACK,
-      });
+      }, { signal: request.signal });
       return textResponse(stream, (text) => {
         postCheck(deps, "ask", text, [system, ...messages.map((m) => m.content)]);
         return `\n\n${ASK_DISCLAIMER}`;
@@ -194,7 +198,8 @@ export function readPaymentHandler(deps: AiDeps) {
         system: READ_PAYMENT_SYSTEM,
         messages: [{ role: "user", content }],
         ...FALLBACK,
-      });
+      }, { signal: request.signal });
+      if (message.stop_reason === "max_tokens") console.warn("read-payment hit max_tokens; the JSON may be cut off.");
       const empty = { amount: null, payer: null, date: null };
       if (message.stop_reason === "refusal") return Response.json(empty, { headers: NO_STORE });
       const out = message.content.find((b) => b.type === "text");

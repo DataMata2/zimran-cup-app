@@ -21,7 +21,19 @@ export class AiCallError extends Error {
   }
 }
 
+let guestReady: Promise<unknown> | null = null;
+
+/**
+ * Make sure this browser has a guest cookie (idempotent), so the AI routes' per-guest limit applies to it
+ * rather than the shared per-IP key. Once per page load; a failure is not fatal.
+ */
+function ensureGuest(): Promise<unknown> {
+  guestReady ??= fetch("/api/guest", { method: "POST" }).catch(() => null);
+  return guestReady;
+}
+
 async function post(url: string, body: unknown, signal?: AbortSignal): Promise<Response> {
+  await ensureGuest();
   const res = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -77,12 +89,13 @@ export async function readPayment(
 }
 
 export const SCREENSHOT_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
-export const SCREENSHOT_MAX_BYTES = 5 * 1024 * 1024;
+/** 4.4 MB: as base64 (×4/3) plus the JSON around it, this stays under the routes' 6 MB body limit. */
+export const SCREENSHOT_MAX_BYTES = 4.4 * 1024 * 1024;
 
 /** A picked file as the request's image, or a message saying why it can't be used. */
 export async function fileToImage(file: File): Promise<{ mediaType: string; dataBase64: string } | { error: string }> {
   if (!SCREENSHOT_TYPES.includes(file.type)) return { error: "Use a PNG, JPEG, WebP or GIF screenshot." };
-  if (file.size > SCREENSHOT_MAX_BYTES) return { error: "That screenshot is over 5 MB. Crop it or use a smaller one." };
+  if (file.size > SCREENSHOT_MAX_BYTES) return { error: "That screenshot is over 4 MB. Crop it or use a smaller one." };
   const bytes = new Uint8Array(await file.arrayBuffer());
   let binary = "";
   for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));

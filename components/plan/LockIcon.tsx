@@ -8,7 +8,8 @@ export function LockIcon({ className = "size-4 text-ink-3" }: { className?: stri
   );
 }
 
-/** The "Pro" lock sticker pinned to a locked Pro card's corner. The padlock is the accessible "Pro" label. */
+/** The "Pro" lock sticker pinned to a locked Pro card's corner. The padlock is the accessible "Pro" label.
+ * Absolutely positioned: the parent must be `relative` (proCardClasses adds it). */
 export function ProSticker() {
   return (
     <span className="absolute -top-4 right-4 inline-flex rotate-[3deg] items-center gap-1.5 rounded-full border-2 border-ink bg-sun px-3 py-1.5 font-mono text-[11px] leading-none font-bold tracking-[0.08em] text-ink uppercase shadow-chip sm:right-6">

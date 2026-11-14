@@ -114,7 +114,7 @@ function DirectPay({ onHot = false }: { onHot?: boolean }) {
         href={DIRECT_PAY_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className={buttonClasses({ variant: onHot ? "dark" : "primary", size: "lg", className: "w-full px-4! text-center whitespace-normal! sm:w-auto sm:px-6!" })}
+        className={buttonClasses({ variant: onHot ? "dark" : "primary", size: "lg", className: "w-full px-4! text-center whitespace-normal! max-[374px]:gap-1.5 max-[374px]:px-3! max-[374px]:text-base sm:w-auto sm:px-6!" })}
       >
         Pay with IRS Direct Pay
         <svg aria-hidden viewBox="0 0 18 18" className="size-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
@@ -163,8 +163,14 @@ function AmountLabel({ children, tone = "ink" }: { children: ReactNode; tone?: "
  * The month band is hot only next to a missed payment; hot never marks a good state.
  */
 function DateTile({ iso, alarm = false, className }: { iso: string; alarm?: boolean; className?: string }) {
-  const m = /^([A-Za-z]{3}) (\d{1,2}), (\d{4})$/.exec(longDate(iso));
-  if (!m) return null;
+  const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return null;
+  const m = [
+    "",
+    d.toLocaleString("en-US", { month: "short", timeZone: "UTC" }),
+    String(d.getUTCDate()),
+    String(d.getUTCFullYear()),
+  ];
   return (
     <span
       aria-hidden
@@ -197,7 +203,7 @@ function NextPayment({ then }: { then: NonNullable<PayNow["then"]> }) {
           </span>
         </p>
       </div>
-      <DateTile iso={then.due} alarm />
+      <DateTile iso={then.due} />
     </div>
   );
 }

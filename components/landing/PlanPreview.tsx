@@ -21,11 +21,11 @@ export function PlanPreview() {
 
   return (
     <Card as="section" raised padding="none" aria-labelledby="preview-title" aria-busy={!plan} className="overflow-hidden">
-      <div className="flex flex-col gap-0.5 border-b-3 border-ink bg-sun px-5 py-3.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3 sm:px-6">
+      <div className="flex flex-col gap-0.5 border-b-3 border-ink bg-sun px-5 py-3.5 sm:px-6">
         <h2 id="preview-title" className="shrink-0 font-mono text-xs font-bold tracking-[0.08em] text-ink uppercase">
           Example: {EXAMPLE_NAME}&rsquo;s plan
         </h2>
-        <p className="min-w-0 text-xs text-ink sm:truncate">{EXAMPLE_DESCRIPTION}</p>
+        <p className="min-w-0 text-xs text-ink">{EXAMPLE_DESCRIPTION}</p>
       </div>
 
       <div className="px-5 pt-5 pb-6 sm:px-6 sm:pt-6">

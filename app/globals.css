@@ -27,6 +27,8 @@
   /* Brand palette */
   --color-sun: #ffd233;
   --color-sun-soft: #fff0b3;
+  --color-sun-hover: #ffdc52;
+  --color-sun-pale: #fff9e6;
   --color-hot: #ff4d1a;
   --color-hot-soft: #ffe1d6;
   /* hot, darkened for text on white / paper (6.1:1); white text on hot itself fails contrast */

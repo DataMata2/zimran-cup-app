@@ -30,7 +30,7 @@ const base =
 
 // Filled variants: 3px ink border on a pressable ink ledge (the `press` utility in globals.css).
 const variants: Record<ButtonVariant, string> = {
-  primary: "press border-3 border-ink bg-sun text-ink hover:bg-[#ffdc52]",
+  primary: "press border-3 border-ink bg-sun text-ink hover:bg-sun-hover",
   secondary: "press border-3 border-ink bg-surface text-ink hover:bg-sky-soft",
   /** Ink fill, white text: the one dark action on a card (e.g. pay the IRS from the past-due card). */
   dark: "press border-3 border-ink bg-ink text-white hover:bg-ink-2",

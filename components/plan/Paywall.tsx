@@ -161,9 +161,9 @@ export function Paywall({ reason, onClose }: { reason: PaywallReason | null; onC
                     <label
                       key={o.value}
                       className={cx(
-                        "relative flex min-h-[5.25rem] cursor-pointer flex-col justify-between gap-2 rounded-md border-3 border-ink px-3.5 pt-3 pb-3 text-ink transition-[background-color,box-shadow,transform]",
+                        "relative flex min-h-[5.25rem] cursor-pointer flex-col justify-between gap-2 rounded-md border-3 border-ink px-3.5 pt-3 pb-3 text-ink max-[359px]:px-3 transition-[background-color,box-shadow,transform]",
                         "has-[input:focus-visible]:outline-3 has-[input:focus-visible]:outline-offset-3 has-[input:focus-visible]:outline-ink",
-                        checked ? "bg-[#fff9e6] shadow-[0_5px_0_var(--color-ink)]" : "bg-surface hover:bg-sky-soft",
+                        checked ? "bg-sun-pale shadow-[0_5px_0_var(--color-ink)]" : "bg-surface [@media(hover:hover)]:hover:bg-sky-soft",
                       )}
                     >
                       <input
@@ -198,7 +198,7 @@ export function Paywall({ reason, onClose }: { reason: PaywallReason | null; onC
               <span className="font-bold text-ink tabular-nums">{price.price}</span> {price.per}
             </p>
 
-            <Button size="lg" fullWidth className="mt-4 max-sm:px-3 max-sm:text-[1.0625rem]" onClick={checkout} disabled={busy} aria-busy={busy}>
+            <Button size="lg" fullWidth className="mt-4 max-sm:px-3 max-sm:py-2 max-sm:text-[1.0625rem] max-sm:leading-tight max-sm:whitespace-normal max-sm:text-center" onClick={checkout} disabled={busy} aria-busy={busy}>
               {busy ? "Opening checkout…" : price.cta}
             </Button>
             {error && (
@@ -235,7 +235,7 @@ export function Paywall({ reason, onClose }: { reason: PaywallReason | null; onC
                   <tr key={f.label} className="[&:last-child>*]:border-b-0">
                     <th scope="row" className="border-b-2 border-ink px-3 py-2.5 text-sm font-normal text-ink">{f.label}</th>
                     <td className="border-b-2 border-l-2 border-ink px-2 py-2.5 text-center"><span className="inline-flex justify-center"><Cell value={f.free} /></span></td>
-                    <td className="border-b-2 border-l-2 border-ink bg-[#fff9e6] px-2 py-2.5 text-center"><span className="inline-flex justify-center"><Cell value={f.pro} pro /></span></td>
+                    <td className="border-b-2 border-l-2 border-ink bg-sun-pale px-2 py-2.5 text-center"><span className="inline-flex justify-center"><Cell value={f.pro} pro /></span></td>
                   </tr>
                 ))}
               </tbody>

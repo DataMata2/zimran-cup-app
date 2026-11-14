@@ -327,7 +327,7 @@ function Quiz({ useUrlStep }: { useUrlStep: boolean }) {
 
         <ActionBar barRef={barRef}>
           {missingNote && (
-            <p role="status" className="mb-2 text-sm font-medium text-amber sm:order-last sm:mt-3 sm:mb-0">
+            <p role="status" className="mb-2 w-fit max-w-full rounded-full border-2 border-ink bg-sun-soft px-3 py-1 text-sm font-medium text-ink sm:order-last sm:mt-3 sm:mb-0">
               {missingNote}
             </p>
           )}

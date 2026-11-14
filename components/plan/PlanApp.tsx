@@ -92,7 +92,7 @@ export function PlanApp() {
         )}
 
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,27rem)] lg:gap-x-10 lg:gap-y-12">
-          <div className="flex min-w-0 flex-col gap-5 lg:col-start-1">
+          <div className="flex min-w-0 flex-col gap-6 lg:col-start-1">
             <PlanHero result={result} />
             <WhyCard plan={aiPlan} />
           </div>

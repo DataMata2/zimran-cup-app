@@ -94,7 +94,7 @@ export interface TextInputProps extends Omit<InputHTMLAttributes<HTMLInputElemen
 export function TextInput({ className, id, invalid, "aria-describedby": describedBy, ...rest }: TextInputProps) {
   const wiring = useFieldWiring(id, describedBy, invalid);
   return (
-    <div className={cx(inputBox, wiring["aria-invalid"] ? "border-red" : "border-ink", className)}>
+    <div className={cx(inputBox, wiring["aria-invalid"] ? "border-red focus-within:border-red" : "border-ink", className)}>
       <input {...rest} {...wiring} className={cx(inputReset, "px-3.5")} />
     </div>
   );
@@ -157,7 +157,7 @@ export function MoneyInput({
   }
 
   return (
-    <div className={cx(inputBox, wiring["aria-invalid"] ? "border-red" : "border-ink", className)}>
+    <div className={cx(inputBox, wiring["aria-invalid"] ? "border-red focus-within:border-red" : "border-ink", className)}>
       <span aria-hidden className="pl-3.5 pr-1 font-display font-extrabold text-ink-2">
         $
       </span>

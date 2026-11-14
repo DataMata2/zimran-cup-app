@@ -35,9 +35,16 @@ function stepFromUrl(): number | null {
   return Number.isInteger(n) ? n : null;
 }
 
-/** Start where the URL says (a refresh), else where the saved draft was, never past an unanswered step. */
+/**
+ * Start where the URL says (a refresh), else where the saved draft was, never past an unanswered step.
+ * A saved draft only counts as an edit while there is still a plan of your own to edit (it may have been
+ * reset or replaced since).
+ */
 function initialDraft(): QuizDraft {
-  const draft = chooseDraft(loadDraft(), getProfile(), getLog());
+  const stored = getProfile();
+  const ownPlan = stored !== null && !stored.isExample;
+  const chosen = chooseDraft(loadDraft(), stored, getLog());
+  const draft = { ...chosen, editing: chosen.editing && ownPlan };
   return { ...draft, step: clampStep(draft, stepFromUrl() ?? draft.step) };
 }
 
@@ -100,7 +107,10 @@ function Quiz() {
     function onPop() {
       if (window.location.pathname !== "/start") return;
       const current = draftRef.current;
-      const next = clampStep(current, stepFromUrl() ?? 1);
+      const wanted = stepFromUrl() ?? 1;
+      const next = clampStep(current, wanted);
+      // Forward past an unanswered step: stay on the step we can show, and say so in the URL.
+      if (next !== wanted) window.history.replaceState(null, "", `/start?step=${next}`);
       depth.current = Math.max(0, depth.current + (next - current.step));
       if (next !== current.step) showStep(next);
     }
@@ -154,16 +164,28 @@ function Quiz() {
     const found = checkWithEngine(profile, log, asOf);
     if (found) {
       setProblem(found);
-      if (found.step !== d.step) {
-        window.history.replaceState(null, "", `/start?step=${found.step}`);
-        showStep(found.step);
-      }
+      if (found.step !== d.step) jumpBackTo(found.step);
       return;
     }
     setLeaving(true);
     setProfile(profile, keepLog ? undefined : { log: [] });
     clearDraft();
     router.push("/plan");
+  }
+
+  /**
+   * Go back to an earlier step to fix it, keeping history in order so Back then goes to the step before
+   * it. Pops the entries we pushed when there are enough; otherwise rewrites this one.
+   */
+  function jumpBackTo(target: QuizStep) {
+    const steps = draftRef.current.step - target;
+    if (steps > 0 && depth.current >= steps) {
+      window.history.go(-steps); // popstate shows the step and updates depth
+    } else {
+      window.history.replaceState(null, "", `/start?step=${target}`);
+      depth.current = 0;
+      showStep(target);
+    }
   }
 
   /** Continue: move on if this step is complete, else reveal what's wrong. */

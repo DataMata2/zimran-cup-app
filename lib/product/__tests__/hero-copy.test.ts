@@ -5,6 +5,7 @@ import { PlanHero } from "@/components/plan/PlanHero";
 import { planFacts, unknownDollarAmounts } from "@/lib/product/ai-prompts";
 import { buildExample } from "@/lib/product/example";
 import { buildTaxInput } from "@/lib/product/input";
+import { money } from "@/lib/product/format";
 import { catchUpLine, latePaidPenalty, latePaidText } from "@/lib/product/payNow";
 import type { LogEntry, Profile } from "@/lib/product/types";
 import { estimate, estimateAccruedPenalty, type TaxResult } from "@/lib/tax";
@@ -123,12 +124,13 @@ describe("catch-up line", () => {
     expect(result.setAside.catchUpRate).toBe(0.6);
     const line = catchUpLine(result);
     expect(line).toEqual({
-      text: "Behind on saving? Even 60% of what’s still to come won’t cover what’s left, so plan for a balance with your April return.",
+      text: `Haven’t set anything aside from the ${money(result.income.net1099Ytd)} you’ve earned so far? Even 60% of what’s still to come won’t cover it, so plan for a balance with your April return.`,
       capped: true,
     });
     const html = hero(result);
     expect(html).not.toContain("Catching up?");
-    expect(html).toContain("Behind on saving? Even 60%");
+    expect(html).toContain("you’ve earned so far? Even 60%");
+    expect(html).not.toContain("Behind on saving?");
     const facts = planFacts(result, mayaLog, maya);
     expect(facts.setAside.catchUpSays).toBe(line!.text);
     expect(facts.setAside.catchUpRateIfNothingSavedYet).toBeNull();
@@ -137,8 +139,10 @@ describe("catch-up line", () => {
   it("below the cap, keeps the catch-up rate", () => {
     const real = plan(maya, mayaLog);
     const result = { ...real, setAside: { ...real.setAside, rate: 0.2, catchUpRate: 0.35 } };
-    expect(catchUpLine(result)).toEqual({ text: "Catching up? Set aside 35% of what’s still to come.", capped: false });
-    expect(hero(result)).toContain("Catching up? Set aside 35% of what’s still to come.");
+    const text = `Haven’t set anything aside from the ${money(real.income.net1099Ytd)} you’ve earned so far? Then set aside 35% of what’s still to come instead.`;
+    expect(catchUpLine(result)).toEqual({ text, capped: false });
+    expect(hero(result)).toContain(text);
+    expect(planFacts(result, mayaLog, maya).setAside.catchUpSays).toBe(text);
     expect(planFacts(result, mayaLog, maya).setAside.catchUpRateIfNothingSavedYet).toBe("35%");
   });
 

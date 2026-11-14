@@ -220,9 +220,15 @@ export function allPaidCopy(latePenalty: number | null): { headline: string; bod
 export function catchUpLine(result: TaxResult): { text: string; capped: boolean } | null {
   const { rate, catchUpRate } = result.setAside;
   if (!(catchUpRate > rate + 0.0005)) return null;
+  // The engine's catch-up rate assumes nothing was set aside from the income so far: say so, with the amount.
+  const earned = result.income.net1099Ytd;
+  const ask =
+    earned >= MIN_SHOWN
+      ? `Haven’t set anything aside from the ${money(earned)} you’ve earned so far?`
+      : "Haven’t set anything aside yet?";
   if (catchUpRate >= SET_ASIDE_MAX_RATE - 1e-9) {
-    const text = `Behind on saving? Even ${pct(SET_ASIDE_MAX_RATE, 0)} of what’s still to come won’t cover what’s left, so plan for a balance with your April return.`;
+    const text = `${ask} Even ${pct(SET_ASIDE_MAX_RATE, 0)} of what’s still to come won’t cover it, so plan for a balance with your April return.`;
     return { text, capped: true };
   }
-  return { text: `Catching up? Set aside ${pct(catchUpRate, 0)} of what’s still to come.`, capped: false };
+  return { text: `${ask} Then set aside ${pct(catchUpRate, 0)} of what’s still to come instead.`, capped: false };
 }

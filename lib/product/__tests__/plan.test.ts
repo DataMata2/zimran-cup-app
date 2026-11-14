@@ -1,12 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
-import { estimate, type TaxResult } from "@/lib/tax";
+import { estimate, estimateAccruedPenalty, type TaxResult } from "@/lib/tax";
 import { buildTaxInput } from "@/lib/product/input";
-import { computePlan, FREE_LOG_LIMIT, needsPro, planNotes } from "@/lib/product/plan";
+import { computePlan, defaultIrsDate, FREE_LOG_LIMIT, logDateError, needsPro, planNotes } from "@/lib/product/plan";
+import { buildCsv } from "@/lib/product/csv";
+import { isLogEntry } from "@/lib/product/validate";
+import { penaltyMeter } from "@/lib/product/meter";
 import { missedRemaining, nextStepText, pastDue, payTarget } from "@/lib/product/payNow";
 import { calendarFile, ICS_FILENAME } from "@/lib/product/calendar";
 import { CHECKOUT_ERROR, refreshPro, startCheckout } from "@/lib/product/pro";
 import { dateList, shortDate } from "@/lib/product/format";
-import type { Profile } from "@/lib/product/types";
+import type { LogEntry, Profile } from "@/lib/product/types";
 
 const profile: Profile = {
   filingStatus: "single",
@@ -243,5 +246,58 @@ describe("installmentRow", () => {
     expect(q4!.note).toBe("Pay by this date");
     expect(q4!.amount).toBeCloseTo(1850, 6);
     expect(q3!.amount + q4!.amount).toBeCloseTo(result.nextDeadline!.amountDue, 6);
+  });
+});
+
+describe("LIVE-PP-02: the IRS payment date", () => {
+  const NOV15 = "2026-11-15";
+  const irsOn = (date: string): LogEntry => ({
+    id: `irs-${date}`, kind: "irs", amount: 2000, payer: "", date, setAside: 0, createdAt: "2026-11-15T10:00:00.000Z",
+  });
+
+  it("defaults to today, within 2026", () => {
+    expect(defaultIrsDate(NOV15)).toBe(NOV15);
+    expect(defaultIrsDate("2027-02-01")).toBe("2026-12-31");
+  });
+
+  it("accepts Jan 1, 2026 through today; rejects future dates, 2025 and 2027 dates", () => {
+    expect(logDateError("2026-01-01", NOV15)).toBeNull();
+    expect(logDateError("2026-04-15", NOV15)).toBeNull();
+    expect(logDateError(NOV15, NOV15)).toBeNull();
+    const msg = "Use a date between Jan 1, 2026 and Nov 15, 2026.";
+    expect(logDateError("2026-11-16", NOV15)).toBe(msg);
+    expect(logDateError("2025-12-31", NOV15)).toBe(msg);
+    expect(logDateError("2027-01-10", NOV15)).toBe(msg);
+    expect(logDateError("", NOV15)).toBe(msg);
+    // In 2027 the latest date is still Dec 31, 2026 (2026 dates only).
+    expect(logDateError("2027-01-10", "2027-02-01")).toBe("Use a date between Jan 1, 2026 and Dec 31, 2026.");
+  });
+
+  it("the entry keeps its payment date (not the logging time); server validation accepts a past date", () => {
+    const e = irsOn("2026-04-15");
+    expect(e.date).toBe("2026-04-15");
+    expect(e.createdAt.startsWith(NOV15)).toBe(true);
+    expect(isLogEntry(e)).toBe(true);
+  });
+
+  it("the engine gets the date: dated Apr 15 it covers Q1 on time; dated Nov 15 Q1 was paid late", () => {
+    const run = (date: string) => estimate(buildTaxInput(profile, [irsOn(date)], NOV15));
+    const onTime = run("2026-04-15");
+    const late = run(NOV15);
+    expect(onTime.input.estimatedPaymentsMade).toEqual([{ date: "2026-04-15", amount: 2000 }]);
+    expect(late.input.estimatedPaymentsMade).toEqual([{ date: NOV15, amount: 2000 }]);
+    // Same total paid, so the meter's paid figure is the same...
+    expect(penaltyMeter(onTime, [irsOn("2026-04-15")]).paid).toBe(penaltyMeter(late, [irsOn(NOV15)]).paid);
+    // ...but the penalty differs: Q1 accrued nothing when paid Apr 15, and did when paid Nov 15.
+    const q1 = (r: TaxResult) => estimateAccruedPenalty(r).perInstallment.find((i) => i.quarter === 1)!;
+    expect(q1(onTime).penalty).toBe(0);
+    expect(q1(late).penalty).toBeGreaterThan(0);
+    expect(estimateAccruedPenalty(late).total).toBeGreaterThan(estimateAccruedPenalty(onTime).total);
+  });
+
+  it("the CSV row carries the entered date", () => {
+    const log = [irsOn("2026-04-15")];
+    const csv = buildCsv({ log, result: estimate(buildTaxInput(profile, log, NOV15)), asOf: NOV15 });
+    expect(csv).toContain("2026-04-15,Estimated tax paid to IRS,,2000.00,");
   });
 });

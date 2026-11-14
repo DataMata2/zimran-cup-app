@@ -9,7 +9,16 @@ import { longDate, moneyCents, pct, shortDate } from "@/lib/product/format";
 import { penaltyMeter } from "@/lib/product/meter";
 import { nextStepText, setAsideNextStep } from "@/lib/product/payNow";
 import { countedEntries } from "@/lib/product/freeLimit";
-import { FREE_LOG_LIMIT, needsPro, setAsideAfterLogging } from "@/lib/product/plan";
+import {
+  defaultIrsDate,
+  FREE_LOG_LIMIT,
+  latestLogDate,
+  LOG_YEAR_END as YEAR_END,
+  LOG_YEAR_START as YEAR_START,
+  logDateError,
+  needsPro,
+  setAsideAfterLogging,
+} from "@/lib/product/plan";
 import { addLogEntry, getProfile, removeLogEntry, useAddedCount } from "@/lib/product/store";
 import type { LogEntry, LogKind } from "@/lib/product/types";
 import { setAsideForPayment, type TaxResult } from "@/lib/tax";
@@ -22,20 +31,19 @@ const KIND_OPTIONS = [
   { value: "irs", label: "I paid the IRS" },
 ] as const;
 const PAYER_MAX = 60;
-const YEAR_START = "2026-01-01";
-/** Freelance income counts for tax year 2026 only up to Dec 31 (IRS payments can be made into 2027). */
-const YEAR_END = "2026-12-31";
 
 interface Props {
   result: TaxResult;
   log: readonly LogEntry[];
   pro: boolean;
-  /** The plan's "today": the date a new entry is logged on. */
+  /** The plan's "today": the default date of a new entry, and the latest one allowed (within 2026). */
   asOf: string;
   onNeedPro: (reason: PaywallReason) => void;
 }
 
-type Confirmation = { kind: "income"; amount: number; setAside: number; rate: number; payer: string } | { kind: "irs"; amount: number };
+type Confirmation =
+  | { kind: "income"; amount: number; setAside: number; rate: number; payer: string }
+  | { kind: "irs"; amount: number; date: string };
 
 /** The return mechanic: the paid-to-IRS meter, the "I just got paid" row, and the log of entries. */
 export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
@@ -48,8 +56,13 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
   const [payer, setPayer] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
-  /** Date the money moved; null = today (asOf). Set when a payout is read. */
+  /**
+   * Date the money moved; null = the default: today (asOf) for income, `defaultIrsDate(asOf)` for an IRS
+   * payment. Set when a payout is read or the date field is changed. This is LogEntry.date; createdAt stays
+   * the time it was logged.
+   */
   const [date, setDate] = useState<string | null>(null);
+  const irsDate = date ?? defaultIrsDate(asOf);
   const [readOpen, setReadOpen] = useState(false);
   /** The form was filled from a read payout and hasn't been logged yet. */
   const [filled, setFilled] = useState(false);
@@ -66,10 +79,10 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
       setError("Income received in 2027 counts toward next year. Enter the 2026 date you were paid.");
       return;
     }
-    const when = date ?? asOf;
-    const latest = kind === "income" && asOf > YEAR_END ? YEAR_END : asOf;
-    if (when < YEAR_START || when > latest) {
-      setError(`Use a date between ${longDate(YEAR_START)} and ${longDate(latest)}.`);
+    const when = kind === "irs" ? irsDate : (date ?? asOf);
+    const dateError = logDateError(when, asOf);
+    if (dateError) {
+      setError(dateError);
       return;
     }
     if (kind === "income" && needsPro(added, pro)) {
@@ -86,8 +99,8 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
       addLogEntry({ kind, amount, payer: name, date: when, setAside });
       setConfirmation({ kind, amount, setAside, rate, payer: name });
     } else {
-      addLogEntry({ kind, amount, payer: "", date: asOf, setAside: 0 });
-      setConfirmation({ kind, amount });
+      addLogEntry({ kind, amount, payer: "", date: when, setAside: 0 });
+      setConfirmation({ kind, amount, date: when });
     }
     setAmount(null);
     setPayer("");
@@ -189,18 +202,18 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
               </Field>
             </div>
           )}
-          {kind === "income" && date !== null && (
+          {(kind === "irs" || date !== null) && (
             <div className="grid grid-cols-[8.25rem_minmax(0,1fr)] items-center gap-x-3 max-[400px]:grid-cols-1 max-[400px]:gap-y-1">
               <span aria-hidden className="text-right text-base font-bold text-ink max-[400px]:text-left">
                 on
               </span>
-              <Field label="Date you were paid" hideLabel>
+              <Field label={kind === "income" ? "Date you were paid" : "Date you paid the IRS"} hideLabel>
                 <TextInput
                   type="date"
                   className="[&_input]:pr-2 [&_input]:pl-3"
-                  value={date}
+                  value={kind === "irs" ? irsDate : (date ?? asOf)}
                   min={YEAR_START}
-                  max={asOf > YEAR_END ? YEAR_END : asOf}
+                  max={latestLogDate(asOf)}
                   onChange={(e) => {
                     setDate(e.target.value || null);
                     setError(null);
@@ -217,7 +230,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
           )}
           <p className="text-sm text-ink-2">
             {kind === "irs"
-              ? `A 2026 estimated payment, dated ${longDate(asOf)}. It comes out of what you set aside.`
+              ? `A 2026 estimated payment, dated ${longDate(irsDate)}. It comes out of what you set aside.`
               : "We treat each payment as profit. If it has big business expenses against it, log what’s left after them."}
           </p>
           {error && (
@@ -245,7 +258,9 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
                 </>
               ) : (
                 <>
-                  <p className="font-display text-xl leading-tight font-extrabold tracking-[-0.02em] text-ink">Logged {moneyCents(confirmation.amount)} paid to the IRS</p>
+                  <p className="font-display text-xl leading-tight font-extrabold tracking-[-0.02em] text-ink">
+                    Logged {moneyCents(confirmation.amount)} paid to the IRS on {longDate(confirmation.date)}
+                  </p>
                   <p className="mt-0.5 text-sm text-ink-2">
                     {nextStepText(result)}
                   </p>

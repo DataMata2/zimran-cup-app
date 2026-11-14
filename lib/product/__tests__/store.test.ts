@@ -62,6 +62,19 @@ describe("store", () => {
     expect(getLog().map((e) => e.id)).toEqual([b.id]);
   });
 
+  it("LIVE-PP-02: an IRS payment keeps its entered date; createdAt is the logging time", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-15T10:00:00.000Z"));
+    try {
+      const e = addLogEntry({ kind: "irs", amount: 2000, payer: "", date: "2026-04-15", setAside: 0 });
+      expect(getLog()).toEqual([e]);
+      expect(e.date).toBe("2026-04-15");
+      expect(e.createdAt).toBe("2026-11-15T10:00:00.000Z");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("tracks Pro and ignores corrupt data", () => {
     setPro(true);
     expect(isPro()).toBe(true);

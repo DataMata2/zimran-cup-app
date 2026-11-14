@@ -121,7 +121,7 @@ export function Paywall({ reason, onClose }: { reason: PaywallReason | null; onC
       }}
       className={cx(
         "m-0 mt-auto max-h-[92dvh] w-full max-w-none overflow-y-auto overscroll-contain rounded-t-lg border-3 border-b-0 border-ink bg-surface p-0 text-ink",
-        "backdrop:bg-ink/45 sm:m-auto sm:max-w-lg sm:rounded-lg sm:border-b-3 sm:shadow-hard lg:max-w-4xl",
+        "backdrop:bg-ink/45 sm:m-auto sm:max-w-lg sm:rounded-lg sm:border-b-3 sm:shadow-hard lg:max-w-5xl",
         "open:animate-[pp-step-in_250ms_var(--ease-out-soft)_both]",
       )}
     >
@@ -198,7 +198,7 @@ export function Paywall({ reason, onClose }: { reason: PaywallReason | null; onC
               <span className="font-bold text-ink tabular-nums">{price.price}</span> {price.per}
             </p>
 
-            <Button size="lg" fullWidth className="mt-4 max-sm:px-3 max-sm:py-2 max-sm:text-[1.0625rem] max-sm:leading-tight max-sm:whitespace-normal max-sm:text-center" onClick={checkout} disabled={busy} aria-busy={busy}>
+            <Button size="lg" fullWidth className="mt-4 text-center text-balance whitespace-normal! max-sm:px-5 sm:px-8 max-sm:py-2 max-sm:text-[1.0625rem] max-sm:leading-tight" onClick={checkout} disabled={busy} aria-busy={busy}>
               {busy ? "Opening checkout…" : price.cta}
             </Button>
             {error && (

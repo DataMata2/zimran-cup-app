@@ -11,6 +11,9 @@ export const metadata: Metadata = {
 };
 
 const linkClass = "font-bold text-ink underline decoration-2 underline-offset-3 hover:bg-sun-soft";
+// Source links sit inline in a sentence: a 44px tap area via min-height, pulled back out of the line box by negative
+// margins so the text and line spacing look the same.
+const sourceLinkClass = `${linkClass} -my-2.5 inline-flex min-h-11 items-center`;
 const h2Class = "font-display text-[1.375rem] leading-tight font-extrabold tracking-[-0.03em] text-ink sm:text-[1.75rem]";
 const matchChip =
   "inline-block rounded-md border-2 border-ink bg-mint-soft px-2.5 py-1 text-sm leading-snug font-bold text-ink";
@@ -62,7 +65,7 @@ export default function HowWeCheckPage() {
         <ul className="mt-4 flex flex-col gap-3">
           {VERIFIED_SOURCES.map((s) => (
             <li key={s.name} className="max-w-[65ch] text-base text-ink-2">
-              <a href={s.url} target="_blank" rel="noopener noreferrer" className={linkClass}>
+              <a href={s.url} target="_blank" rel="noopener noreferrer" className={sourceLinkClass}>
                 {s.name}
                 <span className="sr-only"> (opens in a new tab)</span>
               </a>

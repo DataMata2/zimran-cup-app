@@ -165,9 +165,8 @@ function AmountLabel({ children, tone = "ink" }: { children: ReactNode; tone?: "
 
 /**
  * Calendar-page tile for a due date ("JAN / 15 / 2027"). Decorative: the date is always in the text too.
- * The month band is hot only next to a missed payment; hot never marks a good state.
  */
-function DateTile({ iso, alarm = false, className }: { iso: string; alarm?: boolean; className?: string }) {
+function DateTile({ iso, className }: { iso: string; className?: string }) {
   const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`);
   if (Number.isNaN(d.getTime())) return null;
   const m = [
@@ -184,7 +183,7 @@ function DateTile({ iso, alarm = false, className }: { iso: string; alarm?: bool
         className,
       )}
     >
-      <span className={cx("block w-full border-b-2 border-ink py-1.5", alarm ? "bg-hot" : "bg-sun", "font-mono text-[11px] leading-none font-bold tracking-[0.1em] uppercase")}>
+      <span className={cx("block w-full border-b-2 border-ink bg-sun py-1.5", "font-mono text-[11px] leading-none font-bold tracking-[0.1em] uppercase")}>
         {m[1]}
       </span>
       <span className="block px-2 pt-1.5 font-display text-[1.75rem] leading-none font-extrabold tabular-nums sm:text-[2rem]">{m[2]}</span>

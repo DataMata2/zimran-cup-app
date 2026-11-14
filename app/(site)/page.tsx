@@ -66,7 +66,7 @@ export default function LandingPage() {
           </p>
           <p className="mt-6 max-w-[560px] text-[19px] leading-[1.5] text-ink max-[480px]:hidden lg:text-[21px]">
             Penaltyproof tells you how much to set aside from every payment, and the minimum to pay the IRS by
-            each quarterly deadline so you don’t owe that penalty.
+            each quarterly deadline, so you don’t owe that penalty when you pay on time.
           </p>
           <div className="mt-6 sm:mt-8">
             <HeroActions />

@@ -11,11 +11,14 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN corepack install && pnpm install --frozen-lockfile
 
 FROM base AS builder
-# Public (client-inlined) values must be present at build time.
+# Public (client-inlined) values must be present at build time; APP_URL too, since
+# prerendered pages bake metadataBase (og:image, canonical URLs) in at build.
 ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 ARG NEXT_PUBLIC_SUPABASE_URL
+ARG APP_URL
 ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY \
-    NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+    NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
+    APP_URL=$APP_URL
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN corepack install && pnpm build

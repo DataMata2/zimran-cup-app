@@ -24,7 +24,7 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
-const TITLE = "Penaltyproof — never pay an IRS underpayment penalty";
+const TITLE = "Penaltyproof — avoid the IRS underpayment penalty";
 const DESCRIPTION =
   "For US freelancers: how much to set aside from every payment, and the minimum to pay the IRS by each quarterly deadline to avoid the underpayment penalty. Tax year 2026.";
 
@@ -38,12 +38,12 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Penaltyproof",
-    title: "Never pay an IRS underpayment penalty again",
+    title: "Avoid the IRS underpayment penalty: pay the minimum on time",
     description: DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Never pay an IRS underpayment penalty again",
+    title: "Avoid the IRS underpayment penalty: pay the minimum on time",
     description: DESCRIPTION,
   },
 };

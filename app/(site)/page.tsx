@@ -61,8 +61,8 @@ export default function LandingPage() {
             in fiscal&nbsp;2025.
           </h1>
           <p className="mt-4 max-w-[560px] text-[17px] leading-[1.5] text-ink min-[481px]:hidden">
-            Know what to set aside from every payment and what to pay by each deadline, so you don’t owe the
-            penalty.
+            Know what to set aside from every payment and what to pay by each deadline, so you don’t owe an
+            underpayment penalty when you pay on time.
           </p>
           <p className="mt-6 max-w-[560px] text-[19px] leading-[1.5] text-ink max-[480px]:hidden lg:text-[21px]">
             Penaltyproof tells you how much to set aside from every payment, and the minimum to pay the IRS by

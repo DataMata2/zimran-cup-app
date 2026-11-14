@@ -1,6 +1,6 @@
 # Penaltyproof
 
-Penaltyproof tells US freelancers how much to set aside from every client payment and the minimum to pay the IRS by each quarterly deadline, so they never owe an underpayment penalty (tax year 2026). No sign-up: guest mode, a Stripe test-mode Pro plan, Supabase storage, and Claude explaining numbers that a verified tax engine computes. Built for Zimran Business Cup 2026.
+Penaltyproof tells US freelancers how much to set aside from every client payment and the minimum to pay the IRS by each quarterly deadline, so they don’t owe an underpayment penalty when they pay those amounts on time (tax year 2026). No sign-up: guest mode, a Stripe test-mode Pro plan, Supabase storage, and Claude explaining numbers that a verified tax engine computes. Built for Zimran Business Cup 2026.
 
 ## Product: Penaltyproof
 

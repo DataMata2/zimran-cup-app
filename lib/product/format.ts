@@ -8,6 +8,15 @@ export function money(amount: number): string {
   return whole.format(normalize(Math.round(amount)));
 }
 
+/**
+ * Whole dollars for an amount to PAY (pay now, the next payment, a pay target): rounded up, so paying the
+ * shown amount is never a few cents short ("$2,000.25" → "$2,001"). `- 0.005` keeps float residue
+ * (1850.0000001) at "$1,850". Totals and breakdowns use `money`.
+ */
+export function moneyUp(amount: number): string {
+  return whole.format(normalize(Math.ceil(amount - 0.005)));
+}
+
 /** Dollars and cents for tables and the log: 1234.5 → "$1,234.50". */
 export function moneyCents(amount: number): string {
   return cents.format(normalize(Math.round(amount * 100) / 100));

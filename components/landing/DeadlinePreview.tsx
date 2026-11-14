@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/kit/Badge";
-import { longDate, money } from "@/lib/product/format";
+import { longDate } from "@/lib/product/format";
 import { installmentRow } from "@/lib/product/payNow";
 import type { Installment } from "@/lib/tax";
 import { useExamplePlan } from "./useExamplePlan";
@@ -18,7 +18,7 @@ export function DeadlinePreview() {
         {QUARTERS.map((quarter, index) => {
           const i: Installment | null = plan?.result.installments[index] ?? null;
           // The same amounts as the /plan deadlines: missed rows show what is unpaid, the next one its own part.
-          const amount = i && plan ? installmentRow(plan.result, i).amount : null;
+          const amount = i && plan ? installmentRow(plan.result, i).amountText : null;
           return (
             <li
               key={quarter}
@@ -27,7 +27,7 @@ export function DeadlinePreview() {
               <span className="font-display text-xl leading-none font-extrabold tracking-[-0.02em] text-ink">Q{quarter}</span>
               <span className="min-w-0">
                 <span className="block text-sm font-bold text-ink">{i ? longDate(i.due) : " "}</span>
-                <span className="block text-sm text-ink-2">{amount !== null ? money(amount) : " "}</span>
+                <span className="block text-sm text-ink-2">{amount !== null ? amount : " "}</span>
               </span>
               {i ? <Badge status={i.status} /> : <span className="h-[23px] w-20 rounded-full border-2 border-ink/20 bg-sunken" aria-hidden />}
             </li>

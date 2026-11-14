@@ -23,7 +23,7 @@ export function Deadlines({ result, className }: { result: TaxResult; className?
       <div className="mt-5 overflow-hidden rounded-lg border-3 border-ink bg-surface shadow-hard">
         <ol>
           {result.installments.map((i) => {
-            const { amount, note } = installmentRow(result, i);
+            const { amountText, note } = installmentRow(result, i);
             const isNext = i.quarter === nextQuarter;
             return (
               <li
@@ -41,7 +41,7 @@ export function Deadlines({ result, className }: { result: TaxResult; className?
                   <span className="block text-sm text-ink-2">{note}</span>
                 </span>
                 <span className="flex flex-col items-end gap-1.5 sm:contents">
-                  <span className="text-right font-display text-lg leading-none font-extrabold text-ink tabular-nums">{money(amount)}</span>
+                  <span className="text-right font-display text-lg leading-none font-extrabold text-ink tabular-nums">{amountText}</span>
                   <span className="sm:justify-self-end">
                     <Badge status={i.status} />
                   </span>

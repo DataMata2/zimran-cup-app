@@ -233,9 +233,12 @@ describe("installmentRow", () => {
     const { profile, entry } = buildExample("2026-11-14", new Date("2026-11-14T12:00:00Z"));
     const result = estimate(buildTaxInput(profile, [{ ...entry, id: "e", createdAt: "2026-11-14T12:00:00.000Z" }], "2026-11-14"));
     const [q1, q2, q3, q4] = result.installments.map((i) => installmentRow(result, i));
-    expect(q1).toEqual({ amount: 1850, note: "Covered" });
-    expect(q2).toEqual({ amount: 1850, note: "Covered" });
+    expect(q1).toEqual({ amount: 1850, note: "Covered", amountText: "$1,850" });
+    expect(q2).toEqual({ amount: 1850, note: "Covered", amountText: "$1,850" });
     expect(q3!.note).toBe("Missed, pay now");
+    // Float residue stays at $1,850 when rounded up (PP-QA-08).
+    expect(q3!.amountText).toBe("$1,850");
+    expect(q4!.amountText).toBe("$1,850");
     expect(q3!.amount).toBeCloseTo(1850, 6);
     expect(q4!.note).toBe("Pay by this date");
     expect(q4!.amount).toBeCloseTo(1850, 6);

@@ -6,7 +6,7 @@ import { toICS, type TaxResult } from "@/lib/tax";
 import { TAX_YEAR } from "@/lib/tax/constants/federal2026";
 import { addDays, daysSinceYearStart, toBasicDate } from "@/lib/tax/dates";
 import { foldLine } from "@/lib/tax/ics";
-import { dateList, money } from "./format";
+import { dateList, moneyUp } from "./format";
 import { pastDue, payTarget, quarterList, type PastDue } from "./payNow";
 
 export const ICS_FILENAME = "penaltyproof-2026.ics";
@@ -93,6 +93,6 @@ export function calendarFile(result: TaxResult): string {
 export function calendarNote(result: TaxResult): string {
   const due = pastDue(result);
   return due
-    ? `A reminder tomorrow at 9 AM to pay the missed ${quarterList(due.quarters)} amount (${money(due.amount)}), then each remaining deadline with its own amount and a reminder 3 days before.`
+    ? `A reminder tomorrow at 9 AM to pay the missed ${quarterList(due.quarters)} amount (${moneyUp(due.amount)}), then each remaining deadline with its own amount and a reminder 3 days before.`
     : "Each remaining deadline with its amount, plus a reminder 3 days before.";
 }

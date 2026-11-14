@@ -16,8 +16,8 @@ export const STEP_COPY: Record<QuizStep, StepCopy> = {
     lead: "Your state’s income tax goes into the share you set aside.",
   },
   3: {
-    question: "How much have clients paid you this year?",
-    lead: "Before taxes, after nothing — just what clients paid you.",
+    question: "What’s your freelance profit this year?",
+    lead: "What clients paid you, minus business expenses. Before any tax.",
   },
   4: {
     question: "Do you also have a W-2 job?",

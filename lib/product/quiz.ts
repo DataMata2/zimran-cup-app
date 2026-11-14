@@ -149,8 +149,8 @@ export function stepErrors(draft: QuizDraft, step: QuizStep): StepErrors {
       else if (draft.editing && draft.ytdIncome < draft.loggedIncome)
         e.ytdIncome = `That's less than the ${money(draft.loggedIncome)} you've already logged. Remove payments from your log, or enter at least ${money(draft.loggedIncome)}.`;
       else if (draft.expectedIncome < draft.ytdIncome)
-        e.expectedIncome = "The full year can't be less than what clients have paid you so far.";
-      else if (draft.expectedIncome === 0) e.expectedIncome = "Enter what you expect clients to pay you in 2026.";
+        e.expectedIncome = "The full year can't be less than your profit so far.";
+      else if (draft.expectedIncome === 0) e.expectedIncome = "Enter the profit you expect for 2026.";
       break;
     case 4:
       if (!draft.hasW2) break;

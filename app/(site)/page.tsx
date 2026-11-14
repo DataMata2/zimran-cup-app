@@ -6,7 +6,7 @@ import { Button } from "@/components/kit/Button";
 const STEPS = [
   {
     title: "Answer six questions",
-    body: "Filing status, state, what clients have paid you so far, and last year’s tax if you know it. About two minutes.",
+    body: "Filing status, state, your freelance profit so far, and last year’s tax if you know it. About two minutes.",
   },
   {
     title: "Get your two numbers",

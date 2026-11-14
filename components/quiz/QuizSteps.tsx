@@ -120,7 +120,7 @@ export function IncomeStep({ draft, update, errors, touch, asOf }: StepProps & {
   return (
     <div className="flex flex-col gap-5">
       <Field
-        label="Received so far in 2026"
+        label="Profit so far in 2026"
         hint={
           draft.editing && draft.loggedCount > 0
             ? `Includes ${money(draft.loggedIncome)} from ${draft.loggedCount} ${draft.loggedCount === 1 ? "payment" : "payments"} you logged.`
@@ -141,7 +141,7 @@ export function IncomeStep({ draft, update, errors, touch, asOf }: StepProps & {
         hint={
           suggestion !== null
             ? `At your pace so far, about ${money(suggestion)} for the year.`
-            : "What you expect clients to pay you by Dec 31, including what they already have."
+            : "What clients will have paid you by Dec 31, minus business expenses, including what you’ve earned so far."
         }
         error={errors.expectedIncome}
       >

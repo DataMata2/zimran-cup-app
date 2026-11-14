@@ -215,9 +215,11 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
               Check these before logging.
             </p>
           )}
-          {kind === "irs" && (
-            <p className="text-sm text-ink-2">A 2026 estimated payment, dated {longDate(asOf)}. It comes out of what you set aside.</p>
-          )}
+          <p className="text-sm text-ink-2">
+            {kind === "irs"
+              ? `A 2026 estimated payment, dated ${longDate(asOf)}. It comes out of what you set aside.`
+              : "We treat each payment as profit. If it has big business expenses against it, log what’s left after them."}
+          </p>
           {error && (
             <p id="log-error" role="alert" className="text-sm font-medium text-red">
               {error}

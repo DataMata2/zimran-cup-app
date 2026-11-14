@@ -346,7 +346,7 @@ export function monthsElapsed(asOf: string): number {
 }
 
 /**
- * A placeholder for "Expected for all of 2026": the pace so far run out to twelve months
+ * A placeholder for "Expected freelance profit for all of 2026": the pace so far run out to twelve months
  * (so far × 12 / months elapsed), rounded to the nearest $100. null when there's nothing to project.
  * Never below what was already received.
  */

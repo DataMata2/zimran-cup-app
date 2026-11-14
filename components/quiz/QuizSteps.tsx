@@ -198,11 +198,11 @@ export function IncomeStep({ draft, update, errors, touch, asOf }: StepProps & {
   return (
     <div className="flex flex-col gap-5 sm:max-w-lg">
       <Field
-        label="Profit so far in 2026"
+        label="Freelance profit so far in 2026 (income minus business expenses)"
         hint={
           draft.editing && draft.loggedCount > 0
             ? `Includes ${money(draft.loggedIncome)} from ${draft.loggedCount} ${draft.loggedCount === 1 ? "payment" : "payments"} you logged.`
-            : undefined
+            : "e.g. $60,000 invoiced − $8,000 expenses = $52,000"
         }
         error={errors.ytdIncome}
       >
@@ -216,7 +216,7 @@ export function IncomeStep({ draft, update, errors, touch, asOf }: StepProps & {
         />
       </Field>
       <Field
-        label="Expected for all of 2026"
+        label="Expected freelance profit for all of 2026"
         hint={
           suggestion !== null
             ? `At your pace so far, about ${money(suggestion)} for the year.`

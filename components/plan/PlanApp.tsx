@@ -6,7 +6,8 @@ import { Button } from "@/components/kit/Button";
 import { Card } from "@/components/kit/Card";
 import { computePlan } from "@/lib/product/plan";
 import { refreshPro } from "@/lib/product/pro";
-import { restoreIfEmpty, startSync } from "@/lib/product/sync";
+import { startSync } from "@/lib/product/sync";
+import { useRestoreSavedPlan } from "@/lib/product/useRestoreSavedPlan";
 import { useHydrated, useLog, usePro, useProfile } from "@/lib/product/store";
 import { useTodayIso } from "@/lib/product/useTodayIso";
 import { Breakdown } from "./Breakdown";
@@ -37,23 +38,12 @@ export function PlanApp() {
 
   const plan = useMemo(() => (profile && asOf ? computePlan(profile, log, asOf) : null), [profile, log, asOf]);
 
-  /** True until the server copy has been checked (it is restored only into an empty browser). */
-  const [restoring, setRestoring] = useState(true);
-
-  // Restore the server copy into an empty browser, then keep the copy up to date while this page is open.
-  useEffect(() => {
-    let stop: (() => void) | null = null;
-    let cancelled = false;
-    void restoreIfEmpty().then(() => {
-      if (cancelled) return;
-      setRestoring(false);
-      stop = startSync();
-    });
-    return () => {
-      cancelled = true;
-      stop?.();
-    };
-  }, []);
+  // Restore the server copy into an empty browser. Then keep the copy up to date while this page is open,
+  // unless the server couldn't be reached (then nothing is sent in this page session).
+  const restore = useRestoreSavedPlan();
+  const restoring = restore === "checking";
+  const syncOn = restore !== "checking" && restore !== "failed";
+  useEffect(() => (syncOn ? startSync() : undefined), [syncOn]);
 
   // No saved answers here or on the server: this page has nothing to show yet.
   useEffect(() => {

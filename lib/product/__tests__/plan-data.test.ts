@@ -1,8 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RateLimiter } from "@/lib/product/ai-guard";
-import { isLocalEmpty, parsePlanData, PLAN_DATA_MAX_BYTES, shouldRestore, type PlanData } from "@/lib/product/planData";
+import {
+  clearedBody, isClearedPlan, isLocalEmpty, parsePlanData, PLAN_DATA_MAX_BYTES, shouldRestore, syncBody, type PlanData,
+} from "@/lib/product/planData";
 import { getPlanData, putPlanData, type PlanDataDeps } from "@/lib/product/planDataHandlers";
-import { restoreIfEmpty, startSync, SYNC_DEBOUNCE_MS, type SyncDeps } from "@/lib/product/sync";
+import {
+  clearSavedCopy, resetSyncStateForTests, restoreIfEmpty, startSync, SYNC_DEBOUNCE_MS, type SyncDeps,
+} from "@/lib/product/sync";
 import type { LogEntry, Profile } from "@/lib/product/types";
 
 const profile: Profile = {
@@ -60,6 +64,19 @@ describe("merge rule", () => {
     // Local wins when both exist.
     expect(shouldRestore({ profile, log: [] }, stored)).toBe(false);
     expect(shouldRestore({ profile: null, log: [entry] }, stored)).toBe(false);
+    // An example copy is never restored.
+    expect(shouldRestore(empty, { ...stored, profile: { ...profile, isExample: true } })).toBe(false);
+  });
+
+  it("never sends the example or an empty plan; clearing only a real plan", () => {
+    expect(JSON.parse(syncBody({ profile, log: [entry], added: 3 }) ?? "null")).toEqual({ profile, log: [entry], added: 3 });
+    expect(syncBody({ profile: { ...profile, isExample: true }, log: [entry], added: 1 })).toBeNull();
+    expect(syncBody({ profile: null, log: [], added: 0 })).toBeNull();
+    expect(JSON.parse(clearedBody({ profile }) ?? "null")).toEqual({ profile: null, log: [], added: 0 });
+    expect(clearedBody({ profile: { ...profile, isExample: true } })).toBeNull();
+    expect(clearedBody({ profile: null })).toBeNull();
+    expect(isClearedPlan({ profile: null, log: [] })).toBe(true);
+    expect(isClearedPlan({ profile, log: [] })).toBe(false);
   });
 });
 
@@ -72,12 +89,17 @@ function deps(over: Partial<PlanDataDeps> = {}): PlanDataDeps & { saved: unknown
     load: async () => stored,
     save: async (_id, d) => void saved.push(d),
     limiter: new RateLimiter(100),
+    ipLimiter: new RateLimiter(100),
     log: () => {},
     ...over,
   };
 }
 const put = (body: unknown, headers: Record<string, string> = {}) =>
-  new Request("http://x/api/plan-data", { method: "PUT", body: typeof body === "string" ? body : JSON.stringify(body), headers });
+  new Request("http://x/api/plan-data", {
+    method: "PUT",
+    body: typeof body === "string" ? body : JSON.stringify(body),
+    headers: { "x-forwarded-for": "203.0.113.9", ...headers },
+  });
 
 describe("/api/plan-data handlers", () => {
   it("GET returns the validated copy, null without a guest or for a malformed copy, no-store", async () => {
@@ -115,6 +137,31 @@ describe("/api/plan-data handlers", () => {
     expect(d.saved).toHaveLength(0);
   });
 
+  it("PUT checks the IP limit before anything else, and never creates a guest over it", async () => {
+    const getOrCreateGuestId = vi.fn(async () => "g1");
+    const d = deps({ ipLimiter: new RateLimiter(1), getOrCreateGuestId });
+    expect((await putPlanData(put(stored), d)).status).toBe(200);
+    expect((await putPlanData(put(stored), d)).status).toBe(429);
+    // Even a malformed body is refused by the IP limit first.
+    expect((await putPlanData(put("not json"), d)).status).toBe(429);
+    expect(getOrCreateGuestId).toHaveBeenCalledTimes(1);
+    // Another IP still has its own budget.
+    expect((await putPlanData(put(stored, { "x-forwarded-for": "198.51.100.1" }), d)).status).toBe(200);
+  });
+
+  it("PUT of a cleared plan without a guest cookie is a 200 no-op; with a cookie it clears that guest's copy", async () => {
+    const getOrCreateGuestId = vi.fn(async () => "new");
+    const noCookie = deps({ getGuestId: async () => null, getOrCreateGuestId });
+    const res = await putPlanData(put({ profile: null, log: [], added: 0 }), noCookie);
+    expect(res.status).toBe(200);
+    expect(getOrCreateGuestId).not.toHaveBeenCalled();
+    expect(noCookie.saved).toHaveLength(0);
+    const withCookie = deps({ getGuestId: async () => "mine", getOrCreateGuestId });
+    expect((await putPlanData(put({ profile: null, log: [], added: 0 }), withCookie)).status).toBe(200);
+    expect(withCookie.saved).toEqual([{ v: 1, profile: null, log: [], added: 0 }]);
+    expect(getOrCreateGuestId).not.toHaveBeenCalled();
+  });
+
   it("PUT answers 503 when saving fails and 429 over the rate limit", async () => {
     expect((await putPlanData(put(stored), deps({ save: async () => { throw new Error("unconfigured"); } }))).status).toBe(503);
     const d = deps({ limiter: new RateLimiter(1) });
@@ -143,10 +190,17 @@ describe("client sync", () => {
       listeners.push(l);
       return () => (listeners = listeners.filter((x) => x !== l));
     },
+    onPageHide: (f) => {
+      hide = f;
+      return () => (hide = null);
+    },
     warn: () => {},
   });
+  let hide: (() => void) | null;
 
   beforeEach(() => {
+    resetSyncStateForTests();
+    hide = null;
     local = { profile: null, log: [], added: 0 };
     listeners = [];
     calls = [];
@@ -155,19 +209,23 @@ describe("client sync", () => {
   afterEach(() => vi.useRealTimers());
 
   it("restores the server copy into an empty browser", async () => {
-    expect(await restoreIfEmpty(syncDeps())).toBe(true);
+    expect(await restoreIfEmpty(syncDeps())).toBe("restored");
     expect(local).toEqual({ profile, log: [entry], added: 3 });
   });
 
   it("does not fetch or restore when local has data, and stays silent on failures", async () => {
     local = { profile, log: [], added: 0 };
-    expect(await restoreIfEmpty(syncDeps())).toBe(false);
+    expect(await restoreIfEmpty(syncDeps())).toBe("local");
     expect(calls).toHaveLength(0);
     local = { profile: null, log: [], added: 0 };
     respond = async () => { throw new Error("offline"); };
-    expect(await restoreIfEmpty(syncDeps())).toBe(false);
+    expect(await restoreIfEmpty(syncDeps())).toBe("failed");
+    respond = async () => new Response("", { status: 503 });
+    expect(await restoreIfEmpty(syncDeps())).toBe("failed");
     respond = async () => Response.json({ data: { profile: "bad" } });
-    expect(await restoreIfEmpty(syncDeps())).toBe(false);
+    expect(await restoreIfEmpty(syncDeps())).toBe("none");
+    respond = async () => Response.json({ data: { ...stored, profile: { ...profile, isExample: true } } });
+    expect(await restoreIfEmpty(syncDeps())).toBe("none");
     expect(local.profile).toBeNull();
   });
 
@@ -189,13 +247,45 @@ describe("client sync", () => {
     listeners.forEach((l) => l());
     await vi.advanceTimersByTimeAsync(SYNC_DEBOUNCE_MS);
     expect(calls).toHaveLength(1);
-    // A cleared plan ("Start over") is sent right away when the page goes.
+    // A pending save goes out right away (keepalive) when the page is hidden.
+    local = { profile, log: [entry, { ...entry, id: "b" }], added: 2 };
+    listeners.forEach((l) => l());
+    hide?.();
+    expect(calls).toHaveLength(2);
+    expect(calls[1].init?.keepalive).toBe(true);
+    // An emptied local store (Start over) is never sent by the sync, even on stop.
     local = { profile: null, log: [], added: 0 };
     listeners.forEach((l) => l());
     stop();
     expect(calls).toHaveLength(2);
-    expect(calls[1].init?.keepalive).toBe(true);
-    expect(JSON.parse(String(calls[1].init?.body))).toEqual({ profile: null, log: [], added: 0 });
     expect(listeners).toHaveLength(0);
+    expect(hide).toBeNull();
+  });
+
+  it("never sends the example persona", async () => {
+    vi.useFakeTimers();
+    local = { profile: { ...profile, isExample: true }, log: [entry], added: 1 };
+    const stop = startSync(syncDeps());
+    listeners.forEach((l) => l());
+    await vi.advanceTimersByTimeAsync(SYNC_DEBOUNCE_MS * 3);
+    hide?.();
+    stop();
+    expect(calls).toHaveLength(0);
+  });
+
+  it("Start over clears a real copy and stops restoring for the tab; on the example it sends nothing", async () => {
+    respond = async () => Response.json({ ok: true });
+    local = { profile: { ...profile, isExample: true }, log: [entry], added: 1 };
+    clearSavedCopy(syncDeps());
+    expect(calls).toHaveLength(0);
+    local = { profile, log: [entry], added: 1 };
+    clearSavedCopy(syncDeps());
+    expect(calls).toHaveLength(1);
+    expect(JSON.parse(String(calls[0].init?.body))).toEqual({ profile: null, log: [], added: 0 });
+    expect(calls[0].init?.keepalive).toBe(true);
+    local = { profile: null, log: [], added: 0 };
+    respond = async () => Response.json({ data: stored });
+    expect(await restoreIfEmpty(syncDeps())).toBe("none");
+    expect(calls).toHaveLength(1);
   });
 });

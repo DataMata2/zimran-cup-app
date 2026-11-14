@@ -61,13 +61,34 @@ export function isLocalEmpty(local: { profile: Profile | null; log: readonly Log
   return local.profile === null && local.log.length === 0;
 }
 
+/** A cleared plan ("Start over"): no profile, nothing logged. */
+export function isClearedPlan(data: { profile: Profile | null; log: readonly LogEntry[] }): boolean {
+  return data.profile === null && data.log.length === 0;
+}
+
 /**
  * Merge rule: local wins whenever it has anything. The server copy is restored only into an empty browser,
- * and only when it holds a plan (a cleared copy restores nothing).
+ * and only when it holds a real plan (not a cleared copy, not the example persona).
  */
 export function shouldRestore(
   local: { profile: Profile | null; log: readonly LogEntry[] },
   server: PlanData | null,
 ): server is PlanData & { profile: Profile } {
-  return isLocalEmpty(local) && server !== null && server.profile !== null;
+  return isLocalEmpty(local) && server !== null && server.profile !== null && !server.profile.isExample;
+}
+
+/**
+ * The PUT body the sync sends for this local state, or null when nothing should be sent: no plan (only an
+ * explicit "Start over" clears the copy, see `clearedBody`) or the example persona (it must never replace
+ * someone's real copy).
+ */
+export function syncBody(local: { profile: Profile | null; log: readonly LogEntry[]; added: number }): string | null {
+  if (local.profile === null || local.profile.isExample) return null;
+  return JSON.stringify({ profile: local.profile, log: local.log, added: local.added });
+}
+
+/** The body that clears the copy, sent only by "Start over" on a real (non-example) plan. */
+export function clearedBody(local: { profile: Profile | null }): string | null {
+  if (local.profile === null || local.profile.isExample) return null;
+  return JSON.stringify({ profile: null, log: [], added: 0 });
 }

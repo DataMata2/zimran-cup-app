@@ -7,6 +7,7 @@ import { Button } from "@/components/kit/Button";
 import { todayIso } from "@/lib/product/asof";
 import { buildExample } from "@/lib/product/example";
 import { setProfile, useHydrated, useProfile } from "@/lib/product/store";
+import { useRestoreSavedPlan } from "@/lib/product/useRestoreSavedPlan";
 
 /** Load the example persona and its pre-logged payment into guest storage, then open the plan. */
 function loadExample(): void {
@@ -19,6 +20,8 @@ export function HeroActions() {
   const hydrated = useHydrated();
   const profile = useProfile();
   const [confirming, setConfirming] = useState(false);
+  // An empty browser gets the saved copy back, which shows "Continue to my plan".
+  useRestoreSavedPlan();
   const hasOwnPlan = profile !== null && !profile.isExample;
 
   function tryExample() {

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { QuizApp } from "@/components/quiz/Quiz";
+import { RestoreRedirect } from "@/components/quiz/RestoreRedirect";
 
 export const metadata: Metadata = {
   title: "Get your number — Penaltyproof",
@@ -14,5 +15,10 @@ export const viewport: Viewport = {
 };
 
 export default function StartPage() {
-  return <QuizApp />;
+  return (
+    <>
+      <RestoreRedirect />
+      <QuizApp />
+    </>
+  );
 }

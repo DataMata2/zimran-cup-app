@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/kit/Button";
 import { cx } from "@/components/kit/cx";
 import { resetAll } from "@/lib/product/store";
+import { clearSavedCopy } from "@/lib/product/sync";
 
 /** Edit the quiz answers, or clear everything on this device (confirmed inline). */
 export function PlanActions({ isExample, className }: { isExample: boolean; className?: string }) {
@@ -12,6 +13,7 @@ export function PlanActions({ isExample, className }: { isExample: boolean; clas
   const [confirming, setConfirming] = useState(false);
 
   function startOver() {
+    clearSavedCopy();
     resetAll();
     router.push("/start");
   }
@@ -33,7 +35,7 @@ export function PlanActions({ isExample, className }: { isExample: boolean; clas
           role="alert"
           className="mt-4 flex flex-col gap-3 rounded-md border border-line-strong bg-surface px-4 py-3 text-sm text-ink sm:flex-row sm:items-center sm:justify-between"
         >
-          <p>This clears your answers and payment log on this device.</p>
+          <p>This clears your answers and payment log, here and in your saved copy.</p>
           <div className="flex gap-2">
             <Button size="sm" onClick={startOver}>
               Clear and start over

@@ -3,6 +3,7 @@ import { cx } from "@/components/kit/cx";
 import { Disclaimer } from "@/components/kit/Disclaimer";
 import { money, pct } from "@/lib/product/format";
 import { planNotes } from "@/lib/product/plan";
+import { zeroStateTaxNote } from "@/lib/product/stateNote";
 import { stateName } from "@/lib/product/states";
 import { ENGINE_TEST_COUNT, VERIFIED_URL } from "@/lib/product/trust";
 import type { StateCode, TaxResult } from "@/lib/tax";
@@ -10,7 +11,9 @@ import type { StateCode, TaxResult } from "@/lib/tax";
 /** Where the set-aside rate comes from: the year's tax by kind, the total and the effective rate. */
 export function Breakdown({ result, state, className }: { result: TaxResult; state: StateCode; className?: string }) {
   const { tax, income, rates } = result;
-  const { notes, footnotes } = planNotes(result.flags);
+  const { notes: flagNotes, footnotes } = planNotes(result.flags);
+  const stateNote = zeroStateTaxNote(result, state);
+  const notes = stateNote ? [...flagNotes, { code: "state_zero_note", message: stateNote }] : flagNotes;
   const stateLabel =
     tax.stateMethod === "none"
       ? `${stateName(state)} has no state income tax`

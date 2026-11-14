@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/kit/Badge";
 import { longDate, money } from "@/lib/product/format";
+import { installmentRow } from "@/lib/product/payNow";
 import type { Installment } from "@/lib/tax";
 import { useExamplePlan } from "./useExamplePlan";
 
@@ -16,8 +17,8 @@ export function DeadlinePreview() {
       <ol aria-label="Example: the four 2026 deadlines" aria-busy={!plan}>
         {QUARTERS.map((quarter, index) => {
           const i: Installment | null = plan?.result.installments[index] ?? null;
-          // Past or paid quarters show what was required; open ones show what the plan says to pay.
-          const amount = i ? (i.status === "upcoming" || i.status === "due" ? i.plannedPayment : i.required) : null;
+          // The same amounts as the /plan deadlines: missed rows show what is unpaid, the next one its own part.
+          const amount = i && plan ? installmentRow(plan.result, i).amount : null;
           return (
             <li
               key={quarter}

@@ -240,3 +240,20 @@ describe("pro adapter", () => {
     expect(await refreshPro({ fetch: bad as unknown as typeof fetch })).toBe(false);
   });
 });
+
+describe("installmentRow", () => {
+  it("Maya: Q3 shows its unpaid $1,850 to pay now, Q4 only its own instalment", async () => {
+    const { buildExample } = await import("@/lib/product/example");
+    const { installmentRow } = await import("@/lib/product/payNow");
+    const { profile, entry } = buildExample("2026-11-14", new Date("2026-11-14T12:00:00Z"));
+    const result = estimate(buildTaxInput(profile, [{ ...entry, id: "e", createdAt: "2026-11-14T12:00:00.000Z" }], "2026-11-14"));
+    const [q1, q2, q3, q4] = result.installments.map((i) => installmentRow(result, i));
+    expect(q1).toEqual({ amount: 1850, note: "Covered" });
+    expect(q2).toEqual({ amount: 1850, note: "Covered" });
+    expect(q3!.note).toBe("Missed, pay now");
+    expect(q3!.amount).toBeCloseTo(1850, 6);
+    expect(q4!.note).toBe("Pay by this date");
+    expect(q4!.amount).toBeCloseTo(1850, 6);
+    expect(q3!.amount + q4!.amount).toBeCloseTo(result.nextDeadline!.amountDue, 6);
+  });
+});

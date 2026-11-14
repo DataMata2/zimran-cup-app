@@ -2,7 +2,7 @@
 // deadlines list, the landing preview and the log all read these, so the split is made in one place.
 // Pure selection and copy. Every amount comes from the engine (estimate() and estimateAccruedPenalty()).
 
-import type { PenaltyEstimate, TaxResult } from "@/lib/tax";
+import type { Installment, PenaltyEstimate, TaxResult } from "@/lib/tax";
 import { longDate, money } from "./format";
 
 /** Below this weekly penalty (dollars) the hero says the penalty grows daily instead of "about $0 a week". */
@@ -98,6 +98,27 @@ export function quarterList(quarters: readonly number[]): string {
 export function pastDueSentence(quarters: readonly number[]): string {
   const n = new Set(quarters).size;
   return `${quarterList(quarters)} ${n === 1 ? "is" : "are"} past due.`;
+}
+
+/**
+ * What a deadline row shows: the amount and a short note. A past-due part is paid now, so the next
+ * deadline's row shows only its own instalment and each missed row shows what is still unpaid on it.
+ */
+export function installmentRow(result: TaxResult, i: Installment): { amount: number; note: string } {
+  const next = result.nextDeadline;
+  if (next && next.quarter === i.quarter) {
+    const target = payTarget(result);
+    const own = target?.isNext ? target.amount : 0;
+    return { amount: own, note: own > 0 ? "Pay by this date" : "Already covered" };
+  }
+  switch (i.status) {
+    case "paid":
+      return { amount: i.required, note: "Covered" };
+    case "pastDue":
+      return { amount: missedRemaining(result, i.quarter), note: "Missed, pay now" };
+    default:
+      return { amount: i.plannedPayment, note: i.plannedPayment > 0 ? "Planned" : "Nothing to pay" };
+  }
 }
 
 /** "Missed Q3 payment" or "Missed Q1–Q3 payments": the label over the pay-now amount. */

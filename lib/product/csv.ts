@@ -109,7 +109,7 @@ export function buildCsv({ log, result, annualized, asOf }: CsvData): string {
   );
 
   // BOM so Excel opens non-ASCII payer names as UTF-8.
-  return `﻿${csvRows(rows)}\r\n`;
+  return `\uFEFF${csvRows(rows)}\r\n`;
 }
 
 /** Download `text` as the export file (browser only). */
@@ -121,5 +121,6 @@ export function downloadCsv(text: string, filename: string = CSV_FILENAME): void
   document.body.appendChild(a);
   a.click();
   a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1_000);
+  // Late enough for iOS Safari's Download / View prompt, which reads the URL after the click.
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }

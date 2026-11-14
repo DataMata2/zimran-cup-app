@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/kit/Button";
 import { cx } from "@/components/kit/cx";
 import { buildAnnualizedInput } from "@/lib/product/annualizedPlan";
-import { buildCsv, CSV_FILENAME, downloadCsv } from "@/lib/product/csv";
+import { buildCsv, downloadCsv } from "@/lib/product/csv";
 import type { LogEntry, Profile } from "@/lib/product/types";
 import { annualized, type AnnualizedResult, type TaxResult } from "@/lib/tax";
 import { LockIcon } from "./LockIcon";
@@ -64,7 +64,7 @@ export function ExportCard({
           Export for your accountant (CSV)
         </Button>
         <p role="status" className="text-sm text-ink-3">
-          {done ? `Downloaded ${CSV_FILENAME}.` : pro ? "Opens in Excel, Numbers or Google Sheets." : "Included with Pro."}
+          {done ? "Your CSV is ready." : pro ? "Opens in Excel, Numbers or Google Sheets." : "Included with Pro."}
         </p>
       </div>
     </section>

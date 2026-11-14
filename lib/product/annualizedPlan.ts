@@ -6,21 +6,21 @@ import { annualized, estimate, type AnnualizedResult, type DatedAmount, type Tax
 import { buildTaxInput } from "./input";
 import type { LogEntry, Profile } from "./types";
 
-/** Cents below which two engine amounts count as equal. */
-const EPSILON = 0.5;
+/** Smallest saving worth a headline: a whole dollar (smaller differences are rounding). */
+const MIN_SAVING = 1;
 
 /**
  * Dated freelance payments for Schedule AI: every logged income entry on its own date, plus the quiz's
  * "paid so far" (profile.ytdIncome) spread in equal monthly amounts on the 15th of each month from January to
- * the month of `asOf` (December when `asOf` is in 2027). A 15th later than `asOf` is dated `asOf`, so nothing is
- * dated in the future. The monthly amounts are in cents and the last one takes the rounding, so they add up to
- * ytdIncome exactly.
+ * the month the quiz was answered (profile.createdAt). That month is clamped to January..the month of `asOf`,
+ * and to December 2026. ytdIncome is what had been received by the quiz, so spreading it to a later month
+ * would invent late income. A 15th later than `asOf` is dated `asOf`, so nothing is dated in the future. The
+ * monthly amounts are in cents and the last one takes the rounding, so they add up to ytdIncome exactly.
  */
 export function payments1099(profile: Profile, log: readonly LogEntry[], asOf: string): DatedAmount[] {
   const out: DatedAmount[] = [];
   if (profile.ytdIncome > 0) {
-    const year = Number(asOf.slice(0, 4));
-    const months = year > 2026 ? 12 : Number(asOf.slice(5, 7));
+    const months = Math.min(monthIn2026(profile.createdAt), monthIn2026(asOf));
     const totalCents = Math.round(profile.ytdIncome * 100);
     const each = Math.floor(totalCents / months);
     for (let m = 1; m <= months; m++) {
@@ -33,6 +33,14 @@ export function payments1099(profile: Profile, log: readonly LogEntry[], asOf: s
     if (e.kind === "income") out.push({ date: e.date, amount: e.amount });
   }
   return out.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+}
+
+/** Month (1..12) of an ISO date or timestamp within 2026: earlier years give 1, later years 12. */
+function monthIn2026(iso: string): number {
+  const year = Number(iso.slice(0, 4));
+  const month = Number(iso.slice(5, 7));
+  if (!Number.isFinite(year) || !(month >= 1 && month <= 12)) return 12;
+  return year < 2026 ? 1 : year > 2026 ? 12 : month;
 }
 
 /** The engine input for the annualized plan: the usual input plus the dated payments above. */
@@ -100,7 +108,7 @@ export function summarizeAnnualized(result: AnnualizedResult, regular: TaxResult
   } else {
     const nextRow = nextQuarter === null ? null : result.installments.find((i) => i.quarter === nextQuarter) ?? null;
     const atNext = nextRow ? lessBy(nextRow) : 0;
-    if (nextRow && atNext >= EPSILON) {
+    if (nextRow && atNext >= MIN_SAVING) {
       headline = { kind: "lessByNext", amount: atNext, due: nextRow.due };
     } else {
       // The largest saving at a due date that has already passed.
@@ -108,7 +116,7 @@ export function summarizeAnnualized(result: AnnualizedResult, regular: TaxResult
       for (const i of result.installments) {
         if (nextQuarter !== null && i.quarter >= nextQuarter) break;
         const v = lessBy(i);
-        if (v >= EPSILON && (!best || v > best.amount)) best = { amount: v, due: i.due };
+        if (v >= MIN_SAVING && (!best || v > best.amount)) best = { amount: v, due: i.due };
       }
       headline = best
         ? { kind: "lessEarlier", amount: best.amount, due: best.due, nextDue: nextRow?.due ?? null }

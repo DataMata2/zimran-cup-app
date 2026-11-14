@@ -23,6 +23,8 @@ const KIND_OPTIONS = [
 ] as const;
 const PAYER_MAX = 60;
 const YEAR_START = "2026-01-01";
+/** Freelance income counts for tax year 2026 only up to Dec 31 (IRS payments can be made into 2027). */
+const YEAR_END = "2026-12-31";
 
 interface Props {
   result: TaxResult;
@@ -60,9 +62,16 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
       setError(kind === "income" ? "Enter the amount you were paid." : "Enter the amount you paid the IRS.");
       return;
     }
+    if (kind === "income" && date === null && asOf > YEAR_END) {
+      // Today is in 2027: income received now belongs to next year. Show the date field to pick a 2026 date.
+      setDate(YEAR_END);
+      setError("Income received in 2027 counts toward next year. Enter the 2026 date you were paid.");
+      return;
+    }
     const when = date ?? asOf;
-    if (when < YEAR_START || when > asOf) {
-      setError(`Use a date between ${longDate(YEAR_START)} and ${longDate(asOf)}.`);
+    const latest = kind === "income" && asOf > YEAR_END ? YEAR_END : asOf;
+    if (when < YEAR_START || when > latest) {
+      setError(`Use a date between ${longDate(YEAR_START)} and ${longDate(latest)}.`);
       return;
     }
     if (needsPro(added, pro)) {
@@ -218,7 +227,7 @@ export function PaymentLog({ result, log, pro, asOf, onNeedPro }: Props) {
                   className="[&_input]:pr-2 [&_input]:pl-3"
                   value={date}
                   min={YEAR_START}
-                  max={asOf}
+                  max={asOf > YEAR_END ? YEAR_END : asOf}
                   onChange={(e) => {
                     setDate(e.target.value || null);
                     setError(null);

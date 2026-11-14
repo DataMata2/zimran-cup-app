@@ -37,7 +37,7 @@ const entry = (over: Partial<LogEntry>): LogEntry => ({
 describe("payments1099", () => {
   it("spreads ytdIncome over Jan..asOf month on the 15th and adds logged income on its own date", () => {
     const log = [entry({ amount: 4200, date: "2026-06-03" }), entry({ kind: "irs", amount: 999, date: "2026-06-10" })];
-    const p = payments1099({ ...profile, ytdIncome: 1000 }, log, "2026-07-20");
+    const p = payments1099({ ...profile, ytdIncome: 1000, createdAt: "2026-07-20T00:00:00.000Z" }, log, "2026-07-20");
     // 7 months; cents add up exactly; IRS payments are not income.
     expect(p.filter((x) => x.date.endsWith("-15")).map((x) => x.date)).toEqual([
       "2026-01-15", "2026-02-15", "2026-03-15", "2026-04-15", "2026-05-15", "2026-06-15", "2026-07-15",
@@ -49,14 +49,27 @@ describe("payments1099", () => {
     expect([...p].sort((a, b) => a.date.localeCompare(b.date))).toEqual(p);
   });
 
-  it("dates the current month's share no later than asOf, and covers all of 2026 when asOf is in 2027", () => {
-    const nov = payments1099(profile, [], "2026-11-14");
+  it("spreads only through the quiz month, not up to today", () => {
+    // Quiz answered in July, plan viewed in November: ytdIncome was received Jan..Jul.
+    const p = payments1099({ ...profile, createdAt: "2026-07-08T10:00:00.000Z" }, [], "2026-11-14");
+    expect(p.map((x) => x.date)).toEqual([
+      "2026-01-15", "2026-02-15", "2026-03-15", "2026-04-15", "2026-05-15", "2026-06-15", "2026-07-15",
+    ]);
+    expect(p.reduce((s, x) => s + Math.round(x.amount * 100), 0)).toBe(30000 * 100);
+  });
+
+  it("dates the quiz month's share no later than asOf, and clamps the quiz month to 2026", () => {
+    const nov = payments1099({ ...profile, createdAt: "2026-11-14T09:00:00.000Z" }, [], "2026-11-14");
     expect(nov).toHaveLength(11);
     expect(nov[10].date).toBe("2026-11-14");
-    const feb27 = payments1099(profile, [], "2027-02-01");
+    // Quiz in 2027: Jan..Dec 2026.
+    const feb27 = payments1099({ ...profile, createdAt: "2027-02-01T00:00:00.000Z" }, [], "2027-02-01");
     expect(feb27).toHaveLength(12);
     expect(feb27[11].date).toBe("2026-12-15");
     expect(feb27.every((x) => x.amount === 2500)).toBe(true);
+    // A quiz month later than asOf (clock skew) is clamped to asOf's month; a 2025 timestamp gives January.
+    expect(payments1099({ ...profile, createdAt: "2026-09-01T00:00:00.000Z" }, [], "2026-05-20")).toHaveLength(5);
+    expect(payments1099({ ...profile, createdAt: "2025-12-31T23:00:00.000Z" }, [], "2026-05-20")).toHaveLength(1);
   });
 
   it("is only the log when nothing was received before it", () => {

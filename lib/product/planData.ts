@@ -3,7 +3,7 @@
 
 import { countedEntries } from "./freeLimit";
 import type { LogEntry, Profile } from "./types";
-import { isLogEntry, isProfile } from "./validate";
+import { isLogEntry, isProfile, logEntrySaveError, profileSaveError } from "./validate";
 
 /** Largest PUT /api/plan-data body (bytes), checked before parsing. */
 export const PLAN_DATA_MAX_BYTES = 64 * 1024;
@@ -34,6 +34,22 @@ export function parsePlanData(value: unknown): PlanData | null {
   const profile = o.profile === null ? null : pickProfile(o.profile as Profile);
   if (profile === null && o.log.length > 0) return null;
   return { v: 1, profile, log: (o.log as LogEntry[]).map(pickEntry), added: Math.max(added, countedEntries(o.log as LogEntry[])) };
+}
+
+/**
+ * SH-06: why a parsed plan can't be SAVED, or null when it can. Used by PUT only: GET and restore never run it,
+ * so a copy stored before these rules still loads. `now` is the server's clock (see latestClientToday).
+ */
+export function planDataSaveError(data: PlanData, now: Date): string | null {
+  if (data.profile !== null) {
+    const err = profileSaveError(data.profile);
+    if (err) return err;
+  }
+  for (const entry of data.log) {
+    const err = logEntrySaveError(entry, now);
+    if (err) return err;
+  }
+  return null;
 }
 
 /** Keep only the known fields, so nothing extra is stored. */

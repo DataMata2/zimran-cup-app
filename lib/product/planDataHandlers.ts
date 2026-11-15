@@ -2,7 +2,7 @@
 // are unit-tested without Next or Supabase; app/api/plan-data/route.ts wires the real ones.
 
 import { clientIp, GuardError, guardResponse, RateLimiter, readJsonBody } from "./ai-guard";
-import { isClearedPlan, parsePlanData, PLAN_DATA_MAX_BYTES } from "./planData";
+import { isClearedPlan, parsePlanData, PLAN_DATA_MAX_BYTES, planDataSaveError } from "./planData";
 
 export interface PlanDataDeps {
   /** The guest id from the cookie, or null (GET never creates a guest). */
@@ -16,6 +16,8 @@ export interface PlanDataDeps {
   /** Saves per IP per hour, checked first (before a guest can be created). */
   ipLimiter?: RateLimiter;
   log?: (message: string, detail?: unknown) => void;
+  /** The server clock, for the date checks on save (tests pass a fixed one). */
+  now?: () => Date;
 }
 
 const NO_STORE = { "cache-control": "no-store" };
@@ -58,6 +60,8 @@ export async function putPlanData(request: Request, deps: PlanDataDeps): Promise
     const body = await readJsonBody(request, PLAN_DATA_MAX_BYTES);
     const data = parsePlanData({ profile: body.profile, log: body.log, added: body.added });
     if (!data) throw new GuardError(400, "Plan data is malformed.");
+    const saveError = planDataSaveError(data, (deps.now ?? (() => new Date()))());
+    if (saveError) throw new GuardError(400, saveError);
     let guestId: string;
     if (isClearedPlan(data)) {
       const existing = await deps.getGuestId();

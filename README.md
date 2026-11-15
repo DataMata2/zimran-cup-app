@@ -1,6 +1,6 @@
 # Penaltyproof
 
-**Know what to set aside from every client payment, and the minimum to pay the IRS by each quarterly deadline, so a US freelancer never owes an estimated-tax penalty.**
+**Know what to set aside from every client payment, and the minimum to pay the IRS by each quarterly deadline, so a US freelancer who pays on time doesn't owe an estimated-tax penalty.**
 
 **Live: [zimran.incode.kz](https://zimran.incode.kz)**: no sign-up. Click "Try with an example" for a full plan in one click. Pro checkout is Stripe test mode: card `4242 4242 4242 4242`, any future date, any CVC.
 

@@ -50,7 +50,7 @@ export default function LandingPage() {
             Freelancer?
           </p>
           <h1 className="text-[2.875rem] leading-none font-extrabold tracking-[-0.045em] text-ink [font-variation-settings:'opsz'_96] min-[481px]:text-[clamp(2.75rem,8vw,4.5rem)] min-[481px]:leading-[0.94] lg:text-[clamp(3.25rem,calc((100vw_-_488px)/9.6),4.5rem)] max-[359px]:text-[2.5rem]">
-            <span className="max-[480px]:hidden">Freelancer? The IRS charged </span>
+            <span className="max-[480px]:hidden">Freelancer? The IRS charged individual taxpayers </span>
             <span className="my-[0.04em] inline-block -rotate-[1.5deg] rounded-md border-3 border-ink bg-sun px-[0.12em] shadow-[3px_3px_0_0_var(--color-ink)] sm:shadow-chip lg:shadow-[4px_4px_0_0_var(--color-ink)]">
               15.7&nbsp;million
             </span>{" "}
@@ -58,6 +58,7 @@ export default function LandingPage() {
             <span className="min-[481px]:text-hot min-[481px]:[-webkit-text-stroke:2px_var(--color-ink)] min-[481px]:[paint-order:stroke_fill] lg:[-webkit-text-stroke:3px_var(--color-ink)]">
               <span className="whitespace-nowrap">estimated-tax</span> penalties
             </span>{" "}
+            <span className="min-[481px]:hidden">on individual taxpayers </span>
             in fiscal&nbsp;2025.
           </h1>
           <p className="mt-4 max-w-[560px] text-[17px] leading-[1.5] text-ink min-[481px]:hidden">

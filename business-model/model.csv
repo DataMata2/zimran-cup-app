@@ -39,8 +39,8 @@ D-A3,LTV yearly plan (one renewal),≈ $66,derived,52.43 × (1 + 25.8%) [R3]; no
 D-MIX,Plan mix used,52% annual / 48% monthly,derived,R5 renormalised without weekly plans: 39.7 ÷ (39.7 + 36.2) and 36.2 ÷ (39.7 + 36.2)
 D-LTV,Blended LTV per payer,≈ $50,derived,0.52 × 66 + 0.48 × 33.5
 D-SUP,Support cost per payer,$8.33,derived,20 ÷ 60 h × $25 [S1]
-D-LTVS,LTV including support,≈ $44,derived,50 − 8.33 (rounded figure from the model)
-D-GM,Gross margin per payment after Stripe and AI,92% monthly / 92% annual,derived,9.14 ÷ 9.99 and 54.30 ÷ 59
+D-LTVS,LTV including support,≈ $44,derived,"0.52 × 55.8 + 0.48 × 31.0 (annual 66 → 55.8, monthly 33.5 → 31.0 after support; teammate REVIEW §2)"
+D-GM,Gross margin per payment after Stripe and AI,≈ 91% monthly / 92% annual,derived,9.14 ÷ 9.99 and 54.30 ÷ 59
 D-PB,Day-1 payback threshold for an annual payer,CAC below ~$45 incl. support,derived,52.43 − 8.33 = 44.10
 CAC-G,"CAC, Google search (intent keywords)",$208 base / $104 optimistic,derived,4.15 ÷ 2.0% and 4.15 ÷ 4.0% [G1; K1]
 CAC-G-R,"LTV/CAC, Google search",0.24 / 0.48,derived,50 ÷ 208 and 50 ÷ 104; payback never within LTV
@@ -54,7 +54,7 @@ CAC-SEO-R,"LTV/CAC and payback, SEO",1.2 / 2.5; 4.6 mo / 2.3 mo,derived,50 ÷ 41
 CAC-AFF,"CAC, affiliates / partners (Planned)",$20,input [ASSUMP],"The payout we set: 34% of $59; incumbents pay $50–$300 [AF1]"
 CAC-AFF-R,"LTV/CAC and payback, affiliates",2.5; 2.3 mo monthly / immediate annual,derived,50 ÷ 20; payback = 20 ÷ 8.82
 CAC-REF,"CAC, in-product referral (Planned)",≈ $9,derived,One month forgone ≈ $8.82 per referred payer [ASSUMP]
-CAC-REF-R,"LTV/CAC and payback, referral",≈ 5.6; 1 mo,derived,50 ÷ 8.82
+CAC-REF-R,"LTV/CAC and payback, referral",≈ 5.6; 1 mo,derived,50 ÷ 9 (rounded CAC)
 CAC-TGT,Target blended CAC (Planned),≤ $25; LTV/CAC ≈ 2×,target,Model section 3 recommendation
 ARR1,ARR per payer: annual / monthly,$59 / $119.88,derived,59 and 9.99 × 12
 ARR2,Share of annual plans among active payers,≈ 77%,derived,"From plans sold 52/48 (D-MIX), with monthly payers churning faster than annual (R2 vs R3); the model states the resulting share"

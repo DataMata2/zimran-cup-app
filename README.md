@@ -26,7 +26,7 @@
 
 ### The code calculates; the AI explains
 
-The tax engine in `lib/tax/` (a verbatim copy of `engine/src`) computes everything: federal income tax, self-employment tax, state tax, the safe-harbor minimum (Form 1040-ES), the instalment schedule, the penalty estimate (Form 2210), the annualized method (Schedule AI), the set-aside rate and the calendar file. The UI only selects and formats its results (`lib/product/`). The AI never calculates. It explains numbers the engine already produced.
+The tax engine in `lib/tax/` (a verbatim copy of `engine/src`) computes everything: federal income tax, self-employment tax, state tax, the safe-harbor minimum (Form 1040-ES), the instalment schedule, the penalty estimate (Form 2210), the annualized method (Schedule AI), the set-aside rate and the calendar file. The UI only selects and formats its results (`lib/product/`). Every number the AI writes is checked against the engine's figures before you see it. If one doesn't match, the answer is regenerated; if it still fails, a fixed explanation is shown.
 
 AI features (Claude, server-side):
 

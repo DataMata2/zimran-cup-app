@@ -54,7 +54,7 @@ Full model and sources → [business-model/](business-model/) ([model.csv](busin
 - Anthropic API (`@anthropic-ai/sdk`), Stripe Checkout (`stripe`), Supabase (`@supabase/supabase-js`)
 - pnpm, Vitest
 
-**Tests:** `pnpm test` runs 345 tests in 21 files, all passing: **71 engine** tests (`lib/tax/__tests__`, including four personas checked by hand against the IRS worksheet, below) and **274 product** tests: input building, the meter, pay-now split, quiz validation, storage, server copy, the guest cookie, Pro helpers, CSV, AI facts, rate limits and the AI number guard (unknown numbers held back, one retry, then a fixed template).
+**Tests:** `pnpm test` runs 359 tests in 22 files, all passing: **71 engine** tests (`lib/tax/__tests__`, including four personas checked by hand against the IRS worksheet, below) and **288 product** tests: input building, the meter, pay-now split, quiz validation, storage, server copy and its save validation, the guest cookie, Pro helpers, CSV, AI facts, rate limits and the AI number guard (unknown numbers held back, one retry, then a fixed template).
 
 ### Verified against the IRS worksheet
 

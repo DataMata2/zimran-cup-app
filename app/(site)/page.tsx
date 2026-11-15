@@ -43,13 +43,13 @@ export default function LandingPage() {
     <main className="flex-1">
       {/* Hero. Phone: eyebrow, headline, sub, CTA and the example link fill the first screen; the poster follows. */}
       <section
-        className={`${GUTTER} grid gap-16 pt-6 pb-4 sm:pt-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)] lg:items-center lg:gap-12 lg:pt-10 lg:pb-8`}
+        className={`${GUTTER} grid gap-16 pt-6 pb-4 sm:pt-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)] lg:items-center lg:gap-12 lg:pt-6 lg:pb-8`}
       >
         <div className="flex min-w-0 flex-col">
           <p className="mt-2 mb-3 font-mono text-[13px] leading-none font-bold tracking-[0.1em] text-ink uppercase min-[481px]:hidden">
             Freelancer?
           </p>
-          <h1 className="text-[2.875rem] leading-none font-extrabold tracking-[-0.045em] text-ink [font-variation-settings:'opsz'_96] min-[481px]:text-[clamp(2.75rem,8vw,4.5rem)] min-[481px]:leading-[0.94] lg:text-[clamp(3.25rem,calc((100vw_-_488px)/9.6),4.5rem)] max-[359px]:text-[2.5rem]">
+          <h1 className="text-[2.5rem] leading-none font-extrabold tracking-[-0.045em] text-ink [font-variation-settings:'opsz'_96] min-[481px]:text-[clamp(2.75rem,8vw,4.5rem)] min-[481px]:leading-[0.94] lg:text-[clamp(3.25rem,calc((100vw_-_488px)/11),4rem)] lg:[@media(max-height:800px)]:text-[3.25rem] max-[359px]:text-[2.25rem]">
             <span className="max-[480px]:hidden">Freelancer? The IRS charged individual taxpayers </span>
             <span className="my-[0.04em] inline-block -rotate-[1.5deg] rounded-md border-3 border-ink bg-sun px-[0.12em] shadow-[3px_3px_0_0_var(--color-ink)] sm:shadow-chip lg:shadow-[4px_4px_0_0_var(--color-ink)]">
               15.7&nbsp;million
@@ -61,7 +61,7 @@ export default function LandingPage() {
             <span className="min-[481px]:hidden">on individual taxpayers </span>
             in fiscal&nbsp;2025.
           </h1>
-          <p className="mt-4 max-w-[560px] text-[17px] leading-[1.5] text-ink min-[481px]:hidden">
+          <p className="mt-3 max-w-[560px] text-[17px] leading-[1.5] text-ink min-[481px]:hidden">
             Know what to set aside from every payment and what to pay by each deadline, so you don’t owe an
             underpayment penalty when you pay on time.
           </p>
@@ -69,7 +69,7 @@ export default function LandingPage() {
             Penaltyproof tells you how much to set aside from every payment, and the minimum to pay the IRS by
             each quarterly deadline, so you don’t owe that penalty when you pay on time.
           </p>
-          <div className="mt-6 sm:mt-8">
+          <div className="mt-5 sm:mt-8 lg:mt-6">
             <HeroActions />
           </div>
         </div>

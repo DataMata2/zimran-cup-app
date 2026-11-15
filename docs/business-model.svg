@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="850" viewBox="0 0 1200 850" role="img" aria-labelledby="t d">
+  <title id="t">Penaltyproof business model</title>
+  <desc id="d">Price $59 a year or $9.99 a month. LTV about $50 per payer (about $44 including support). CAC by channel: referral about $9, affiliates $20, SEO $20 to $41, Meta $31 to $61, Google search $104 to $208 (not used). An annual payer pays back on day 1 when CAC is under about $45. $100M ARR needs 1.37M payers, about 4.5% of the 30.5M returns with Schedule C.</desc>
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; fill: #141210; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+    .k { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; }
+    .big { font-size: 46px; font-weight: 800; letter-spacing: -0.02em; }
+    .mid { font-size: 22px; font-weight: 800; }
+    .b { font-size: 16px; }
+    .s { font-size: 13px; fill: #4a4540; }
+    .lbl { font-size: 15px; font-weight: 700; }
+    .val { font-size: 15px; font-weight: 700; }
+    .card { fill: #FFFFFF; stroke: #141210; stroke-width: 2.5; }
+    .shadow { fill: #141210; }
+  </style>
+
+  <!-- solid background so it reads the same in GitHub light and dark mode -->
+  <rect width="1200" height="850" fill="#FFF6DA"/>
+
+  <!-- header -->
+  <text x="40" y="58" style="font-size:34px;font-weight:800;letter-spacing:-0.02em">Penaltyproof: the business model</text>
+  <text x="40" y="86" class="b">Live today: the product and test-mode Stripe checkout. Every acquisition channel is <tspan font-weight="700">Planned</tspan>.</text>
+
+  <!-- card 1: price -->
+  <rect x="46" y="116" width="352" height="196" rx="14" class="shadow"/>
+  <rect x="40" y="110" width="352" height="196" rx="14" class="card"/>
+  <text x="62" y="142" class="k mono">PRICE</text>
+  <text x="62" y="196" class="big">$59<tspan class="mid" dx="4">/year</tspan></text>
+  <text x="62" y="236" class="mid">or $9.99<tspan font-weight="400" font-size="18px">/month</tspan></text>
+  <text x="62" y="268" class="s">Stripe subscriptions (test mode in the demo).</text>
+  <text x="62" y="288" class="s">Plan mix assumed 52% annual / 48% monthly.</text>
+
+  <!-- card 2: LTV -->
+  <rect x="430" y="116" width="352" height="196" rx="14" class="shadow"/>
+  <rect x="424" y="110" width="352" height="196" rx="14" fill="#FFD43B" stroke="#141210" stroke-width="2.5"/>
+  <text x="446" y="142" class="k mono">LTV PER PAYER</text>
+  <text x="446" y="196" class="big">≈ $50</text>
+  <text x="446" y="228" class="b">≈ $44 incl. support</text>
+  <text x="446" y="262" class="s" style="fill:#141210">Annual plan ≈ $66, monthly plan ≈ $33.5,</text>
+  <text x="446" y="282" class="s" style="fill:#141210">after Stripe fees, AI cost and refunds.</text>
+
+  <!-- card 3: payback / break-even -->
+  <rect x="814" y="116" width="352" height="196" rx="14" class="shadow"/>
+  <rect x="808" y="110" width="352" height="196" rx="14" class="card"/>
+  <text x="830" y="142" class="k mono">PAYBACK AND BREAK-EVEN</text>
+  <text x="830" y="186" class="mid">Day 1 for an annual payer</text>
+  <text x="830" y="210" class="b">when CAC is under ~$45 incl. support</text>
+  <text x="830" y="230" class="s">($52.43 net first charge − $8.33 support)</text>
+  <text x="830" y="258" class="b">Break-even: CAC = LTV ≈ $50</text>
+  <text x="830" y="279" class="s">Monthly payer: 1–4.6 months (referral,</text>
+  <text x="830" y="296" class="s">affiliates, SEO).</text>
+
+  <!-- CAC chart -->
+  <rect x="46" y="346" width="736" height="420" rx="14" class="shadow"/>
+  <rect x="40" y="340" width="736" height="420" rx="14" class="card"/>
+  <text x="62" y="372" class="k mono">CAC BY CHANNEL (PLANNED) · LTV/CAC</text>
+  <text x="62" y="396" class="s">Range bars: base / optimistic conversion. Dashed line = LTV ≈ $50.</text>
+
+  <!-- scale: x0 = 250, 2.2 px per $ ; $0..$220 -> 250..734 -->
+  <g class="s">
+    <line x1="250" y1="414" x2="250" y2="690" stroke="#c9c0b0"/>
+    <line x1="360" y1="414" x2="360" y2="690" stroke="#e6dece"/>
+    <line x1="470" y1="414" x2="470" y2="690" stroke="#e6dece"/>
+    <line x1="580" y1="414" x2="580" y2="690" stroke="#e6dece"/>
+    <line x1="690" y1="414" x2="690" y2="690" stroke="#e6dece"/>
+    <text x="250" y="710" text-anchor="middle" class="s">$0</text>
+    <text x="360" y="710" text-anchor="middle" class="s">$50</text>
+    <text x="470" y="710" text-anchor="middle" class="s">$100</text>
+    <text x="580" y="710" text-anchor="middle" class="s">$150</text>
+    <text x="690" y="710" text-anchor="middle" class="s">$200</text>
+  </g>
+  <line x1="360" y1="410" x2="360" y2="694" stroke="#141210" stroke-width="2" stroke-dasharray="6 5"/>
+
+  <!-- rows: label at x=62, bar from 250 -->
+  <!-- Referral ≈ $9 -->
+  <text x="62" y="442" class="lbl">In-product referral</text>
+  <text x="62" y="460" class="s">LTV/CAC ≈ 5.6</text>
+  <rect x="250" y="430" width="19.8" height="24" rx="4" fill="#2BC48A" stroke="#141210" stroke-width="2"/>
+  <text x="280" y="448" class="val">≈ $9</text>
+
+  <!-- Affiliates $20 -->
+  <text x="62" y="496" class="lbl">Affiliates / partners</text>
+  <text x="62" y="514" class="s">LTV/CAC 2.5</text>
+  <rect x="250" y="484" width="44" height="24" rx="4" fill="#2BC48A" stroke="#141210" stroke-width="2"/>
+  <text x="304" y="502" class="val">$20</text>
+
+  <!-- SEO $20-41 -->
+  <text x="62" y="550" class="lbl">SEO calculator pages</text>
+  <text x="62" y="568" class="s">LTV/CAC 1.2–2.5</text>
+  <rect x="250" y="538" width="90.2" height="24" rx="4" fill="#2BC48A" stroke="#141210" stroke-width="2"/>
+  <rect x="250" y="538" width="44" height="24" rx="4" fill="#1E9E6E" stroke="#141210" stroke-width="2"/>
+  <text x="368" y="556" class="val">$20–41</text>
+
+  <!-- Meta $31-61 -->
+  <text x="62" y="604" class="lbl">Meta (FB/IG) ads</text>
+  <text x="62" y="622" class="s">LTV/CAC 0.8–1.6 · test only</text>
+  <rect x="250" y="592" width="134.2" height="24" rx="4" fill="#FFD43B" stroke="#141210" stroke-width="2"/>
+  <rect x="250" y="592" width="68.2" height="24" rx="4" fill="#F2B800" stroke="#141210" stroke-width="2"/>
+  <text x="394" y="610" class="val">$31–61</text>
+
+  <!-- Google $104-208 -->
+  <text x="62" y="658" class="lbl">Google search ads</text>
+  <text x="62" y="676" class="s">LTV/CAC 0.2–0.5 · not used</text>
+  <rect x="250" y="646" width="457.6" height="24" rx="4" fill="#FF6A3D" stroke="#141210" stroke-width="2"/>
+  <rect x="250" y="646" width="228.8" height="24" rx="4" fill="#E8471A" stroke="#141210" stroke-width="2"/>
+  <text x="490" y="664" class="val" style="fill:#FFFFFF">$104–208</text>
+
+  <text x="62" y="744" class="s">Target blended CAC ≤ $25 · LTV/CAC ≈ 2×. We don't buy search clicks.</text>
+
+  <!-- $100M path -->
+  <rect x="814" y="346" width="352" height="420" rx="14" class="shadow"/>
+  <rect x="808" y="340" width="352" height="420" rx="14" fill="#141210" stroke="#141210" stroke-width="2.5"/>
+  <text x="830" y="372" class="k mono" style="fill:#FFD43B">THE $100M ARR PATH · A STRETCH</text>
+  <text x="830" y="420" class="big" style="fill:#FFFFFF">1.37M</text>
+  <text x="830" y="446" class="b" style="fill:#FFFFFF">payers at ≈ $73 ARR per active payer</text>
+  <text x="830" y="490" style="fill:#FFD43B;font-size:34px;font-weight:800">≈ 4.5%</text>
+  <text x="830" y="514" class="b" style="fill:#FFFFFF">of the 30.5M returns with</text>
+  <text x="830" y="534" class="b" style="fill:#FFFFFF">Schedule C business income</text>
+  <line x1="830" y1="556" x2="1138" y2="556" stroke="#5a544c"/>
+  <text x="830" y="584" class="b" style="fill:#FFFFFF">≈ 1.7–2M new payers a year (churn)</text>
+  <text x="830" y="614" class="b" style="fill:#FFFFFF"><tspan font-weight="700">Planned:</tspan> year 1 goal 10k payers</text>
+  <text x="830" y="634" class="b" style="fill:#FFFFFF">≈ $0.73M ARR</text>
+  <text x="830" y="666" class="b" style="fill:#FFFFFF"><tspan font-weight="700">Planned:</tspan> payout-platform partners</text>
+  <text x="830" y="686" class="b" style="fill:#FFFFFF">and a higher-priced Pro+ tier</text>
+  <text x="830" y="738" class="s" style="fill:#c9c0b0">Comparable: Rocket Money, 4.583M payers.</text>
+
+  <!-- footer -->
+  <text x="40" y="808" class="s">Sources: RevenueCat SOSA 2026, Stripe pricing, Anthropic pricing, seodata.dev CPC, WordStream, IRS SOI TY2023, Rocket 10-K FY2025.</text>
+  <text x="40" y="828" class="s">Full model with every input, source link and formula: business-model/ in this repo.</text>
+</svg>

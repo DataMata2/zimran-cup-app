@@ -1,0 +1,68 @@
+id,item,value,type,source link or formula
+P1,Monthly price,$9.99,input (product decision),Price in the app (components/plan/Paywall.tsx)
+P2,Yearly price,$59,input (product decision),Price in the app (components/plan/Paywall.tsx)
+R1,"Monthly plan, first renewal (month-1 retention), North America",54.9%,input [SRC],https://www.revenuecat.com/state-of-subscription-apps/
+R2,"Monthly plan, 12-month retention: Utilities (where RevenueCat files Finance) / all apps",10.3% / 8.2%,input [SRC],https://www.revenuecat.com/state-of-subscription-apps/
+R3,"Annual plan, first renewal, North America",25.8%,input [SRC],https://www.revenuecat.com/state-of-subscription-apps/
+R4,Annual plan 12-month retention by price: low / mid / high,36% / 26% / 23%,input [SRC],https://www.revenuecat.com/state-of-subscription-apps/
+R5,Plan mix sold in North America: yearly / monthly / weekly,39.7% / 36.2% / 23.0%,input [SRC],https://www.revenuecat.com/state-of-subscription-apps/
+R6,"Refund rate, North America",3.45%,input [SRC],https://www.revenuecat.com/state-of-subscription-apps/
+R7,"First-year revenue per payer, North America (cross-check)",$26.07,input [SRC],https://www.revenuecat.com/state-of-subscription-apps/
+C1,Download to paid by day 35: hard paywall / freemium; NA median,10.7% / 2.1%; 2.8%,input [SRC],https://www.revenuecat.com/state-of-subscription-apps/
+C2,"Trial to paid, NA median",34.2%,input [SRC],https://www.revenuecat.com/state-of-subscription-apps/
+F1,Stripe card fee + Stripe Billing,"2.9% + $0.30, + 0.7%",input [SRC],https://stripe.com/pricing ; https://stripe.com/billing/pricing
+A1,claude-sonnet-5-5 price per million tokens (input / output),$2 / $10,input [SRC],https://platform.claude.com/docs/en/about-claude/pricing
+A2,"AI cost per Pro user per month (4 explanations, 8 screenshot reads, 10 chat messages)",≈ $0.15 (≈ $0.19 with full-resolution screenshots),input [ASSUMP usage; SRC price],Usage is our assumption; priced with A1
+G1,"Google CPC, volume-weighted over 7 intent keywords (73,680 searches/mo)",$4.15,input [SRC; third-party estimate],"https://www.seodata.dev/keyword/estimated-tax-payments (27,100/mo, $3.83) and the other keyword pages on seodata.dev"
+G2,Google Ads Finance & Insurance median CPC / conversion rate (2026),$3.39 / 2.64%,input [SRC],https://www.wordstream.com/blog/2026-google-ads-benchmarks
+M1,"Facebook, Finance & Insurance traffic-campaign CPC (US, 2025)",$1.22,input [SRC],https://www.wordstream.com/blog/facebook-ads-benchmarks-2025
+AF1,Affiliate payouts paid by incumbents,"Keeper up to $50 per signup; FreshBooks up to $200 per paid subscriber; QuickBooks $25 to $300",input [SRC],https://keepertax.com/become-an-affiliate ; https://www.freshbooks.com/affiliate-program ; https://quickbooks.intuit.com/partners/qbbusinessaffiliates/
+D1,Comparable consumer-fintech CAC (Dave),"$20 per new member (Q4 2025), $22 (Q3 2026)",input [SRC],https://dave.com/press/news-releases/news-release-details/dave-reports-fourth-quarter-full-year-2025-financial-results ; https://www.sec.gov/Archives/edgar/data/0001841408/000119312526447333/dave-ex99_1.htm
+K1,Click (or landing visit) to paid,"base 2.0%, optimistic 4.0%",input [ASSUMP],Anchored on C1: a freemium app converts 2.1% of downloads and a click is a weaker commitment than a download
+S1,Support time per payer,20 min/yr at $25/h,input [ASSUMP],Our assumption
+SEO1,SEO fixed cost,$3000/mo,input [ASSUMP],Our assumption (content and tools)
+SEO2,Share of the 73680 monthly searches captured by SEO,5%,input [ASSUMP],Our assumption
+T1,Returns with Schedule C (TY2023),30.48M,input [SRC],https://www.irs.gov/pub/irs-soi/23in14ar.xls (21411713 with net income + 9067174 with a loss)
+T2,Returns claiming the SE-tax deduction (TY2023),21.85M,input [SRC],https://www.irs.gov/pub/irs-soi/23in14ar.xls
+T3,Estimated-tax penalties assessed (FY2025),"15,734,656 penalties; $12.06B; ≈ $766 each",input [SRC],https://www.irs.gov/pub/irs-soi/25db-4-02-cp.xlsx (IRS Data Book FY2025 Table 4-2; all individual returns; counts assessments not people)
+T4,Rocket Money paying subscribers (YE2025) / subscription revenue (2025),4.583M / $351M,input [SRC],https://www.sec.gov/Archives/edgar/data/1805284/000162828026013283/rkt-20251231.htm
+T5,Searches a year for the seven core keywords,≈ 884k,input [SRC; third-party estimate],seodata.dev keyword pages (as G1)
+D-STR1,Stripe cost per monthly charge,$0.66,derived,9.99 × (2.9% + 0.7%) + 0.30
+D-STR2,Stripe cost per yearly charge,$2.42,derived,59 × (2.9% + 0.7%) + 0.30
+D-M1,Net per paid month (monthly plan),$9.14,derived,9.99 − 0.66 (Stripe) − 0.19 (AI upper bound)
+D-M2,Net per paid month after refunds,$8.82,derived,9.14 × (1 − 3.45%) [R6]
+D-M3,Paid months in year 1 (monthly plan),3.8 (4.0 with Utilities retention),derived,"Month 1 = 1.0, month 2 = 54.9% [R1], then a geometric decay to the 12-month retention 8.2% [R2] (10.3% Utilities gives 4.0); summed over 12 months"
+D-M4,LTV monthly plan (year 1 only),≈ $33.5,derived,3.8 × 8.82
+D-A1,Net per yearly charge,$54.30,derived,59 − 2.42 (Stripe) − 2.28 (AI at $0.19 × 12 months)
+D-A2,Net per yearly charge after refunds,$52.43,derived,54.30 × 0.9655
+D-A3,LTV yearly plan (one renewal),≈ $66,derived,52.43 × (1 + 25.8%) [R3]; no credit for later renewals
+D-MIX,Plan mix used,52% annual / 48% monthly,derived,R5 renormalised without weekly plans: 39.7 ÷ (39.7 + 36.2) and 36.2 ÷ (39.7 + 36.2)
+D-LTV,Blended LTV per payer,≈ $50,derived,0.52 × 66 + 0.48 × 33.5
+D-SUP,Support cost per payer,$8.33,derived,20 ÷ 60 h × $25 [S1]
+D-LTVS,LTV including support,≈ $44,derived,50 − 8.33 (rounded figure from the model)
+D-GM,Gross margin per payment after Stripe and AI,92% monthly / 92% annual,derived,9.14 ÷ 9.99 and 54.30 ÷ 59
+D-PB,Day-1 payback threshold for an annual payer,CAC below ~$45 incl. support,derived,52.43 − 8.33 = 44.10
+CAC-G,"CAC, Google search (intent keywords)",$208 base / $104 optimistic,derived,4.15 ÷ 2.0% and 4.15 ÷ 4.0% [G1; K1]
+CAC-G-R,"LTV/CAC, Google search",0.24 / 0.48,derived,50 ÷ 208 and 50 ÷ 104; payback never within LTV
+CAC-G-BE,Click-to-paid needed for Google to break even,8.3%,derived,4.15 ÷ 50
+CAC-GX,"CAC, Google F&I median (cross-check)",$170 / $85,derived,3.39 ÷ 2.0% and 3.39 ÷ 4.0% [G2]; LTV/CAC 0.29 / 0.59
+CAC-M,"CAC, Meta (FB/IG) traffic",$61 base / $31 optimistic,derived,1.22 ÷ 2.0% and 1.22 ÷ 4.0% [M1]
+CAC-M-R,"LTV/CAC and payback, Meta",0.82 / 1.6; 6.9 mo / immediate on annual,derived,50 ÷ 61 and 50 ÷ 31; payback = 61 ÷ 8.82
+CAC-M-BE,Click-to-paid needed for Meta to break even,2.4%,derived,1.22 ÷ 50
+CAC-SEO,"CAC, SEO calculator pages + deadline content",$41 base / $20 optimistic,derived,"3000 ÷ (73680 × 5% = 3684 visits/mo × 2.0–4.0% = 74–147 payers/mo) [SEO1; SEO2; G1; K1]"
+CAC-SEO-R,"LTV/CAC and payback, SEO",1.2 / 2.5; 4.6 mo / 2.3 mo,derived,50 ÷ 41 and 50 ÷ 20; payback = CAC ÷ 8.82
+CAC-AFF,"CAC, affiliates / partners (Planned)",$20,input [ASSUMP],"The payout we set: 34% of $59; incumbents pay $50–$300 [AF1]"
+CAC-AFF-R,"LTV/CAC and payback, affiliates",2.5; 2.3 mo monthly / immediate annual,derived,50 ÷ 20; payback = 20 ÷ 8.82
+CAC-REF,"CAC, in-product referral (Planned)",≈ $9,derived,One month forgone ≈ $8.82 per referred payer [ASSUMP]
+CAC-REF-R,"LTV/CAC and payback, referral",≈ 5.6; 1 mo,derived,50 ÷ 8.82
+CAC-TGT,Target blended CAC (Planned),≤ $25; LTV/CAC ≈ 2×,target,Model section 3 recommendation
+ARR1,ARR per payer: annual / monthly,$59 / $119.88,derived,59 and 9.99 × 12
+ARR2,Share of annual plans among active payers,≈ 77%,derived,"From plans sold 52/48 (D-MIX), with monthly payers churning faster than annual (R2 vs R3); the model states the resulting share"
+ARR3,ARR per active payer,≈ $73,derived,0.77 × 59 + 0.23 × 119.88
+N1,Payers needed for $100M ARR,≈ 1.37M (all-annual ≈ 1.69M),derived,100M ÷ 73 (and 100M ÷ 59)
+N2,Share of returns with Schedule C,≈ 4.5% (4.5–5.6%),derived,1.37M ÷ 30.48M (and 1.69M ÷ 30.48M) [T1]
+N3,Share of SE-tax returns,6.3–7.8%,derived,1.37M ÷ 21.85M and 1.69M ÷ 21.85M [T2]
+N4,New payers needed a year to hold 1.37M,≈ 1.7–2M,derived,"About 74% of annual and 90% of monthly payers are gone within a year [R2; R3]; range from a 15-month vs 12-month annual stay"
+N5,Acquisition spend at a $20 CAC,≈ $34–40M/yr,derived,1.7–2M × $20
+N6,Payers a year from search alone (100% capture),18–35k,derived,884k × 2.0–4.0% [T5; K1]; ≈ 1–2% of the adds needed; caps search at ≈ $1–3M ARR
+Y1,Year 1 goal (Planned; arithmetic target not a forecast),10k payers ≈ $0.73M ARR,target,10000 × 73
